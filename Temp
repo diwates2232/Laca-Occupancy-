@@ -1,3 +1,21 @@
+node_modules
+.env
+
+
+
+
+
+npm install
+npm run dev
+
+
+
+
+
+
+
+
+
 require('dotenv').config();
 const app = require('./app');
 
