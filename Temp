@@ -1,3 +1,38 @@
+const service = require('../services/occupancy.service');
+
+exports.getLiveOccupancy = async (req, res) => {
+  try {
+    const data = await service.fetchLiveOccupancy();
+    res.json({ success: true, count: data.length, data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Live occupancy fetch failed' });
+  }
+};
+
+exports.getHistoricalOccupancy = async (req, res) => {
+  const { location } = req.params;
+  try {
+    const data = await service.fetchHistoricalOccupancy(location);
+    res.json({ success: true, count: data.length, data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Historical occupancy fetch failed' });
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
 const { poolPromise } = require('../config/db');
 
 const partitionList = [
