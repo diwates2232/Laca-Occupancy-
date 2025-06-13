@@ -1,3 +1,118 @@
+ const express = require('express');
+ const router  = express.Router();
+ const controller = require('../controllers/occupancy.controller');
+
+ // existing endpoints
+ router.get('/live',       controller.getLiveOccupancy);
+ router.get('/history/:location', controller.getHistoricalOccupancy);
+
++// new: live headcount summary (region + per-partition)
++router.get('/live-summary', controller.getLiveSummary);
+
+ module.exports = router;
+
+
+
+
+
+// src/controllers/occupancy.controller.js
+
+const service = require('../services/occupancy.service');
+
+/**
+ * (unchanged) returns all raw swipe records for today
+ */
+exports.getLiveOccupancy = async (req, res) => {
+  try {
+    const data = await service.fetchLiveOccupancy();
+    res.json({ success: true, count: data.length, data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Live occupancy fetch failed' });
+  }
+};
+
+/**
+ * New: returns a “summary” of who’s currently in-office,
+ * plus the same detail list of those still present.
+ */
+exports.getLiveSummary = async (req, res) => {
+  try {
+    // 1. get all today’s swipe records
+    const allSwipes = await service.fetchLiveOccupancy();
+
+    // 2. pick each person’s last swipe of the day
+    const lastByPerson = {};
+    allSwipes.forEach(rec => {
+      const prev = lastByPerson[rec.PersonGUID];
+      if (!prev || new Date(rec.LocaleMessageTime) > new Date(prev.LocaleMessageTime)) {
+        lastByPerson[rec.PersonGUID] = rec;
+      }
+    });
+
+    // 3. filter to those whose last swipe is InDirection (i.e. still in-office)
+    const present = Object.values(lastByPerson).filter(r => r.Direction === 'InDirection');
+
+    // 4. build region and per-partition aggregates
+    const region = { total: 0, Employee: 0, Contractor: 0 };
+    const partitions = {}; // e.g. { 'AR.Cordoba': { total, Employee, Contractor }, … }
+
+    present.forEach(r => {
+      // region
+      region.total++;
+      if (r.PersonnelType === 'Employee') region.Employee++;
+      else region.Contractor++;
+
+      // per-partition
+      const p = r.PartitionName2;
+      if (!partitions[p]) {
+        partitions[p] = { total: 0, Employee: 0, Contractor: 0 };
+      }
+      partitions[p].total++;
+      if (r.PersonnelType === 'Employee') partitions[p].Employee++;
+      else partitions[p].Contractor++;
+    });
+
+    // 5. respond
+    res.json({
+      success: true,
+      summary: {
+        region: 'LACA',
+        ...region,       // { total, Employee, Contractor }
+        partitions       // { 'AR.Cordoba': { … }, … }
+      },
+      details: present  // the array of swipe‐records still present
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Live summary fetch failed' });
+  }
+};
+
+/**
+ * (unchanged) historical detail
+ */
+exports.getHistoricalOccupancy = async (req, res) => {
+  const { location } = req.params;
+  try {
+    const data = await service.fetchHistoricalOccupancy(location);
+    res.json({ success: true, count: data.length, data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Historical occupancy fetch failed' });
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
 Good We are getting API Responce like this 
 
 http://localhost:3001/api/occupancy/live
