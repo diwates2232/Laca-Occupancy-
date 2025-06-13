@@ -1,3 +1,89 @@
+const { poolPromise } = require('../config/db');
+
+const partitionList = [
+  'AR.Cordoba',
+  'BR.Sao Paulo',
+  'CR.Costa Rica Partition',
+  'MX.Mexico City',
+  'PA.Panama City',
+  'PE.Lima'
+];
+
+exports.fetchLiveOccupancy = async () => {
+  const pool = await poolPromise;
+
+  const query = `
+    SELECT 
+      DISTINCT [ObjectName1],
+      t3.[Name] AS PersonnelType,
+      CASE
+        WHEN t2.[Int1] = 0 THEN t2.[Text12]
+        ELSE CAST(t2.[Int1] AS NVARCHAR)
+      END AS EmployeeID,
+      t2.text5,
+      t1.PartitionName2,
+      t1.MessageType,
+      CONVERT(DATE, DATEADD(MINUTE, -1 * t1.[MessageLocaleOffset], t1.[MessageUTC])) AS Date
+    FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLog] AS t1
+    INNER JOIN [ACVSCore].[Access].[Personnel] AS t2
+      ON t1.ObjectIdentity1 = t2.GUID
+    INNER JOIN [ACVSCore].[Access].[PersonnelType] AS t3
+      ON t2.[PersonnelTypeId] = t3.[ObjectID]
+    WHERE 
+      CONVERT(DATE, DATEADD(MINUTE, -1 * t1.[MessageLocaleOffset], t1.[MessageUTC])) = CONVERT(DATE, GETDATE())
+      AND t1.PartitionName2 IN (${partitionList.map(p => `'${p}'`).join(',')})
+      AND t1.MessageType = 'CardAdmitted'
+  `;
+
+  const result = await pool.request().query(query);
+  return result.recordset;
+};
+
+exports.fetchHistoricalOccupancy = async (location) => {
+  const pool = await poolPromise;
+
+  const query = `
+    SELECT 
+      DISTINCT [ObjectName1],
+      t3.[Name] AS PersonnelType,
+      CASE
+        WHEN t2.[Int1] = 0 THEN t2.[Text12]
+        ELSE CAST(t2.[Int1] AS NVARCHAR)
+      END AS EmployeeID,
+      t2.text5,
+      t1.PartitionName2,
+      t1.MessageType,
+      CONVERT(DATE, DATEADD(MINUTE, -1 * t1.[MessageLocaleOffset], t1.[MessageUTC])) AS Date
+    FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLog] AS t1
+    INNER JOIN [ACVSCore].[Access].[Personnel] AS t2
+      ON t1.ObjectIdentity1 = t2.GUID
+    INNER JOIN [ACVSCore].[Access].[PersonnelType] AS t3
+      ON t2.[PersonnelTypeId] = t3.[ObjectID]
+    WHERE 
+      CONVERT(DATE, DATEADD(MINUTE, -1 * t1.[MessageLocaleOffset], t1.[MessageUTC])) >= DATEADD(DAY, -30, GETDATE())
+      AND t1.PartitionName2 = @location
+      AND t1.MessageType = 'CardAdmitted'
+  `;
+
+  const result = await pool.request()
+    .input('location', location)
+    .query(query);
+
+  return result.recordset;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
 module.exports = {
   'AR.Cordoba': 'America/Argentina/Cordoba',
   'BR.Sao Paulo': 'America/Sao_Paulo',
