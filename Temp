@@ -1,9 +1,55 @@
+Read below file carefully 
+for Employee 
+and Contractor 
+
+their are a cases like 
+
+to build summary- 
+
+if PersonnelType is  Contractor','Terminated Contractor','Temp Badge','Visitor','Property Management or blank 
+then increase Contractor count strickly.
+
+
+PersonnelType is - Employee or Terminated Employee 
+then increase Employee count 
+
+
+Only for build Summary 
+
+
+
+for details section keep as it is PersonnelType 
+
+strickly 
+
+make this changes and give me update files carefully .
+
+dont make unne cessary changes carefully.
+
+
+//C:\Users\W0024618\Desktop\laca-occupancy-backend\src\controllers\occupancy.controller.js
+
+
 const service = require('../services/occupancy.service');
 
+exports.getLiveOccupancy = async (req, res) => {
+  try {
+    const data = await service.fetchLiveOccupancy();
+    res.json({ success: true, count: data.length, data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Live occupancy fetch failed' });
+  }
+};
+
+
+
 /**
- * GET /api/occupancy/live-summary
- *   - Deduplicate by PersonGUID with the LAST swipe of today.
+ * New: returns a “summary” of who’s currently in-office,
+ * plus the same detail list of those still present.
  */
+
+
 exports.getLiveSummary = async (req, res) => {
   try {
     const swipes = await service.fetchLiveOccupancy();
@@ -129,15 +175,6 @@ exports.getHistoricalOccupancy = async (req, res) => {
 
 
 
-
-
-
-
-
-
-
-// src/controllers/occupancy.controller.js
-
 exports.getHistoricalOccupancy = async (req, res) => {
   const location = req.params.location || null;
   try {
@@ -229,305 +266,172 @@ exports.getHistoricalOccupancy = async (req, res) => {
 
 
 
-1) as per below APi we are getting API Responce like this 
-
-i think you are not removing duplicate for this this is our HeadCount History
-
-and Expected result is like ...
-
-http://localhost:3001/api/occupancy/history
-
-{
-  "success": true,
-  "summaryByDate": [
-    {
-      "date": "2025-06-12",
-      "day": "Thursday",
-      "region": {
-        "name": "LACA",
-        "total": 15418,
-        "Employee": 12984,
-        "Contractor": 2434
-      },
-      "partitions": {
-        "AR.Cordoba": {
-          "total": 2724,
-          "Employee": 1904,
-          "Contractor": 820
-        },
-        "CR.Costa Rica Partition": {
-          "total": 10382,
-          "Employee": 9058,
-          "Contractor": 1324
-        },
-        "MX.Mexico City": {
-          "total": 1469,
-          "Employee": 1289,
-          "Contractor": 180
-        },
-        "BR.Sao Paulo": {
-          "total": 246,
-          "Employee": 203,
-          "Contractor": 43
-        },
-        "PE.Lima": {
-          "total": 503,
-          "Employee": 445,
-          "Contractor": 58
-        },
-        "PA.Panama City": {
-          "total": 94,
-          "Employee": 85,
-          "Contractor": 9
-        }
-      }
-    },
-
- ],
-  "details": [
-    {
-      "LocaleMessageTime": "2025-06-12T00:00:12.000Z",
-      "ObjectName1": "Andrada, Nestor",
-      "Door": "LACA ARG 12TH Floor Terrace",
-      "EmployeeID": "W0019098",
-      "Text5": "Buenos Aires - Montevideo 825",
-      "PartitionName2": "AR.Cordoba",
-      "PersonGUID": "8487FA1B-FF05-46DD-ADA9-5FDF15B3663F",
-      "PersonnelType": "Contractor",
-      "CardNumber": "614137",
-      "AdmitCode": "Admit",
-      "Direction": "InDirection",
-      "SwipeDate": "2025-06-12T00:00:00.000Z"
-    },
-
-
- {
-      "date": "2025-06-13",
-      "day": "Friday",
-      "region": {
-        "name": "LACA",
-        "total": 312,
-        "Employee": 51,
-        "Contractor": 261
-      },
-      "partitions": {
-        "CR.Costa Rica Partition": {
-          "total": 191,
-          "Employee": 18,
-          "Contractor": 173
-        },
-        "BR.Sao Paulo": {
-          "total": 8,
-          "Employee": 7,
-          "Contractor": 1
-        },
-        "AR.Cordoba": {
-          "total": 113,
-          "Employee": 26,
-          "Contractor": 87
-        }
-      }
-    }
-  ],
-  "details": [
-
-
-
-i wan exact result like this ,
-
-
-
-
-2)this is our current APi responce For remove Duplicate personnnel Guid is our unique identity ,
-
-
-http://localhost:3001/api/occupancy/history
-
-{
-  "success": true,
-  "summaryByDate": [
-    {
-      "date": "2025-06-12",
-      "day": "Thursday",
-      "region": {
-        "name": "LACA",
-        "total": 15418,
-        "Employee": 12984,
-        "Contractor": 2434
-      },
-      "partitions": {
-        "AR.Cordoba": {
-          "total": 2724,
-          "Employee": 1904,
-          "Contractor": 820
-        },
-        "CR.Costa Rica Partition": {
-          "total": 10382,
-          "Employee": 9058,
-          "Contractor": 1324
-        },
-        "MX.Mexico City": {
-          "total": 1469,
-          "Employee": 1289,
-          "Contractor": 180
-        },
-        "BR.Sao Paulo": {
-          "total": 246,
-          "Employee": 203,
-          "Contractor": 43
-        },
-        "PE.Lima": {
-          "total": 503,
-          "Employee": 445,
-          "Contractor": 58
-        },
-        "PA.Panama City": {
-          "total": 94,
-          "Employee": 85,
-          "Contractor": 9
-        }
-      }
-    },
-    {
-      "date": "2025-06-13",
-      "day": "Friday",
-      "region": {
-        "name": "LACA",
-        "total": 312,
-        "Employee": 51,
-        "Contractor": 261
-      },
-      "partitions": {
-        "CR.Costa Rica Partition": {
-          "total": 191,
-          "Employee": 18,
-          "Contractor": 173
-        },
-        "BR.Sao Paulo": {
-          "total": 8,
-          "Employee": 7,
-          "Contractor": 1
-        },
-        "AR.Cordoba": {
-          "total": 113,
-          "Employee": 26,
-          "Contractor": 87
-        }
-      }
-    }
-  ],
-  "details": [
-    {
-      "LocaleMessageTime": "2025-06-12T00:00:12.000Z",
-      "ObjectName1": "Andrada, Nestor",
-      "Door": "LACA ARG 12TH Floor Terrace",
-      "EmployeeID": "W0019098",
-      "Text5": "Buenos Aires - Montevideo 825",
-      "PartitionName2": "AR.Cordoba",
-      "PersonGUID": "8487FA1B-FF05-46DD-ADA9-5FDF15B3663F",
-      "PersonnelType": "Contractor",
-      "CardNumber": "614137",
-      "AdmitCode": "Admit",
-      "Direction": "InDirection",
-      "SwipeDate": "2025-06-12T00:00:00.000Z"
-    },
-    {
-      "LocaleMessageTime": "2025-06-12T00:00:13.000Z",
-      "ObjectName1": "Parrales, Jorge",
-      "Door": "LACA CR B3 3rd Floor Elevator Emergency Door",
-      "EmployeeID": "W0020261",
-      "Text5": "Santa Ana - Parque Empresarial",
-      "PartitionName2": "CR.Costa Rica Partition",
-      "PersonGUID": "A5D4AFCF-BF71-48E8-A387-693B20820960",
-      "PersonnelType": "Contractor",
-      "CardNumber": "612769",
-      "AdmitCode": "Admit",
-      "Direction": "OutDirection",
-      "SwipeDate": "2025-06-12T00:00:00.000Z"
-    },
-    {
-      "LocaleMessageTime": "2025-06-12T00:01:47.000Z",
-      "ObjectName1": "Parrales, Jorge",
-      "Door": "LACA CR B3 3RD Floor Emergency Door",
-      "EmployeeID": "W0020261",
-      "Text5": "Santa Ana - Parque Empresarial",
-      "PartitionName2": "CR.Costa Rica Partition",
-      "PersonGUID": "A5D4AFCF-BF71-48E8-A387-693B20820960",
-      "PersonnelType": "Contractor",
-      "CardNumber": "612769",
-      "AdmitCode": "Admit",
-      "Direction": "OutDirection",
-      "SwipeDate": "2025-06-12T00:00:00.000Z"
-    },
-    {
 
 
 
 
 
+// src/services/occupancy.service.js
+
+const { poolPromise, sql } = require('../config/db');
+
+const partitionList = [
+  'AR.Cordoba',
+  'BR.Sao Paulo',
+  'CR.Costa Rica Partition',
+  'MX.Mexico City',
+  'PA.Panama City',
+  'PE.Lima'
+];
+
+/**
+ * Live occupancy (today) query unchanged.
+ */
+exports.fetchLiveOccupancy = async () => {
+  const pool = await poolPromise;
+  const partitionsSql = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
+
+  const query = `
+    WITH CombinedQuery AS (
+      SELECT
+        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
+        t1.ObjectName1,
+        t1.ObjectName2            AS Door,
+        CASE
+          WHEN t3.Name IN ('Contractor','Terminated Contractor')
+            THEN t2.Text12
+          ELSE CAST(t2.Int1 AS NVARCHAR)
+        END                       AS EmployeeID,
+        t2.text5                  AS Text5,
+        t1.PartitionName2         AS PartitionName2,
+        t1.ObjectIdentity1        AS PersonGUID,
+        t3.Name                   AS PersonnelType,
+        COALESCE(
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]','varchar(50)'),
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID)[1]','varchar(50)'),
+          sc.value
+        )                         AS CardNumber,
+        t5a.value                 AS AdmitCode,
+        t5d.value                 AS Direction
+      FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLog] AS t1
+      LEFT JOIN [ACVSCore].[Access].[Personnel]     AS t2
+        ON t1.ObjectIdentity1 = t2.GUID
+      LEFT JOIN [ACVSCore].[Access].[PersonnelType] AS t3
+        ON t2.PersonnelTypeId = t3.ObjectID
+      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5a
+        ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
+      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5d
+        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
+      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxml] AS t_xml
+        ON t1.XmlGUID = t_xml.GUID
+      LEFT JOIN (
+        SELECT GUID, value
+        FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred]
+        WHERE Name IN ('Card','CHUID')
+      ) AS sc
+        ON t1.XmlGUID = sc.GUID
+      WHERE
+        t1.MessageType = 'CardAdmitted'
+        AND t1.PartitionName2 IN (${partitionsSql})
+        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
+            = CONVERT(DATE, GETDATE())
+    )
+    SELECT
+      LocaleMessageTime,
+      CONVERT(VARCHAR(10), LocaleMessageTime, 23) AS Dateonly,
+      CONVERT(VARCHAR(8), LocaleMessageTime, 108) AS Swipe_Time,
+      EmployeeID,
+      PersonGUID,
+      ObjectName1,
+      Door,
+      PersonnelType,
+      CardNumber,
+      Text5,
+      PartitionName2,
+      AdmitCode,
+      Direction
+    FROM CombinedQuery
+    ORDER BY LocaleMessageTime ASC;
+  `;
+
+  const result = await pool.request().query(query);
+  return result.recordset;
+};
 
 
-imp---http://localhost:3001/api/occupancy/live-summary this api Gives us below Api Res[ponce 
-Check time Zone Properly as per Location fetch continously data 
-and Update live data ,
-check strickly API Responce carefully,
+/**
+ * Core raw‐data fetch for the past N days, all or by location.
+ */
+exports.fetchHistoricalData = async ({ days = 7, location = null }) => {
+  const pool = await poolPromise;
+  const partitionsSql = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
+  const locationFilter = location
+    ? `AND t1.PartitionName2 = @location`
+    : `AND t1.PartitionName2 IN (${partitionsSql})`;
 
-breakdown API as like 
-Today HeadCount and their breakdown as ..
-for this use 1st swipe ofthe Employee for the Specific day.
+  const query = `
+    WITH Hist AS (
+      SELECT
+        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
+        t1.ObjectName1,
+        t1.ObjectName2       AS Door,
+        CASE
+          WHEN t3.Name IN ('Contractor','Terminated Contractor') THEN t2.Text12
+          ELSE CAST(t2.Int1 AS NVARCHAR)
+        END                   AS EmployeeID,
+        t2.text5             AS Text5,
+        t1.PartitionName2    AS PartitionName2,
+        t1.ObjectIdentity1   AS PersonGUID,
+        t3.Name              AS PersonnelType,
+        COALESCE(
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]','varchar(50)'),
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID)[1]','varchar(50)'),
+          sc.value
+        )                     AS CardNumber,
+        t5a.value            AS AdmitCode,
+        t5d.value            AS Direction,
+        CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC)) AS SwipeDate
+      FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLog] AS t1
+      LEFT JOIN [ACVSCore].[Access].[Personnel]     AS t2
+        ON t1.ObjectIdentity1 = t2.GUID
+      LEFT JOIN [ACVSCore].[Access].[PersonnelType] AS t3
+        ON t2.PersonnelTypeId = t3.ObjectID
+      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5a
+        ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
+      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5d
+        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
+      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxml] AS t_xml
+        ON t1.XmlGUID = t_xml.GUID
+      LEFT JOIN (
+        SELECT GUID, value
+        FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred]
+        WHERE Name IN ('Card','CHUID')
+      ) AS sc
+        ON t1.XmlGUID = sc.GUID
+      WHERE
+        t1.MessageType = 'CardAdmitted'
+        ${locationFilter}
+        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
+            >= DATEADD(DAY, -${days}, CONVERT(DATE, GETDATE()))
+    )
+    SELECT *
+    FROM Hist
+    ORDER BY LocaleMessageTime ASC;
+  `;
 
-and for Current headCount use last Swipe for the Employee 
-as per door ,
-
-build both diffrent api ,
-if need to first Door Wise Floor partation we can define this data first 
-as per my request strickly update my backend files carefully
-
-
-3) http://localhost:3001/api/occupancy/live-summary   -- very very important API
+  const req = pool.request();
+  if (location) req.input('location', sql.NVarChar, location);
+  const result = await req.query(query);
+  return result.recordset;
+};
 
 
-{
-  "success": true,
-  "summary": {
-    "region": "LACA",
-    "total": 31,
-    "Employee": 24,
-    "Contractor": 7,
-    "partitions": {
-      "CR.Costa Rica Partition": {
-        "total": 11,
-        "Employee": 11,
-        "Contractor": 0
-      },
-      "AR.Cordoba": {
-        "total": 14,
-        "Employee": 8,
-        "Contractor": 6
-      },
-      "BR.Sao Paulo": {
-        "total": 6,
-        "Employee": 5,
-        "Contractor": 1
-      }
-    }
-  },
-  "details": [
-    {
-      "LocaleMessageTime": "2025-06-13T04:00:39.000Z",
-      "Dateonly": "2025-06-13",
-      "Swipe_Time": "04:00:39",
-      "EmployeeID": "307205",
-      "PersonGUID": "D3E32B08-FBA5-4132-AFAA-0D52DF9135ED",
-      "ObjectName1": "Vega, Manuel Francisco",
-      "Door": "LACA CR F4 Main Lobby Door",
-      "PersonnelType": "Employee",
-      "CardNumber": "417610",
-      "Text5": "Santa Ana - Parque Empresarial",
-      "PartitionName2": "CR.Costa Rica Partition",
-      "AdmitCode": "Admit",
-      "Direction": "InDirection"
-    },
+/**
+ * Public wrapper: always last 7 days, all or by location.
+ */
+exports.fetchHistoricalOccupancy = async (location) => {
+  return exports.fetchHistoricalData({ days: 30, location: location || null });
+};
 
-
+module.exports.partitionList = partitionList;
 
