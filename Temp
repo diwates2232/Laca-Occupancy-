@@ -1,3 +1,80 @@
+// src/controllers/occupancy.controller.js
+
+exports.getHistoricalOccupancy = async (req, res) => {
+  const location = req.params.location || null;
+  try {
+    // 1. fetch raw swipes
+    const raw = await service.fetchHistoricalOccupancy(location);
+
+    // 2. group by date (YYYY-MM-DD)
+    const byDate = raw.reduce((acc, rec) => {
+      // ensure we have a string ISO timestamp
+      const iso = (rec.LocaleMessageTime instanceof Date)
+        ? rec.LocaleMessageTime.toISOString()
+        : rec.LocaleMessageTime;
+      // extract YYYY-MM-DD
+      const d = iso.slice(0, 10);
+
+      acc[d] = acc[d] || [];
+      acc[d].push(rec);
+      return acc;
+    }, {});
+
+    // 3. build summary for each date
+    const summaryByDate = Object.keys(byDate)
+      .sort()
+      .map(date => {
+        const recs = byDate[date];
+        const regionCounts = { total: 0, Employee: 0, Contractor: 0 };
+        const partitionCounts = {};
+
+        recs.forEach(r => {
+          regionCounts.total++;
+          if (r.PersonnelType === 'Employee') regionCounts.Employee++;
+          else regionCounts.Contractor++;
+
+          if (!location) {
+            const p = r.PartitionName2;
+            partitionCounts[p] = partitionCounts[p] || { total: 0, Employee: 0, Contractor: 0 };
+            partitionCounts[p].total++;
+            if (r.PersonnelType === 'Employee') partitionCounts[p].Employee++;
+            else partitionCounts[p].Contractor++;
+          }
+        });
+
+        return {
+          date,
+          day: new Date(date).toLocaleDateString('en-US', { weekday: 'long' }),
+          region: location
+            ? { name: location, ...regionCounts }
+            : { name: 'LACA', ...regionCounts },
+          partitions: location ? undefined : partitionCounts
+        };
+      });
+
+    // 4. respond
+    res.json({
+      success:     true,
+      summaryByDate,
+      details:     raw
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Historical fetch failed' });
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
 Read below file carefully annd solve the issue give me updated Snippet,
 
 🚀 Server running on port 3001
