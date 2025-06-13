@@ -1,3 +1,125 @@
+ // src/services/occupancy.service.js
+
+ const { poolPromise, sql } = require('../config/db');
+
+ const partitionList = [
+   'AR.Cordoba',
+   'BR.Sao Paulo',
+   'CR.Costa Rica Partition',
+   'MX.Mexico City',
+   'PA.Panama City',
+   'PE.Lima'
+ ];
+
+ // … your existing fetchLiveOccupancy …
+
+ /**
+  * Fetch raw swipe records for the past N days.
+  * If `location` is provided, filters to that partition; otherwise all.
+  */
+ exports.fetchHistoricalData = async ({ days = 7, location = null }) => {
+   // … your existing implementation …
+ };
+
++/**
++ * Wrapper for exactly 7 days of history, all or by location.
++ */
++exports.fetchHistoricalOccupancy = async (location) => {
++  // pass `location` or null for all
++  return exports.fetchHistoricalData({ days: 7, location: location || null });
++};
+
+ module.exports.partitionList = partitionList;
+
+
+
+
+
+ // src/controllers/occupancy.controller.js
+
+ const service = require('../services/occupancy.service');
+
+ // … your existing getLiveOccupancy & getLiveSummary …
+
+-exports.getHistoricalOccupancy = async (req, res) => {
+-  const { location } = req.params;
+-  try {
+-    const data = await service.fetchHistoricalOccupancy(location);
+-    res.json({ success: true, count: data.length, data });
+-  } catch (err) {
+-    console.error(err);
+-    res.status(500).json({ success: false, message: 'Historical occupancy fetch failed' });
+-  }
+-};
++exports.getHistoricalOccupancy = async (req, res) => {
++  const location = req.params.location || null;
++  try {
++    // 1. fetch raw swipes
++    const raw = await service.fetchHistoricalOccupancy(location);
++
++    // 2. group by date (YYYY-MM-DD)
++    const byDate = raw.reduce((acc, rec) => {
++      const d = rec.LocaleMessageTime.slice(0,10);
++      acc[d] = acc[d] || [];
++      acc[d].push(rec);
++      return acc;
++    }, {});
++
++    // 3. build summary for each date
++    const summaryByDate = Object.keys(byDate)
++      .sort()
++      .map(date => {
++        const recs = byDate[date];
++        // region or location counts
++        const regionCounts = { total: 0, Employee: 0, Contractor: 0 };
++        const partitionCounts = {};
++
++        recs.forEach(r => {
++          regionCounts.total++;
++          if (r.PersonnelType === 'Employee') regionCounts.Employee++;
++          else regionCounts.Contractor++;
++
++          if (!location) {
++            const p = r.PartitionName2;
++            partitionCounts[p] = partitionCounts[p] || { total: 0, Employee: 0, Contractor: 0 };
++            partitionCounts[p].total++;
++            if (r.PersonnelType === 'Employee') partitionCounts[p].Employee++;
++            else partitionCounts[p].Contractor++;
++          }
++        });
++
++        return {
++          date,
++          day: new Date(date).toLocaleDateString('en-US', { weekday: 'long' }),
++          region: location
++            ? { name: location, ...regionCounts }
++            : { name: 'LACA', ...regionCounts },
++          partitions: location ? undefined : partitionCounts
++        };
++      });
++
++    // 4. respond
++    res.json({
++      success:     true,
++      summaryByDate,
++      details:     raw
++    });
++  } catch (err) {
++    console.error(err);
++    res.status(500).json({ success: false, message: 'Historical fetch failed' });
++  }
++};
+
+
+
+
+
+
+
+
+
+
+
 Read below my current file and Give me both Updated files do only necessary changes
 
 
