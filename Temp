@@ -1,4 +1,11 @@
- const express = require('express');
+curl http://localhost:3001/api/occupancy/live-summary
+
+
+
+
+
+
+const express = require('express');
  const router  = express.Router();
  const controller = require('../controllers/occupancy.controller');
 
