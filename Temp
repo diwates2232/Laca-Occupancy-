@@ -1,252 +1,302 @@
-GET http://localhost:3001/api/occupancy/history
+1) as per below APi we are getting API Responce like this 
 
+i think you are not removing duplicate for this this is our HeadCount History
 
-GET http://localhost:3001/api/occupancy/history/CR.SanJose
+and Expected result is like ...
 
+http://localhost:3001/api/occupancy/history
 
-
-
-
-
-
-
-
-// src/controllers/occupancy.controller.js
-
-exports.getHistoricalOccupancy = async (req, res) => {
-  const location = req.params.location || null;
-  try {
-    // 1. fetch raw swipes
-    const raw = await service.fetchHistoricalOccupancy(location);
-
-    // 2. group by date (YYYY-MM-DD)
-    const byDate = raw.reduce((acc, rec) => {
-      // ensure we have a string ISO timestamp
-      const iso = (rec.LocaleMessageTime instanceof Date)
-        ? rec.LocaleMessageTime.toISOString()
-        : rec.LocaleMessageTime;
-      // extract YYYY-MM-DD
-      const d = iso.slice(0, 10);
-
-      acc[d] = acc[d] || [];
-      acc[d].push(rec);
-      return acc;
-    }, {});
-
-    // 3. build summary for each date
-    const summaryByDate = Object.keys(byDate)
-      .sort()
-      .map(date => {
-        const recs = byDate[date];
-        const regionCounts = { total: 0, Employee: 0, Contractor: 0 };
-        const partitionCounts = {};
-
-        recs.forEach(r => {
-          regionCounts.total++;
-          if (r.PersonnelType === 'Employee') regionCounts.Employee++;
-          else regionCounts.Contractor++;
-
-          if (!location) {
-            const p = r.PartitionName2;
-            partitionCounts[p] = partitionCounts[p] || { total: 0, Employee: 0, Contractor: 0 };
-            partitionCounts[p].total++;
-            if (r.PersonnelType === 'Employee') partitionCounts[p].Employee++;
-            else partitionCounts[p].Contractor++;
-          }
-        });
-
-        return {
-          date,
-          day: new Date(date).toLocaleDateString('en-US', { weekday: 'long' }),
-          region: location
-            ? { name: location, ...regionCounts }
-            : { name: 'LACA', ...regionCounts },
-          partitions: location ? undefined : partitionCounts
-        };
-      });
-
-    // 4. respond
-    res.json({
-      success:     true,
-      summaryByDate,
-      details:     raw
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Historical fetch failed' });
-  }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-Read below file carefully annd solve the issue give me updated Snippet,
-
-🚀 Server running on port 3001
-✅ MSSQL connected
-TypeError: rec.LocaleMessageTime.slice is not a function
-    at C:\Users\W0024618\Desktop\laca-occupancy-backend\src\controllers\occupancy.controller.js:98:41
-    at Array.reduce (<anonymous>)
-    at exports.getHistoricalOccupancy (C:\Users\W0024618\Desktop\laca-occupancy-backend\src\controllers\occupancy.controller.js:96:24)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-
-
-
-
-
-
-const service = require('../services/occupancy.service');
-
-exports.getLiveOccupancy = async (req, res) => {
-  try {
-    const data = await service.fetchLiveOccupancy();
-    res.json({ success: true, count: data.length, data });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Live occupancy fetch failed' });
-  }
-};
-
-
-
-/**
- * New: returns a “summary” of who’s currently in-office,
- * plus the same detail list of those still present.
- */
-exports.getLiveSummary = async (req, res) => {
-  try {
-    // 1. get all today’s swipe records
-    const allSwipes = await service.fetchLiveOccupancy();
-
-    // 2. pick each person’s last swipe of the day
-    const lastByPerson = {};
-    allSwipes.forEach(rec => {
-      const prev = lastByPerson[rec.PersonGUID];
-      if (!prev || new Date(rec.LocaleMessageTime) > new Date(prev.LocaleMessageTime)) {
-        lastByPerson[rec.PersonGUID] = rec;
-      }
-    });
-
-
-
-      // 3. filter to those whose last swipe is InDirection (i.e. still in-office)
-    const present = Object.values(lastByPerson).filter(r => r.Direction === 'InDirection');
-
-    // 4. build region and per-partition aggregates
-    const region = { total: 0, Employee: 0, Contractor: 0 };
-    const partitions = {}; // e.g. { 'AR.Cordoba': { total, Employee, Contractor }, … }
-
-    present.forEach(r => {
-      // region
-      region.total++;
-      if (r.PersonnelType === 'Employee') region.Employee++;
-      else region.Contractor++;
-
-      // per-partition
-      const p = r.PartitionName2;
-      if (!partitions[p]) {
-        partitions[p] = { total: 0, Employee: 0, Contractor: 0 };
-      }
-      partitions[p].total++;
-      if (r.PersonnelType === 'Employee') partitions[p].Employee++;
-      else partitions[p].Contractor++;
-    });
-
-    // 5. respond
-    res.json({
-      success: true,
-      summary: {
-        region: 'LACA',
-        ...region,       // { total, Employee, Contractor }
-        partitions       // { 'AR.Cordoba': { … }, … }
+{
+  "success": true,
+  "summaryByDate": [
+    {
+      "date": "2025-06-12",
+      "day": "Thursday",
+      "region": {
+        "name": "LACA",
+        "total": 15418,
+        "Employee": 12984,
+        "Contractor": 2434
       },
-      details: present  // the array of swipe‐records still present
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Live summary fetch failed' });
-  }
-};
+      "partitions": {
+        "AR.Cordoba": {
+          "total": 2724,
+          "Employee": 1904,
+          "Contractor": 820
+        },
+        "CR.Costa Rica Partition": {
+          "total": 10382,
+          "Employee": 9058,
+          "Contractor": 1324
+        },
+        "MX.Mexico City": {
+          "total": 1469,
+          "Employee": 1289,
+          "Contractor": 180
+        },
+        "BR.Sao Paulo": {
+          "total": 246,
+          "Employee": 203,
+          "Contractor": 43
+        },
+        "PE.Lima": {
+          "total": 503,
+          "Employee": 445,
+          "Contractor": 58
+        },
+        "PA.Panama City": {
+          "total": 94,
+          "Employee": 85,
+          "Contractor": 9
+        }
+      }
+    },
+
+ ],
+  "details": [
+    {
+      "LocaleMessageTime": "2025-06-12T00:00:12.000Z",
+      "ObjectName1": "Andrada, Nestor",
+      "Door": "LACA ARG 12TH Floor Terrace",
+      "EmployeeID": "W0019098",
+      "Text5": "Buenos Aires - Montevideo 825",
+      "PartitionName2": "AR.Cordoba",
+      "PersonGUID": "8487FA1B-FF05-46DD-ADA9-5FDF15B3663F",
+      "PersonnelType": "Contractor",
+      "CardNumber": "614137",
+      "AdmitCode": "Admit",
+      "Direction": "InDirection",
+      "SwipeDate": "2025-06-12T00:00:00.000Z"
+    },
 
 
-// exports.getHistoricalOccupancy = async (req, res) => {
-//   const { location } = req.params;
-//   try {
-//     const data = await service.fetchHistoricalOccupancy(location);
-//     res.json({ success: true, count: data.length, data });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ success: false, message: 'Historical occupancy fetch failed' });
-//   }
-// };
+ {
+      "date": "2025-06-13",
+      "day": "Friday",
+      "region": {
+        "name": "LACA",
+        "total": 312,
+        "Employee": 51,
+        "Contractor": 261
+      },
+      "partitions": {
+        "CR.Costa Rica Partition": {
+          "total": 191,
+          "Employee": 18,
+          "Contractor": 173
+        },
+        "BR.Sao Paulo": {
+          "total": 8,
+          "Employee": 7,
+          "Contractor": 1
+        },
+        "AR.Cordoba": {
+          "total": 113,
+          "Employee": 26,
+          "Contractor": 87
+        }
+      }
+    }
+  ],
+  "details": [
+
+
+
+i wan exact result like this ,
 
 
 
 
-exports.getHistoricalOccupancy = async (req, res) => {
-  const location = req.params.location || null;
-  try {
-    // 1. fetch raw swipes
-    const raw = await service.fetchHistoricalOccupancy(location);
+2)this is our current APi responce For remove Duplicate personnnel Guid is our unique identity ,
 
-    // 2. group by date (YYYY-MM-DD)
-    const byDate = raw.reduce((acc, rec) => {
-    //   const d = rec.LocaleMessageTime.slice(0,10);
-     const time = rec.LocaleMessageTime.slice(11, 16); // e.g., "13:45"
-      acc[d] = acc[d] || [];
-      acc[d].push(rec);
-      return acc;
-    }, {});
 
-    // 3. build summary for each date
-    const summaryByDate = Object.keys(byDate)
-      .sort()
-      .map(date => {
-        const recs = byDate[date];
-        // region or location counts
-        const regionCounts = { total: 0, Employee: 0, Contractor: 0 };
-        const partitionCounts = {};
+http://localhost:3001/api/occupancy/history
 
-        recs.forEach(r => {
-          regionCounts.total++;
-          if (r.PersonnelType === 'Employee') regionCounts.Employee++;
-          else regionCounts.Contractor++;
+{
+  "success": true,
+  "summaryByDate": [
+    {
+      "date": "2025-06-12",
+      "day": "Thursday",
+      "region": {
+        "name": "LACA",
+        "total": 15418,
+        "Employee": 12984,
+        "Contractor": 2434
+      },
+      "partitions": {
+        "AR.Cordoba": {
+          "total": 2724,
+          "Employee": 1904,
+          "Contractor": 820
+        },
+        "CR.Costa Rica Partition": {
+          "total": 10382,
+          "Employee": 9058,
+          "Contractor": 1324
+        },
+        "MX.Mexico City": {
+          "total": 1469,
+          "Employee": 1289,
+          "Contractor": 180
+        },
+        "BR.Sao Paulo": {
+          "total": 246,
+          "Employee": 203,
+          "Contractor": 43
+        },
+        "PE.Lima": {
+          "total": 503,
+          "Employee": 445,
+          "Contractor": 58
+        },
+        "PA.Panama City": {
+          "total": 94,
+          "Employee": 85,
+          "Contractor": 9
+        }
+      }
+    },
+    {
+      "date": "2025-06-13",
+      "day": "Friday",
+      "region": {
+        "name": "LACA",
+        "total": 312,
+        "Employee": 51,
+        "Contractor": 261
+      },
+      "partitions": {
+        "CR.Costa Rica Partition": {
+          "total": 191,
+          "Employee": 18,
+          "Contractor": 173
+        },
+        "BR.Sao Paulo": {
+          "total": 8,
+          "Employee": 7,
+          "Contractor": 1
+        },
+        "AR.Cordoba": {
+          "total": 113,
+          "Employee": 26,
+          "Contractor": 87
+        }
+      }
+    }
+  ],
+  "details": [
+    {
+      "LocaleMessageTime": "2025-06-12T00:00:12.000Z",
+      "ObjectName1": "Andrada, Nestor",
+      "Door": "LACA ARG 12TH Floor Terrace",
+      "EmployeeID": "W0019098",
+      "Text5": "Buenos Aires - Montevideo 825",
+      "PartitionName2": "AR.Cordoba",
+      "PersonGUID": "8487FA1B-FF05-46DD-ADA9-5FDF15B3663F",
+      "PersonnelType": "Contractor",
+      "CardNumber": "614137",
+      "AdmitCode": "Admit",
+      "Direction": "InDirection",
+      "SwipeDate": "2025-06-12T00:00:00.000Z"
+    },
+    {
+      "LocaleMessageTime": "2025-06-12T00:00:13.000Z",
+      "ObjectName1": "Parrales, Jorge",
+      "Door": "LACA CR B3 3rd Floor Elevator Emergency Door",
+      "EmployeeID": "W0020261",
+      "Text5": "Santa Ana - Parque Empresarial",
+      "PartitionName2": "CR.Costa Rica Partition",
+      "PersonGUID": "A5D4AFCF-BF71-48E8-A387-693B20820960",
+      "PersonnelType": "Contractor",
+      "CardNumber": "612769",
+      "AdmitCode": "Admit",
+      "Direction": "OutDirection",
+      "SwipeDate": "2025-06-12T00:00:00.000Z"
+    },
+    {
+      "LocaleMessageTime": "2025-06-12T00:01:47.000Z",
+      "ObjectName1": "Parrales, Jorge",
+      "Door": "LACA CR B3 3RD Floor Emergency Door",
+      "EmployeeID": "W0020261",
+      "Text5": "Santa Ana - Parque Empresarial",
+      "PartitionName2": "CR.Costa Rica Partition",
+      "PersonGUID": "A5D4AFCF-BF71-48E8-A387-693B20820960",
+      "PersonnelType": "Contractor",
+      "CardNumber": "612769",
+      "AdmitCode": "Admit",
+      "Direction": "OutDirection",
+      "SwipeDate": "2025-06-12T00:00:00.000Z"
+    },
+    {
 
-          if (!location) {
-            const p = r.PartitionName2;
-            partitionCounts[p] = partitionCounts[p] || { total: 0, Employee: 0, Contractor: 0 };
-            partitionCounts[p].total++;
-            if (r.PersonnelType === 'Employee') partitionCounts[p].Employee++;
-            else partitionCounts[p].Contractor++;
-          }
-        });
 
-        return {
-         date,
-          day: new Date(date).toLocaleDateString('en-US', { weekday: 'long' }),
-          region: location
-            ? { name: location, ...regionCounts }
-            : { name: 'LACA', ...regionCounts },
-          partitions: location ? undefined : partitionCounts
-        };
-      });
 
-    // 4. respond
-    res.json({
-      success:     true,
-      summaryByDate,
-      details:     raw
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Historical fetch failed' });
-  }
-};
+
+
+
+
+imp---http://localhost:3001/api/occupancy/live-summary this api Gives us below Api Res[ponce 
+Check time Zone Properly as per Location fetch continously data 
+and Update live data ,
+check strickly API Responce carefully,
+
+breakdown API as like 
+Today HeadCount and their breakdown as ..
+for this use 1st swipe ofthe Employee for the Specific day.
+
+and for Current headCount use last Swipe for the Employee 
+as per door ,
+
+build both diffrent api ,
+if need to first Door Wise Floor partation we can define this data first 
+as per my request strickly update my backend files carefully
+
+
+3) http://localhost:3001/api/occupancy/live-summary   -- very very important API
+
+
+{
+  "success": true,
+  "summary": {
+    "region": "LACA",
+    "total": 31,
+    "Employee": 24,
+    "Contractor": 7,
+    "partitions": {
+      "CR.Costa Rica Partition": {
+        "total": 11,
+        "Employee": 11,
+        "Contractor": 0
+      },
+      "AR.Cordoba": {
+        "total": 14,
+        "Employee": 8,
+        "Contractor": 6
+      },
+      "BR.Sao Paulo": {
+        "total": 6,
+        "Employee": 5,
+        "Contractor": 1
+      }
+    }
+  },
+  "details": [
+    {
+      "LocaleMessageTime": "2025-06-13T04:00:39.000Z",
+      "Dateonly": "2025-06-13",
+      "Swipe_Time": "04:00:39",
+      "EmployeeID": "307205",
+      "PersonGUID": "D3E32B08-FBA5-4132-AFAA-0D52DF9135ED",
+      "ObjectName1": "Vega, Manuel Francisco",
+      "Door": "LACA CR F4 Main Lobby Door",
+      "PersonnelType": "Employee",
+      "CardNumber": "417610",
+      "Text5": "Santa Ana - Parque Empresarial",
+      "PartitionName2": "CR.Costa Rica Partition",
+      "AdmitCode": "Admit",
+      "Direction": "InDirection"
+    },
+
+
+
