@@ -1,4 +1,30 @@
 const express = require('express');
+const occupancyRoutes = require('./routes/occupancy.routes');
+
+const app = express();
+app.use(express.json());
+
+// Health check
+app.get('/', (req, res) => res.send('🌎 LACA Occupancy API Running'));
+
+// Routes
+app.use('/api/occupancy', occupancyRoutes);
+
+module.exports = app;
+
+
+
+
+
+
+
+
+
+
+
+
+
+const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/occupancy.controller');
 
