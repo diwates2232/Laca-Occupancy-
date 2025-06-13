@@ -1,5 +1,151 @@
 // src/controllers/occupancy.controller.js
 
+const service = require('../services/occupancy.service');
+
+/**
+ * Helper: decide whether a PersonnelType counts as “Contractor” or “Employee”
+ */
+function classifyType(pt) {
+  const contractorTypes = new Set([
+    'Contractor',
+    'Terminated Contractor',
+    'Temp Badge',
+    'Visitor',
+    'Property Management',
+    '',    // blank
+    null
+  ]);
+  return contractorTypes.has(pt) ? 'Contractor' : 'Employee';
+}
+
+/**
+ * GET /api/occupancy/live-summary
+ */
+exports.getLiveSummary = async (req, res) => {
+  try {
+    const swipes = await service.fetchLiveOccupancy();
+
+    // 1. Dedupe: keep only the last swipe per PersonGUID
+    const lastByPerson = {};
+    swipes.forEach(rec => {
+      const prev = lastByPerson[rec.PersonGUID];
+      const curTime = new Date(rec.LocaleMessageTime).getTime();
+      if (!prev || curTime > new Date(prev.LocaleMessageTime).getTime()) {
+        lastByPerson[rec.PersonGUID] = rec;
+      }
+    });
+    const present = Object.values(lastByPerson);
+
+    // 2. Build summary using classifyType()
+    const region = { total: 0, Employee: 0, Contractor: 0 };
+    const partitions = {};
+    present.forEach(r => {
+      region.total++;
+      const bucket = classifyType(r.PersonnelType);
+      region[bucket]++;
+
+      const p = r.PartitionName2;
+      if (!partitions[p]) partitions[p] = { total: 0, Employee: 0, Contractor: 0 };
+      partitions[p].total++;
+      partitions[p][bucket]++;
+    });
+
+    res.json({
+      success: true,
+      summary: {
+        region: 'LACA',
+        ...region,
+        partitions
+      },
+      details: present
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Live summary failed' });
+  }
+};
+
+
+/**
+ * GET /api/occupancy/history or /api/occupancy/history/:location
+ */
+exports.getHistoricalOccupancy = async (req, res) => {
+  const location = req.params.location || null;
+  try {
+    const raw = await service.fetchHistoricalOccupancy(location);
+
+    // Group by date & dedupe first swipe per PersonGUID
+    const firstByPersonByDate = raw.reduce((acc, rec) => {
+      const iso = (rec.LocaleMessageTime instanceof Date)
+        ? rec.LocaleMessageTime.toISOString()
+        : rec.LocaleMessageTime;
+      const date = iso.slice(0, 10);
+      acc[date] = acc[date] || {};
+      const prev = acc[date][rec.PersonGUID];
+      if (!prev || new Date(iso) < new Date(prev.LocaleMessageTime)) {
+        acc[date][rec.PersonGUID] = { ...rec, LocaleMessageTime: iso };
+      }
+      return acc;
+    }, {});
+
+    const summaryByDate = [];
+    const details = [];
+
+    Object.keys(firstByPersonByDate).sort().forEach(date => {
+      const recs = Object.values(firstByPersonByDate[date]);
+      details.push(...recs);
+
+      // Aggregate using classifyType()
+      const regionCounts = { total: 0, Employee: 0, Contractor: 0 };
+      const partitionCounts = {};
+
+      recs.forEach(r => {
+        regionCounts.total++;
+        const bucket = classifyType(r.PersonnelType);
+        regionCounts[bucket]++;
+
+        if (!location) {
+          const p = r.PartitionName2;
+          if (!partitionCounts[p]) {
+            partitionCounts[p] = { total: 0, Employee: 0, Contractor: 0 };
+          }
+          partitionCounts[p].total++;
+          partitionCounts[p][bucket]++;
+        }
+      });
+
+      summaryByDate.push({
+        date,
+        day: new Date(date).toLocaleDateString('en-US', { weekday: 'long' }),
+        region: location
+          ? { name: location, ...regionCounts }
+          : { name: 'LACA', ...regionCounts },
+        partitions: location ? undefined : partitionCounts
+      });
+    });
+
+    res.json({
+      success: true,
+      summaryByDate,
+      details
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Historical fetch failed' });
+  }
+};
+
+
+
+
+
+
+
+
+
+
+// src/controllers/occupancy.controller.js
+
  const service = require('../services/occupancy.service');
 
 +/**
