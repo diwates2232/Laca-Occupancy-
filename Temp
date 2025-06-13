@@ -1,3 +1,16 @@
+GET http://localhost:3001/api/occupancy/history
+
+
+GET http://localhost:3001/api/occupancy/history/CR.SanJose
+
+
+
+
+
+
+
+
+
 // src/controllers/occupancy.controller.js
 
 exports.getHistoricalOccupancy = async (req, res) => {
