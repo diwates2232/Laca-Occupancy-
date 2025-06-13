@@ -1,127 +1,4 @@
- // src/services/occupancy.service.js
-
- const { poolPromise, sql } = require('../config/db');
-
- const partitionList = [
-   'AR.Cordoba',
-   'BR.Sao Paulo',
-   'CR.Costa Rica Partition',
-   'MX.Mexico City',
-   'PA.Panama City',
-   'PE.Lima'
- ];
-
- // … your existing fetchLiveOccupancy …
-
- /**
-  * Fetch raw swipe records for the past N days.
-  * If `location` is provided, filters to that partition; otherwise all.
-  */
- exports.fetchHistoricalData = async ({ days = 7, location = null }) => {
-   // … your existing implementation …
- };
-
-+/**
-+ * Wrapper for exactly 7 days of history, all or by location.
-+ */
-+exports.fetchHistoricalOccupancy = async (location) => {
-+  // pass `location` or null for all
-+  return exports.fetchHistoricalData({ days: 7, location: location || null });
-+};
-
- module.exports.partitionList = partitionList;
-
-
-
-
-
- // src/controllers/occupancy.controller.js
-
- const service = require('../services/occupancy.service');
-
- // … your existing getLiveOccupancy & getLiveSummary …
-
--exports.getHistoricalOccupancy = async (req, res) => {
--  const { location } = req.params;
--  try {
--    const data = await service.fetchHistoricalOccupancy(location);
--    res.json({ success: true, count: data.length, data });
--  } catch (err) {
--    console.error(err);
--    res.status(500).json({ success: false, message: 'Historical occupancy fetch failed' });
--  }
--};
-+exports.getHistoricalOccupancy = async (req, res) => {
-+  const location = req.params.location || null;
-+  try {
-+    // 1. fetch raw swipes
-+    const raw = await service.fetchHistoricalOccupancy(location);
-+
-+    // 2. group by date (YYYY-MM-DD)
-+    const byDate = raw.reduce((acc, rec) => {
-+      const d = rec.LocaleMessageTime.slice(0,10);
-+      acc[d] = acc[d] || [];
-+      acc[d].push(rec);
-+      return acc;
-+    }, {});
-+
-+    // 3. build summary for each date
-+    const summaryByDate = Object.keys(byDate)
-+      .sort()
-+      .map(date => {
-+        const recs = byDate[date];
-+        // region or location counts
-+        const regionCounts = { total: 0, Employee: 0, Contractor: 0 };
-+        const partitionCounts = {};
-+
-+        recs.forEach(r => {
-+          regionCounts.total++;
-+          if (r.PersonnelType === 'Employee') regionCounts.Employee++;
-+          else regionCounts.Contractor++;
-+
-+          if (!location) {
-+            const p = r.PartitionName2;
-+            partitionCounts[p] = partitionCounts[p] || { total: 0, Employee: 0, Contractor: 0 };
-+            partitionCounts[p].total++;
-+            if (r.PersonnelType === 'Employee') partitionCounts[p].Employee++;
-+            else partitionCounts[p].Contractor++;
-+          }
-+        });
-+
-+        return {
-+          date,
-+          day: new Date(date).toLocaleDateString('en-US', { weekday: 'long' }),
-+          region: location
-+            ? { name: location, ...regionCounts }
-+            : { name: 'LACA', ...regionCounts },
-+          partitions: location ? undefined : partitionCounts
-+        };
-+      });
-+
-+    // 4. respond
-+    res.json({
-+      success:     true,
-+      summaryByDate,
-+      details:     raw
-+    });
-+  } catch (err) {
-+    console.error(err);
-+    res.status(500).json({ success: false, message: 'Historical fetch failed' });
-+  }
-+};
-
-
-
-
-
-
-
-
-
-
-
-Read below my current file and Give me both Updated files do only necessary changes
-
+Read all file carefully and solve the error and give me all updated files carefully
 
 C:\Users\W0024618\Desktop\laca-occupancy-backend\src\services\occupancy.service.js
 
@@ -221,79 +98,86 @@ exports.fetchLiveOccupancy = async () => {
  * Includes Text5 and PartitionName2.
  */
 
+exports.fetchHistoricalOccupancy = async (location) => {
+  // pass `location` or null for all
+  return exports.fetchHistoricalData({ days: 7, location: location || null });
+};
 
-// exports.fetchHistoricalOccupancy = async (location) => {
-//   const pool = await poolPromise;
+ module.exports.partitionList = partitionList;
 
-//   const query = `
-//     WITH HistoricalData AS (
-//       SELECT
-//         DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
-//         t1.ObjectName1,
-//         t1.ObjectName2             AS Door,
-//         CASE
-//           WHEN t3.Name IN ('Contractor','Terminated Contractor')
-//             THEN t2.Text12
-//           ELSE CAST(t2.Int1 AS NVARCHAR)
-//         END                      AS EmployeeID,
-//         t2.text5                 AS Text5,
-//         t1.PartitionName2        AS PartitionName2,
-//         t1.ObjectIdentity1       AS PersonGUID,
-//         t3.Name                  AS PersonnelType,
-//         COALESCE(
-//           TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]','varchar(50)'),
-//           TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID)[1]','varchar(50)'),
-//           sc.value
-//         )                       AS CardNumber,
-//         t5a.value               AS AdmitCode,
-//         t5d.value               AS Direction,
-//         t1.MessageType
-//       FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLog] AS t1
-//       LEFT JOIN [ACVSCore].[Access].[Personnel]     AS t2 ON t1.ObjectIdentity1 = t2.GUID
-//       LEFT JOIN [ACVSCore].[Access].[PersonnelType] AS t3 ON t2.PersonnelTypeId = t3.ObjectID
-//       LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5a
-//         ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
-//       LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5d
-//         ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
-//       LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxml] AS t_xml
-//         ON t1.XmlGUID = t_xml.GUID
-//       LEFT JOIN (
-//         SELECT GUID, value
-//         FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred]
-//         WHERE Name IN ('Card','CHUID')
-//       ) AS sc
-//         ON t1.XmlGUID = sc.GUID
-//       WHERE
-//         t1.MessageType = 'CardAdmitted'
-//         AND t1.PartitionName2 = @location
-//         AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
-//           >= DATEADD(DAY, -7, CONVERT(DATE, GETDATE()))
-//     )
-//     SELECT
-//       LocaleMessageTime,
-//       CONVERT(DATE, LocaleMessageTime) AS Date,
-//       CONVERT(VARCHAR(8), LocaleMessageTime, 108) AS Swipe_Time,
-//       ObjectName1,
-//       Door,
-//       EmployeeID,
-//       Text5,
-//       PersonGUID,
-//       PersonnelType,
-//       PartitionName2,
-//       CardNumber,
-//       AdmitCode,
-//       Direction,
-//       MessageType
-//     FROM HistoricalData
-//     ORDER BY LocaleMessageTime ASC;
-//   `;
 
-//   const result = await pool.request()
-//     .input('location', sql.NVarChar, location)
-//     .query(query);
+exports.fetchHistoricalOccupancy = async (location) => {
+  const pool = await poolPromise;
 
-//   return result.recordset;
-// };
+  const query = `
+    WITH HistoricalData AS (
+      SELECT
+        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
+        t1.ObjectName1,
+        t1.ObjectName2             AS Door,
+        CASE
+          WHEN t3.Name IN ('Contractor','Terminated Contractor')
+            THEN t2.Text12
+          ELSE CAST(t2.Int1 AS NVARCHAR)
+        END                      AS EmployeeID,
+        t2.text5                 AS Text5,
+        t1.PartitionName2        AS PartitionName2,
+        t1.ObjectIdentity1       AS PersonGUID,
+        t3.Name                  AS PersonnelType,
+        COALESCE(
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]','varchar(50)'),
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID)[1]','varchar(50)'),
+          sc.value
+        )                       AS CardNumber,
+        t5a.value               AS AdmitCode,
+        t5d.value               AS Direction,
+        t1.MessageType
+      FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLog] AS t1
+      LEFT JOIN [ACVSCore].[Access].[Personnel]     AS t2 ON t1.ObjectIdentity1 = t2.GUID
+      LEFT JOIN [ACVSCore].[Access].[PersonnelType] AS t3 ON t2.PersonnelTypeId = t3.ObjectID
+      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5a
+        ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
+      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5d
+        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
+      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxml] AS t_xml
+        ON t1.XmlGUID = t_xml.GUID
+      LEFT JOIN (
+        SELECT GUID, value
+        FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred]
+        WHERE Name IN ('Card','CHUID')
+      ) AS sc
+        ON t1.XmlGUID = sc.GUID
+      WHERE
+        t1.MessageType = 'CardAdmitted'
+        AND t1.PartitionName2 = @location
+        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
+          >= DATEADD(DAY, -7, CONVERT(DATE, GETDATE()))
+    )
+    SELECT
+      LocaleMessageTime,
+      CONVERT(DATE, LocaleMessageTime) AS Date,
+      CONVERT(VARCHAR(8), LocaleMessageTime, 108) AS Swipe_Time,
+      ObjectName1,
+      Door,
+      EmployeeID,
+      Text5,
+      PersonGUID,
+      PersonnelType,
+      PartitionName2,
+      CardNumber,
+      AdmitCode,
+      Direction,
+      MessageType
+    FROM HistoricalData
+    ORDER BY LocaleMessageTime ASC;
+  `;
+
+  const result = await pool.request()
+    .input('location', sql.NVarChar, location)
+    .query(query);
+
+  return result.recordset;
+};
 
 
 
@@ -445,15 +329,137 @@ exports.getLiveSummary = async (req, res) => {
 };
 
 
+// exports.getHistoricalOccupancy = async (req, res) => {
+//   const { location } = req.params;
+//   try {
+//     const data = await service.fetchHistoricalOccupancy(location);
+//     res.json({ success: true, count: data.length, data });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ success: false, message: 'Historical occupancy fetch failed' });
+//   }
+// };
+
+
+
+
 exports.getHistoricalOccupancy = async (req, res) => {
-  const { location } = req.params;
+  const location = req.params.location || null;
   try {
-    const data = await service.fetchHistoricalOccupancy(location);
-    res.json({ success: true, count: data.length, data });
+    // 1. fetch raw swipes
+    const raw = await service.fetchHistoricalOccupancy(location);
+
+    // 2. group by date (YYYY-MM-DD)
+    const byDate = raw.reduce((acc, rec) => {
+      const d = rec.LocaleMessageTime.slice(0,10);
+      acc[d] = acc[d] || [];
+      acc[d].push(rec);
+      return acc;
+    }, {});
+
+    // 3. build summary for each date
+    const summaryByDate = Object.keys(byDate)
+      .sort()
+      .map(date => {
+        const recs = byDate[date];
+        // region or location counts
+        const regionCounts = { total: 0, Employee: 0, Contractor: 0 };
+        const partitionCounts = {};
+
+        recs.forEach(r => {
+          regionCounts.total++;
+          if (r.PersonnelType === 'Employee') regionCounts.Employee++;
+          else regionCounts.Contractor++;
+
+          if (!location) {
+            const p = r.PartitionName2;
+            partitionCounts[p] = partitionCounts[p] || { total: 0, Employee: 0, Contractor: 0 };
+            partitionCounts[p].total++;
+            if (r.PersonnelType === 'Employee') partitionCounts[p].Employee++;
+            else partitionCounts[p].Contractor++;
+          }
+        });
+
+        return {
+         date,
+          day: new Date(date).toLocaleDateString('en-US', { weekday: 'long' }),
+          region: location
+            ? { name: location, ...regionCounts }
+            : { name: 'LACA', ...regionCounts },
+          partitions: location ? undefined : partitionCounts
+        };
+      });
+
+    // 4. respond
+    res.json({
+      success:     true,
+      summaryByDate,
+      details:     raw
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, message: 'Historical occupancy fetch failed' });
+    res.status(500).json({ success: false, message: 'Historical fetch failed' });
   }
 };
+
+
+
+
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-backend\src\routes\occupancy.routes.js
+
+
+
+const express = require('express');
+const router = express.Router();
+const controller = require('../controllers/occupancy.controller');
+
+// GET /api/occupancy/live
+router.get('/live', controller.getLiveOccupancy);
+
+// GET /api/occupancy/history/:location
+ router.get('/history/:location', controller.getHistoricalOccupancy);
+
+// historical (all or per-location)
+router.get('/history/:location?', controller.getHistoricalOccupancy);
+
+
+// new: live headcount summary (region + per-partition)
+router.get('/live-summary', controller.getLiveSummary);
+
+module.exports = router;
+
+
+
+
+
+
+
+error message 
+
+
+
+[nodemon] starting `node src/server.js`
+C:\Users\W0024618\Desktop\laca-occupancy-backend\node_modules\path-to-regexp\dist\index.js:123
+        throw new TypeError(`Unexpected ${nextType} at ${index}, expected ${type}: ${DEBUG_URL}`);
+        ^
+
+TypeError: Unexpected ? at 18, expected END: https://git.new/pathToRegexpError
+    at Iter.consume (C:\Users\W0024618\Desktop\laca-occupancy-backend\node_modules\path-to-regexp\dist\index.js:123:15)
+    at consume (C:\Users\W0024618\Desktop\laca-occupancy-backend\node_modules\path-to-regexp\dist\index.js:179:16)
+    at parse (C:\Users\W0024618\Desktop\laca-occupancy-backend\node_modules\path-to-regexp\dist\index.js:183:20)
+    at C:\Users\W0024618\Desktop\laca-occupancy-backend\node_modules\path-to-regexp\dist\index.js:294:74
+    at Array.map (<anonymous>)
+    at pathToRegexp (C:\Users\W0024618\Desktop\laca-occupancy-backend\node_modules\path-to-regexp\dist\index.js:294:25)
+    at Object.match (C:\Users\W0024618\Desktop\laca-occupancy-backend\node_modules\path-to-regexp\dist\index.js:264:30)
+    at matcher (C:\Users\W0024618\Desktop\laca-occupancy-backend\node_modules\router\lib\layer.js:86:23)
+    at new Layer (C:\Users\W0024618\Desktop\laca-occupancy-backend\node_modules\router\lib\layer.js:93:62)
+    at Function.route (C:\Users\W0024618\Desktop\laca-occupancy-backend\node_modules\router\index.js:428:17)
+
+Node.js v22.15.0
+[nodemon] app crashed - waiting for file changes before starting...
+
+
 
 
