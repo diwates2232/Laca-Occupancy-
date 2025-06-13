@@ -4,6 +4,179 @@ const service = require('../services/occupancy.service');
 
 /**
  * Returns true if this PersonnelType counts as Employee.
+ * Everything else (including blank) counts as Contractor,
+ * except Temp Badge which is handled separately.
+ */
+function isEmployeeType(pt) {
+  return pt === 'Employee'
+      || pt === 'Terminated Employee'
+      || pt === 'Terminated Personnel';
+}
+
+/** True only if this is the Temp Badge category. */
+function isTempBadgeType(pt) {
+  return pt === 'Temp Badge';
+}
+
+/**
+ * GET /api/occupancy/live-summary
+ */
+exports.getLiveSummary = async (req, res) => {
+  try {
+    const swipes = await service.fetchLiveOccupancy();
+
+    // 1. Last swipe per PersonGUID
+    const lastByPerson = {};
+    swipes.forEach(r => {
+      const prev = lastByPerson[r.PersonGUID];
+      const now = new Date(r.LocaleMessageTime).getTime();
+      if (!prev || now > new Date(prev.LocaleMessageTime).getTime()) {
+        lastByPerson[r.PersonGUID] = r;
+      }
+    });
+    const present = Object.values(lastByPerson);
+
+    // 2. Build summary
+    const region = { total: 0, Employee: 0, Contractor: 0 };
+    const partitions = {};
+
+    present.forEach(r => {
+      region.total++;
+      if (isEmployeeType(r.PersonnelType)) region.Employee++;
+      else region.Contractor++;
+
+      const p = r.PartitionName2;
+      // Initialize with the right buckets
+      if (!partitions[p]) {
+        partitions[p] = p === 'CR.Costa Rica Partition'
+          ? { total: 0, Employee: 0, Contractor: 0, TempBadge: 0 }
+          : { total: 0, Employee: 0, Contractor: 0 };
+      }
+      partitions[p].total++;
+
+      // Increment the correct bucket
+      if (p === 'CR.Costa Rica Partition') {
+        if (isTempBadgeType(r.PersonnelType)) partitions[p].TempBadge++;
+        else if (isEmployeeType(r.PersonnelType)) partitions[p].Employee++;
+        else partitions[p].Contractor++;
+      } else {
+        if (isEmployeeType(r.PersonnelType)) partitions[p].Employee++;
+        else partitions[p].Contractor++;
+      }
+    });
+
+    return res.json({
+      success: true,
+      summary: {
+        region: 'LACA',
+        ...region,
+        partitions
+      },
+      details: present
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Live summary failed' });
+  }
+};
+
+
+/**
+ * GET /api/occupancy/history[/:location]
+ */
+exports.getHistoricalOccupancy = async (req, res) => {
+  const location = req.params.location || null;
+  try {
+    const raw = await service.fetchHistoricalOccupancy(location);
+
+    // 1. First swipe per PersonGUID per date
+    const byDate = raw.reduce((acc, r) => {
+      const iso = (r.LocaleMessageTime instanceof Date)
+        ? r.LocaleMessageTime.toISOString()
+        : r.LocaleMessageTime;
+      const date = iso.slice(0, 10);
+      acc[date] = acc[date] || {};
+      const prev = acc[date][r.PersonGUID];
+      if (!prev || new Date(iso) < new Date(prev.LocaleMessageTime)) {
+        acc[date][r.PersonGUID] = { ...r, LocaleMessageTime: iso };
+      }
+      return acc;
+    }, {});
+
+    const summaryByDate = [];
+    const details = [];
+
+    // 2. Build per-date summary
+    Object.keys(byDate).sort().forEach(date => {
+      const recs = Object.values(byDate[date]);
+      details.push(...recs);
+
+      const regionCounts = { total: 0, Employee: 0, Contractor: 0 };
+      const partitionCounts = {};
+
+      recs.forEach(r => {
+        regionCounts.total++;
+        if (isEmployeeType(r.PersonnelType)) regionCounts.Employee++;
+        else regionCounts.Contractor++;
+
+        const p = r.PartitionName2;
+        if (!partitionCounts[p]) {
+          partitionCounts[p] = p === 'CR.Costa Rica Partition'
+            ? { total: 0, Employee: 0, Contractor: 0, TempBadge: 0 }
+            : { total: 0, Employee: 0, Contractor: 0 };
+        }
+        partitionCounts[p].total++;
+
+        if (p === 'CR.Costa Rica Partition') {
+          if (isTempBadgeType(r.PersonnelType)) partitionCounts[p].TempBadge++;
+          else if (isEmployeeType(r.PersonnelType)) partitionCounts[p].Employee++;
+          else partitionCounts[p].Contractor++;
+        } else {
+          if (isEmployeeType(r.PersonnelType)) partitionCounts[p].Employee++;
+          else partitionCounts[p].Contractor++;
+        }
+      });
+
+      summaryByDate.push({
+        date,
+        day: new Date(date).toLocaleDateString('en-US', { weekday: 'long' }),
+        region: location
+          ? { name: location, ...regionCounts }
+          : { name: 'LACA', ...regionCounts },
+        partitions: location ? undefined : partitionCounts
+      });
+    });
+
+    return res.json({
+      success: true,
+      summaryByDate,
+      details
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Historical fetch failed' });
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// src/controllers/occupancy.controller.js
+
+const service = require('../services/occupancy.service');
+
+/**
+ * Returns true if this PersonnelType counts as Employee.
  * Everything else (including blank) counts as Contractor.
  */
 function isEmployeeType(pt) {
