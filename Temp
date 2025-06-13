@@ -1,3 +1,12 @@
+Team,
+
+Please cross-check the data for each door — including direction and floor details — and update it accordingly.
+
+
+
+
+
+
 // src/controllers/occupancy.controller.js
 
 const service = require('../services/occupancy.service');
