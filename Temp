@@ -1,3 +1,96 @@
+// src/controllers/occupancy.controller.js
+
+exports.getHistoricalOccupancy = async (req, res) => {
+  const location = req.params.location || null;
+  try {
+    // 1. fetch raw swipes with SwipeDate and LocaleMessageTime from your service
+    const raw = await service.fetchHistoricalOccupancy(location);
+
+    // 2. build a map: { dateString: { PersonGUID: firstRec, … }, … }
+    const firstByPersonByDate = raw.reduce((acc, rec) => {
+      // determine the calendar date key (YYYY-MM-DD) from SwipeDate
+      const swipeDate = rec.SwipeDate instanceof Date
+        ? rec.SwipeDate.toISOString().slice(0, 10)
+        : rec.SwipeDate.slice(0, 10);
+
+      // ensure the day's bucket exists
+      if (!acc[swipeDate]) acc[swipeDate] = {};
+
+      const personMap = acc[swipeDate];
+      const prev = personMap[rec.PersonGUID];
+
+      // choose the earlier swipe as “first”
+      if (
+        !prev ||
+        new Date(rec.LocaleMessageTime) < new Date(prev.LocaleMessageTime)
+      ) {
+        personMap[rec.PersonGUID] = rec;
+      }
+
+      return acc;
+    }, {});
+
+    // 3. build summary and flatten details
+    const summaryByDate = [];
+    const allDetails = [];
+
+    Object.keys(firstByPersonByDate)
+      .sort()
+      .forEach(date => {
+        const personMap = firstByPersonByDate[date];
+        const recs = Object.values(personMap);
+        allDetails.push(...recs);
+
+        // count totals
+        const regionCounts = { total: 0, Employee: 0, Contractor: 0 };
+        const partitionCounts = {};
+
+        recs.forEach(r => {
+          regionCounts.total++;
+          if (r.PersonnelType === 'Employee') regionCounts.Employee++;
+          else regionCounts.Contractor++;
+
+          if (!location) {
+            const p = r.PartitionName2;
+            if (!partitionCounts[p]) {
+              partitionCounts[p] = { total: 0, Employee: 0, Contractor: 0 };
+            }
+            partitionCounts[p].total++;
+            if (r.PersonnelType === 'Employee')
+              partitionCounts[p].Employee++;
+            else partitionCounts[p].Contractor++;
+          }
+        });
+
+        summaryByDate.push({
+          date,
+          day: new Date(date).toLocaleDateString('en-US', { weekday: 'long' }),
+          region: location
+            ? { name: location, ...regionCounts }
+            : { name: 'LACA', ...regionCounts },
+          partitions: location ? undefined : partitionCounts
+        });
+      });
+
+    // 4. respond with deduplicated “first‐swipe” details
+    res.json({
+      success:     true,
+      summaryByDate,
+      details:     allDetails
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Historical fetch failed' });
+  }
+};
+
+
+
+
+
+
+
+
 1) as per below APi we are getting API Responce like this 
 
 i think you are not removing duplicate for this this is our HeadCount History
