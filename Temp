@@ -1,3 +1,26 @@
+const time = rec.LocaleMessageTime.slice(11, 16); // e.g., "13:45"
+
+
+
+
+
+let time = '';
+
+if (rec.LocaleMessageTime) {
+  const timeString = typeof rec.LocaleMessageTime === 'string'
+    ? rec.LocaleMessageTime
+    : new Date(rec.LocaleMessageTime).toISOString();
+
+  time = timeString.slice(11, 16); // safely extract HH:mm
+}
+
+
+
+
+
+
+
+
 // src/services/occupancy.service.js
 
 const { poolPromise, sql } = require('../config/db');
