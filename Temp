@@ -1,268 +1,7 @@
- const express = require('express');
- const router  = express.Router();
- const controller = require('../controllers/occupancy.controller');
+Read below my current file and Give me both Updated files do only necessary changes
 
- // live & summary remain
- router.get('/live',         controller.getLiveOccupancy);
- router.get('/live-summary', controller.getLiveSummary);
 
--// historical per-location
--router.get('/history/:location', controller.getHistoricalOccupancy);
-+// historical (all or per-location)
-+router.get('/history/:location?', controller.getHistoricalOccupancy);
-
- module.exports = router;
-
-
-
-
-
-
-
-
-// src/services/occupancy.service.js
-// … keep existing imports and partitionList …
-
-/**
- * Fetch raw swipe records for the past N days.
- * If `location` is provided, filters to that partition; otherwise all.
- */
-exports.fetchHistoricalData = async ({ days = 7, location = null }) => {
-  const pool = await poolPromise;
-  const partitionsSql = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
-  const locationFilter = location
-    ? `AND t1.PartitionName2 = @location`
-    : `AND t1.PartitionName2 IN (${partitionsSql})`;
-
-  const query = `
-    WITH Hist AS (
-      SELECT
-        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
-        t1.ObjectName1,
-        t1.ObjectName2       AS Door,
-        CASE
-          WHEN t3.Name IN ('Contractor','Terminated Contractor') THEN t2.Text12
-          ELSE CAST(t2.Int1 AS NVARCHAR)
-        END                   AS EmployeeID,
-        t2.text5             AS Text5,
-        t1.PartitionName2    AS PartitionName2,
-        t1.ObjectIdentity1   AS PersonGUID,
-        t3.Name              AS PersonnelType,
-        COALESCE(
-          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]','varchar(50)'),
-          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID)[1]','varchar(50)'),
-          sc.value
-        )                     AS CardNumber,
-        t5a.value            AS AdmitCode,
-        t5d.value            AS Direction,
-        CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC)) AS SwipeDate
-      FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLog] AS t1
-      LEFT JOIN [ACVSCore].[Access].[Personnel]     AS t2 ON t1.ObjectIdentity1 = t2.GUID
-      LEFT JOIN [ACVSCore].[Access].[PersonnelType] AS t3 ON t2.PersonnelTypeId = t3.ObjectID
-      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5a
-        ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
-      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5d
-        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
-      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxml] AS t_xml
-        ON t1.XmlGUID = t_xml.GUID
-      LEFT JOIN (
-        SELECT GUID, value
-        FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred]
-        WHERE Name IN ('Card','CHUID')
-      ) AS sc
-        ON t1.XmlGUID = sc.GUID
-      WHERE
-        t1.MessageType = 'CardAdmitted'
-        ${locationFilter}
-        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
-            >= DATEADD(DAY, -${days}, CONVERT(DATE, GETDATE()))
-    )
-    SELECT *
-    FROM Hist
-    ORDER BY LocaleMessageTime ASC;
-  `;
-
-  const req = pool.request();
-  if (location) req.input('location', sql.NVarChar, location);
-
-  const result = await req.query(query);
-  return result.recordset;
-};
-
-
-
-
-
-
-
-// src/controllers/occupancy.controller.js
-
-const service = require('../services/occupancy.service');
-const partitionList = require('../services/occupancy.service').partitionList; // if needed
-
-exports.getHistoricalOccupancy = async (req, res) => {
-  try {
-    const location = req.params.location || null;
-    const raw = await service.fetchHistoricalData({ days: 7, location });
-
-    // Group records by date
-    const byDate = raw.reduce((acc, rec) => {
-      const d = rec.SwipeDate.toISOString().slice(0,10);
-      acc[d] = acc[d] || [];
-      acc[d].push(rec);
-      return acc;
-    }, {});
-
-    // Build summary per date
-    const summaryByDate = Object.entries(byDate)
-      .sort((a,b) => a[0].localeCompare(b[0]))
-      .map(([date, recs]) => {
-        // region (or location) counts
-        const regionCounts = { total:0, Employee:0, Contractor:0 };
-        const partitionCounts = {}; // only if no location filter
-
-        recs.forEach(r => {
-          // consider only last swipe per person:
-          // we’ll ignore duplicates here for simplicity
-          regionCounts.total ++;
-          if (r.PersonnelType === 'Employee') regionCounts.Employee ++;
-          else regionCounts.Contractor ++;
-
-          if (!location) {
-            const p = r.PartitionName2;
-            partitionCounts[p] = partitionCounts[p] || { total:0, Employee:0, Contractor:0 };
-            partitionCounts[p].total ++;
-            if (r.PersonnelType==='Employee') partitionCounts[p].Employee ++;
-            else partitionCounts[p].Contractor ++;
-          }
-        });
-
-        return {
-          date,
-          day: new Date(date).toLocaleDateString('en-US', { weekday:'long' }),
-          region: location ? { name: location, ...regionCounts } : { name: 'LACA', ...regionCounts },
-          partitions: location ? undefined : partitionCounts
-        };
-      });
-
-    res.json({
-      success:     true,
-      summaryByDate,
-      details:     raw
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success:false, message:'Historical fetch failed' });
-  }
-};
-
-
-
-
-
-
-
-
-
-
-curl http://localhost:3001/api/occupancy/history
-
-
-
-curl http://localhost:3001/api/occupancy/history/MX.Mexico City
-
-
-
-
-
-
-
-
-
-
-
-exports.fetchHistoricalOccupancy = async (location) => {
-  const pool = await poolPromise;
-
-  const query = `
-    WITH HistoricalData AS (
-      SELECT
-        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
-        t1.ObjectName1,
-        t1.ObjectName2             AS Door,
-        CASE
-          WHEN t3.Name IN ('Contractor','Terminated Contractor')
-            THEN t2.Text12
-          ELSE CAST(t2.Int1 AS NVARCHAR)
-        END                      AS EmployeeID,
-        t2.text5                 AS Text5,
-        t1.PartitionName2        AS PartitionName2,
-        t1.ObjectIdentity1       AS PersonGUID,
-        t3.Name                  AS PersonnelType,
-        COALESCE(
-          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]','varchar(50)'),
-          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID)[1]','varchar(50)'),
-          sc.value
-        )                       AS CardNumber,
-        t5a.value               AS AdmitCode,
-        t5d.value               AS Direction,
-        t1.MessageType
-      FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLog] AS t1
-      LEFT JOIN [ACVSCore].[Access].[Personnel]     AS t2 ON t1.ObjectIdentity1 = t2.GUID
-      LEFT JOIN [ACVSCore].[Access].[PersonnelType] AS t3 ON t2.PersonnelTypeId = t3.ObjectID
-      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5a
-        ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
-      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5d
-        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
-      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxml] AS t_xml
-        ON t1.XmlGUID = t_xml.GUID
-      LEFT JOIN (
-        SELECT GUID, value
-        FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred]
-        WHERE Name IN ('Card','CHUID')
-      ) AS sc
-        ON t1.XmlGUID = sc.GUID
-      WHERE
-        t1.MessageType = 'CardAdmitted'
-        AND t1.PartitionName2 = @location
-        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
-          >= DATEADD(DAY, -30, CONVERT(DATE, GETDATE()))
-    )
-    SELECT
-      LocaleMessageTime,
-      CONVERT(DATE, LocaleMessageTime) AS Date,
-      CONVERT(VARCHAR(8), LocaleMessageTime, 108) AS Swipe_Time,
-      ObjectName1,
-      Door,
-      EmployeeID,
-      Text5,
-      PersonGUID,
-      PersonnelType,
-      PartitionName2,
-      CardNumber,
-      AdmitCode,
-      Direction,
-      MessageType
-    FROM HistoricalData
-    ORDER BY LocaleMessageTime ASC;
-  `;
-
-  const result = await pool.request()
-    .input('location', sql.NVarChar, location)
-    .query(query);
-
-  return result.recordset;
-};
-
-
-
-
-
-
-
-
-
-
+C:\Users\W0024618\Desktop\laca-occupancy-backend\src\services\occupancy.service.js
 
 
 // src/services/occupancy.service.js
@@ -359,157 +98,125 @@ exports.fetchLiveOccupancy = async () => {
  * Fetch historical occupancy: past 30 days for a specific partition/location.
  * Includes Text5 and PartitionName2.
  */
-exports.fetchHistoricalOccupancy = async (location) => {
-  const pool = await poolPromise;
-
-  const query = `
-    SELECT DISTINCT
-      t1.ObjectName1,
-      CASE
-        WHEN t2.Int1 = 0 THEN t2.Text12
-        ELSE CAST(t2.Int1 AS NVARCHAR)
-      END                      AS EmployeeID,
-      t3.Name                  AS PersonnelType,
-      t2.text5                 AS Text5,          -- ADDED
-      t1.PartitionName2        AS PartitionName2, -- ADDED
-      t1.MessageType,
-      CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC)) AS Date
-    FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLog] AS t1
-    INNER JOIN [ACVSCore].[Access].[Personnel]     AS t2 
-      ON t1.ObjectIdentity1 = t2.GUID
-    INNER JOIN [ACVSCore].[Access].[PersonnelType] AS t3 
-      ON t2.PersonnelTypeId = t3.ObjectID
-    WHERE
-      CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
-        >= DATEADD(DAY, -30, CONVERT(DATE, GETDATE()))
-      AND t1.PartitionName2 = @location
-      AND t1.MessageType     = 'CardAdmitted'
-    ORDER BY Date ASC;
-  `;
-
-  const result = await pool.request()
-    .input('location', sql.NVarChar, location)
-    .query(query);
-
-  return result.recordset;
-};
 
 
+// exports.fetchHistoricalOccupancy = async (location) => {
+//   const pool = await poolPromise;
 
+//   const query = `
+//     WITH HistoricalData AS (
+//       SELECT
+//         DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
+//         t1.ObjectName1,
+//         t1.ObjectName2             AS Door,
+//         CASE
+//           WHEN t3.Name IN ('Contractor','Terminated Contractor')
+//             THEN t2.Text12
+//           ELSE CAST(t2.Int1 AS NVARCHAR)
+//         END                      AS EmployeeID,
+//         t2.text5                 AS Text5,
+//         t1.PartitionName2        AS PartitionName2,
+//         t1.ObjectIdentity1       AS PersonGUID,
+//         t3.Name                  AS PersonnelType,
+//         COALESCE(
+//           TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]','varchar(50)'),
+//           TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID)[1]','varchar(50)'),
+//           sc.value
+//         )                       AS CardNumber,
+//         t5a.value               AS AdmitCode,
+//         t5d.value               AS Direction,
+//         t1.MessageType
+//       FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLog] AS t1
+//       LEFT JOIN [ACVSCore].[Access].[Personnel]     AS t2 ON t1.ObjectIdentity1 = t2.GUID
+//       LEFT JOIN [ACVSCore].[Access].[PersonnelType] AS t3 ON t2.PersonnelTypeId = t3.ObjectID
+//       LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5a
+//         ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
+//       LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5d
+//         ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
+//       LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxml] AS t_xml
+//         ON t1.XmlGUID = t_xml.GUID
+//       LEFT JOIN (
+//         SELECT GUID, value
+//         FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred]
+//         WHERE Name IN ('Card','CHUID')
+//       ) AS sc
+//         ON t1.XmlGUID = sc.GUID
+//       WHERE
+//         t1.MessageType = 'CardAdmitted'
+//         AND t1.PartitionName2 = @location
+//         AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
+//           >= DATEADD(DAY, -7, CONVERT(DATE, GETDATE()))
+//     )
+//     SELECT
+//       LocaleMessageTime,
+//       CONVERT(DATE, LocaleMessageTime) AS Date,
+//       CONVERT(VARCHAR(8), LocaleMessageTime, 108) AS Swipe_Time,
+//       ObjectName1,
+//       Door,
+//       EmployeeID,
+//       Text5,
+//       PersonGUID,
+//       PersonnelType,
+//       PartitionName2,
+//       CardNumber,
+//       AdmitCode,
+//       Direction,
+//       MessageType
+//     FROM HistoricalData
+//     ORDER BY LocaleMessageTime ASC;
+//   `;
 
+//   const result = await pool.request()
+//     .input('location', sql.NVarChar, location)
+//     .query(query);
 
-
-
-
-
-
-
-below is my current file in this file there is no text,5 and partationName2
-so refer Query and add this two and give me updated files carefully
-
-refer this query
-
-SELECT 
-    t1.[ObjectName1],
-    t1.[ObjectName2],
-   CASE
-        WHEN t2.[Int1] = 0 THEN t2.[Text12]
-        ELSE CAST(t2.[Int1] AS NVARCHAR)
-    END AS EmployeeID,
-    t2.[PersonnelTypeID],
-    t3.[Name],  -- Adding the PersonnelType from the third table
-	t2.text5,
-	t1.PartitionName2,
-    DATEADD(MINUTE, -1 * t1.[MessageLocaleOffset], t1.[MessageUTC]) AS LocaleMessageTime,
-	t1.MessageType
-INTO 
-    #CombinedEmployeeData  -- Temporary table
-FROM 
-    [ACVSUJournal_00010027].[dbo].[ACVSUJournalLog] AS t1  -- Replace with your actual table name
-INNER JOIN 
-    [ACVSCore].[Access].[Personnel] AS t2  -- Replace with the actual table name
-ON 
-    t1.ObjectIdentity1 = t2.GUID
-INNER JOIN 
-    [ACVSCore].[Access].[PersonnelType] AS t3  -- Replace with the actual table name containing PersonnelType
-ON 
-    t2.[PersonnelTypeId] = t3.[ObjectID];
-	SELECT DISTINCT
-    [ObjectName1],
-    [Name],
-	EmployeeID,
-	text5,
-	PartitionName2,
-	Messagetype,
-    CONVERT(DATE, LocaleMessageTime) AS Date
-	FROM 
-    #CombinedEmployeeData  -- Use the temporary table with combined data
-	WHERE 
-    CONVERT (DATE, LocaleMessageTime) = '2025-05-27' 
-	AND PartitionName2 IN ('AR.Cordoba', 'BR.Sao Paulo', 'CR.Costa Rica Partition', 'MX.Mexico City', 'PA.Panama City', 'PE.Lima') 
-	AND MessageType = 'CardAdmitted';
-
-	DROP Table #CombinedEmployeeData;
+//   return result.recordset;
+// };
 
 
 
 
-
-
-and update below file carefully
-
-
-// C:\Users\W0024618\Desktop\laca-occupancy-backend\src\services\occupancy.service.js
-
-const { poolPromise, sql } = require('../config/db');
-
-const partitionList = [
-  'AR.Cordoba',
-  'BR.Sao Paulo',
-  'CR.Costa Rica Partition',
-  'MX.Mexico City',
-  'PA.Panama City',
-  'PE.Lima'
-];
 
 /**
- * Fetch live occupancy: today’s CardAdmitted in any of the six partitions,
- * adjusted for each record’s MessageLocaleOffset.
+ * Fetch raw swipe records for the past N days.
+ * If `location` is provided, filters to that partition; otherwise all.
  */
-exports.fetchLiveOccupancy = async () => {
+exports.fetchHistoricalData = async ({ days = 7, location = null }) => {
   const pool = await poolPromise;
-
-  // Build a properly escaped IN-list for PartitionName2
   const partitionsSql = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
+  const locationFilter = location
+    ? `AND t1.PartitionName2 = @location`
+    : `AND t1.PartitionName2 IN (${partitionsSql})`;
 
   const query = `
-    WITH CombinedQuery AS (
+    WITH Hist AS (
       SELECT
         DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
         t1.ObjectName1,
+        t1.ObjectName2       AS Door,
         CASE
-          WHEN t3.Name IN ('Contractor','Terminated Contractor')
-            THEN t2.Text12
+          WHEN t3.Name IN ('Contractor','Terminated Contractor') THEN t2.Text12
           ELSE CAST(t2.Int1 AS NVARCHAR)
-        END AS EmployeeID,
-        t1.ObjectIdentity1 AS PersonGUID,
-        t3.Name AS PersonnelType,
+        END                   AS EmployeeID,
+        t2.text5             AS Text5,
+        t1.PartitionName2    AS PartitionName2,
+        t1.ObjectIdentity1   AS PersonGUID,
+        t3.Name              AS PersonnelType,
         COALESCE(
           TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]','varchar(50)'),
           TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID)[1]','varchar(50)'),
           sc.value
-        ) AS CardNumber,
-        t5a.value AS AdmitCode,
-        t5d.value AS Direction,
-        t1.ObjectName2 AS Door
+        )                     AS CardNumber,
+        t5a.value            AS AdmitCode,
+        t5d.value            AS Direction,
+        CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC)) AS SwipeDate
       FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLog] AS t1
       LEFT JOIN [ACVSCore].[Access].[Personnel]     AS t2 ON t1.ObjectIdentity1 = t2.GUID
       LEFT JOIN [ACVSCore].[Access].[PersonnelType] AS t3 ON t2.PersonnelTypeId = t3.ObjectID
       LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5a
         ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
       LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5d
-        ON t1.XmlGUID = t5d.GUID 
-       AND t5d.Value IN ('InDirection','OutDirection')
+        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
       LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxml] AS t_xml
         ON t1.XmlGUID = t_xml.GUID
       LEFT JOIN (
@@ -519,64 +226,112 @@ exports.fetchLiveOccupancy = async () => {
       ) AS sc
         ON t1.XmlGUID = sc.GUID
       WHERE
-        t1.MessageType     = 'CardAdmitted'
-        AND t1.PartitionName2 IN (${partitionsSql})
+        t1.MessageType = 'CardAdmitted'
+        ${locationFilter}
         AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
-            = CONVERT(DATE, GETDATE())
+            >= DATEADD(DAY, -${days}, CONVERT(DATE, GETDATE()))
     )
-    SELECT
-      LocaleMessageTime,
-      CONVERT(VARCHAR(10), LocaleMessageTime, 23) AS Dateonly,
-      CONVERT(VARCHAR(8) , LocaleMessageTime, 108) AS Swipe_Time,
-      EmployeeID,
-      PersonGUID,
-      ObjectName1,
-      PersonnelType,
-      CardNumber,
-      AdmitCode,
-      Direction,
-      Door
-    FROM CombinedQuery
+    SELECT *
+    FROM Hist
     ORDER BY LocaleMessageTime ASC;
   `;
 
-  const result = await pool.request().query(query);
+  const req = pool.request();
+  if (location) req.input('location', sql.NVarChar, location);
+
+  const result = await req.query(query);
   return result.recordset;
 };
+
+
+
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-backend\src\controllers\occupancy.controller.js
+
+const service = require('../services/occupancy.service');
+
+exports.getLiveOccupancy = async (req, res) => {
+  try {
+    const data = await service.fetchLiveOccupancy();
+    res.json({ success: true, count: data.length, data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Live occupancy fetch failed' });
+  }
+};
+
+
 
 /**
- * Fetch historical occupancy: past 30 days for a specific partition/location.
+ * New: returns a “summary” of who’s currently in-office,
+ * plus the same detail list of those still present.
  */
-exports.fetchHistoricalOccupancy = async (location) => {
-  const pool = await poolPromise;
+exports.getLiveSummary = async (req, res) => {
+  try {
+    // 1. get all today’s swipe records
+    const allSwipes = await service.fetchLiveOccupancy();
 
-  const query = `
-    SELECT
-      DISTINCT t1.ObjectName1,
-      t3.Name       AS PersonnelType,
-      CASE
-        WHEN t2.Int1 = 0 THEN t2.Text12
-        ELSE CAST(t2.Int1 AS NVARCHAR)
-      END           AS EmployeeID,
-      t2.text5,
-      t1.PartitionName2,
-      t1.MessageType,
-      CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC)) AS Date
-    FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLog] AS t1
-    INNER JOIN [ACVSCore].[Access].[Personnel]     AS t2 ON t1.ObjectIdentity1 = t2.GUID
-    INNER JOIN [ACVSCore].[Access].[PersonnelType] AS t3 ON t2.PersonnelTypeId = t3.ObjectID
-    WHERE
-      CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
-        >= DATEADD(DAY, -30, CONVERT(DATE, GETDATE()))
-      AND t1.PartitionName2 = @location
-      AND t1.MessageType     = 'CardAdmitted'
-    ORDER BY Date ASC
-  `;
+    // 2. pick each person’s last swipe of the day
+    const lastByPerson = {};
+    allSwipes.forEach(rec => {
+      const prev = lastByPerson[rec.PersonGUID];
+      if (!prev || new Date(rec.LocaleMessageTime) > new Date(prev.LocaleMessageTime)) {
+        lastByPerson[rec.PersonGUID] = rec;
+      }
+    });
 
-  const result = await pool.request()
-    .input('location', sql.NVarChar, location)
-    .query(query);
 
-  return result.recordset;
+
+      // 3. filter to those whose last swipe is InDirection (i.e. still in-office)
+    const present = Object.values(lastByPerson).filter(r => r.Direction === 'InDirection');
+
+    // 4. build region and per-partition aggregates
+    const region = { total: 0, Employee: 0, Contractor: 0 };
+    const partitions = {}; // e.g. { 'AR.Cordoba': { total, Employee, Contractor }, … }
+
+    present.forEach(r => {
+      // region
+      region.total++;
+      if (r.PersonnelType === 'Employee') region.Employee++;
+      else region.Contractor++;
+
+      // per-partition
+      const p = r.PartitionName2;
+      if (!partitions[p]) {
+        partitions[p] = { total: 0, Employee: 0, Contractor: 0 };
+      }
+      partitions[p].total++;
+      if (r.PersonnelType === 'Employee') partitions[p].Employee++;
+      else partitions[p].Contractor++;
+    });
+
+    // 5. respond
+    res.json({
+      success: true,
+      summary: {
+        region: 'LACA',
+        ...region,       // { total, Employee, Contractor }
+        partitions       // { 'AR.Cordoba': { … }, … }
+      },
+      details: present  // the array of swipe‐records still present
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Live summary fetch failed' });
+  }
 };
+
+
+exports.getHistoricalOccupancy = async (req, res) => {
+  const { location } = req.params;
+  try {
+    const data = await service.fetchHistoricalOccupancy(location);
+    res.json({ success: true, count: data.length, data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Historical occupancy fetch failed' });
+  }
+};
+
 
