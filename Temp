@@ -1,3 +1,21 @@
+module.exports = {
+  'AR.Cordoba': 'America/Argentina/Cordoba',
+  'BR.Sao Paulo': 'America/Sao_Paulo',
+  'CR.Costa Rica Partition': 'America/Costa_Rica',
+  'MX.Mexico City': 'America/Mexico_City',
+  'PA.Panama City': 'America/Panama',
+  'PE.Lima': 'America/Lima'
+};
+
+
+
+
+
+
+
+
+
+
 const sql = require('mssql');
 require('dotenv').config();
 
