@@ -1,3 +1,141 @@
+const service = require('../services/occupancy.service');
+
+/**
+ * GET /api/occupancy/live-summary
+ *   - Deduplicate by PersonGUID with the LAST swipe of today.
+ */
+exports.getLiveSummary = async (req, res) => {
+  try {
+    const swipes = await service.fetchLiveOccupancy();
+
+    // 1. Dedupe: keep only the last swipe per PersonGUID
+    const lastByPerson = {};
+    swipes.forEach(rec => {
+      const prev = lastByPerson[rec.PersonGUID];
+      const curTime = new Date(rec.LocaleMessageTime).getTime();
+      if (!prev || curTime > new Date(prev.LocaleMessageTime).getTime()) {
+        lastByPerson[rec.PersonGUID] = rec;
+      }
+    });
+    const present = Object.values(lastByPerson);
+
+    // 2. Build summary
+    const region = { total: 0, Employee: 0, Contractor: 0 };
+    const partitions = {};
+    present.forEach(r => {
+      region.total++;
+      if (r.PersonnelType === 'Employee') region.Employee++;
+      else region.Contractor++;
+      const p = r.PartitionName2;
+      if (!partitions[p]) partitions[p] = { total:0, Employee:0, Contractor:0 };
+      partitions[p].total++;
+      if (r.PersonnelType==='Employee') partitions[p].Employee++;
+      else partitions[p].Contractor++;
+    });
+
+    res.json({
+      success: true,
+      summary: {
+        region: 'LACA',
+        ...region,
+        partitions
+      },
+      details: present
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success:false, message:'Live summary failed' });
+  }
+};
+
+
+/**
+ * GET /api/occupancy/history or /api/occupancy/history/:location
+ *   - Last 7 days of data
+ *   - Deduplicate by PersonGUID per date, taking the FIRST swipe of each day
+ */
+exports.getHistoricalOccupancy = async (req, res) => {
+  const location = req.params.location || null;
+  try {
+    // 1. raw swipes (with SwipeDate as a Date string)
+    const raw = await service.fetchHistoricalOccupancy(location);
+
+    // 2. Group by date and dedupe per PersonGUID (first swipe)
+    const byDate = raw.reduce((acc, rec) => {
+      // normalize LocaleMessageTime to ISO string
+      const iso = (rec.LocaleMessageTime instanceof Date)
+        ? rec.LocaleMessageTime.toISOString()
+        : rec.LocaleMessageTime;
+      const date = iso.slice(0,10);
+      // ensure map for this date
+      acc[date] = acc[date] || { firstByPerson: {}, list: [] };
+      const entry = acc[date];
+      // if we haven't seen this GUID for this date, or this swipe is earlier
+      if (!entry.firstByPerson[rec.PersonGUID] ||
+          new Date(iso) < new Date(entry.firstByPerson[rec.PersonGUID].LocaleMessageTime)
+      ) {
+        entry.firstByPerson[rec.PersonGUID] = { ...rec, LocaleMessageTime: iso };
+      }
+      return acc;
+    }, {});
+
+    // 3. Build summaryByDate and collect details
+    const summaryByDate = [];
+    const details = [];
+    Object.keys(byDate).sort().forEach(date => {
+      const { firstByPerson } = byDate[date];
+      const recs = Object.values(firstByPerson);
+      // push into details
+      details.push(...recs);
+
+      // aggregate counts
+      const regionCounts = { total:0, Employee:0, Contractor:0 };
+      const partitionCounts = {};
+
+      recs.forEach(r => {
+        regionCounts.total++;
+        if (r.PersonnelType === 'Employee') regionCounts.Employee++;
+        else regionCounts.Contractor++;
+        if (!location) {
+          const p = r.PartitionName2;
+          if (!partitionCounts[p]) partitionCounts[p] = { total:0, Employee:0, Contractor:0 };
+          partitionCounts[p].total++;
+          if (r.PersonnelType==='Employee') partitionCounts[p].Employee++;
+          else partitionCounts[p].Contractor++;
+        }
+      });
+
+      summaryByDate.push({
+        date,
+        day: new Date(date).toLocaleDateString('en-US', { weekday:'long' }),
+        region: location
+          ? { name: location, ...regionCounts }
+          : { name: 'LACA', ...regionCounts },
+        partitions: location ? undefined : partitionCounts
+      });
+    });
+
+    res.json({
+      success: true,
+      summaryByDate,
+      details
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success:false, message:'Historical fetch failed' });
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
 // src/controllers/occupancy.controller.js
 
 exports.getHistoricalOccupancy = async (req, res) => {
