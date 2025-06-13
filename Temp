@@ -1,0 +1,26 @@
+# 1. Go to your Desktop and create the project folder
+cd ~/Desktop
+mkdir laca-occupancy-backend
+cd laca-occupancy-backend
+
+# 2. Initialize npm (this creates package.json)
+npm init -y
+
+# 3. Create the folder structure
+mkdir -p src/config src/controllers src/routes src/services src/utils
+
+# 4. Create all the files
+touch \
+  src/config/db.js \
+  src/controllers/occupancy.controller.js \
+  src/routes/occupancy.routes.js \
+  src/services/occupancy.service.js \
+  src/utils/timezones.js \
+  src/app.js \
+  src/server.js \
+  .env \
+  .gitignore \
+  README.md
+
+
+
