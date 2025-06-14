@@ -1,173 +1,11 @@
-// src/pages/History.jsx
-
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Grid,
-  Button,
-  Typography,
-  MenuItem,
-  Select,
-  InputLabel,
-  FormControl,
-} from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import LoadingSpinner from '../components/LoadingSpinner';
-import SummaryCard from '../components/SummaryCard';
-
-import { fetchHistory } from '../api/occupancy.service';
-
-export default function History() {
-  const [location, setLocation]     = useState('');     // partition name when drilled
-  const [dateList, setDateList]     = useState([]);     // all available dates
-  const [selectedDate, setSelectedDate] = useState(''); // date you picked
-  const [data, setData]             = useState(null);
-  const [loading, setLoading]       = useState(true);
-
-  const navigate = useNavigate();
-
-  // Fetch either global history or partition-specific history
-  useEffect(() => {
-    setLoading(true);
-    fetchHistory(location || null).then(json => {
-      setData(json);
-      setLoading(false);
-
-      // if top-level (all LACA), grab the list of dates
-      if (!location && json.summaryByDate) {
-        setDateList(json.summaryByDate.map(d => d.date));
-      }
-    });
-  }, [location]);
-
-  if (loading) return <LoadingSpinner />;
-  if (!data)    return null;
-
-  // 1) If we're at top-level and haven't picked a date yet → show date picker
-  if (!location && !selectedDate) {
-    return (
-      <>
-        <Header />
-        <Container sx={{ mt: 2 }}>
-          <Typography variant="h6">Select a date:</Typography>
-          <FormControl fullWidth sx={{ mt: 1 }}>
-            <InputLabel>Date</InputLabel>
-            <Select
-              value={selectedDate}
-              label="Date"
-              onChange={e => setSelectedDate(e.target.value)}
-            >
-              {dateList.map(d => (
-                <MenuItem key={d} value={d}>{d}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Container>
-        <Footer />
-      </>
-    );
-  }
-
-  // 2) Once a date is picked and still top-level → show cards per partition
-  if (!location) {
-    const daySummary = data.summaryByDate.find(d => d.date === selectedDate);
-
-    // Build a card for each partition
-    const partitionCards = Object.entries(daySummary.partitions).map(([name, stats]) => ({
-      title: name,
-      stats: [
-        { label: 'Total',       value: stats.total },
-        { label: 'Employees',   value: stats.Employee },
-        { label: 'Contractors', value: stats.Contractor }
-      ]
-    }));
-
-    return (
-      <>
-        <Header />
-        <Container sx={{ mt: 2 }}>
-          <Button onClick={() => setSelectedDate('')} variant="outlined">
-            ← Change date
-          </Button>
-
-          <Typography variant="h5" sx={{ my: 2 }}>
-            Summary for {selectedDate}
-          </Typography>
-
-          <Grid container spacing={2}>
-            {partitionCards.map(card => (
-              <Grid item xs={12} sm={6} md={4} key={card.title}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  onClick={() => setLocation(card.title)}
-                >
-                  <SummaryCard title={card.title} stats={card.stats} />
-                </Button>
-              </Grid>
-            ))}
-          </Grid>
-        </Container>
-        <Footer />
-      </>
-    );
-  }
-
-  // 3) If we're drilled into a partition → show its history summaryByDate
-  //    (for partition endpoints, summaryByDate is an array of { date, day, region })
-  const partitionSummary = data.summaryByDate.map(d => ({
-    title: d.date,
-    stats: [
-      { label: 'Total',       value: d.region.total },
-      { label: 'Employees',   value: d.region.Employee },
-      { label: 'Contractors', value: d.region.Contractor }
-    ]
-  }));
-
-  return (
-    <>
-      <Header />
-      <Container sx={{ mt: 2 }}>
-        <Button onClick={() => setLocation('')} variant="outlined">
-          ← Back to all dates
-        </Button>
-
-        <Typography variant="h5" sx={{ my: 2 }}>
-          History for {location}
-        </Typography>
-
-        <Grid container spacing={2}>
-          {partitionSummary.map(card => (
-            <Grid item xs={12} sm={6} md={4} key={card.title}>
-              <SummaryCard title={card.title} stats={card.stats} />
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
-      <Footer />
-    </>
-  );
-}
-
-
-
-
-
-
-
-
-C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\History.jsx
-
+Read below error and solve this issue carefully and give me updated file carefully
 
 Uncaught runtime errors:
 ×
 ERROR
-selectedDate is not defined
-ReferenceError: selectedDate is not defined
-    at History (http://localhost:3000/main.e3d27d41a2c8a2d1f181.hot-update.js:80:21)
+Grid is not defined
+ReferenceError: Grid is not defined
+    at Dashboard (http://localhost:3000/static/js/bundle.js:99394:92)
     at react-stack-bottom-frame (http://localhost:3000/static/js/bundle.js:60418:18)
     at renderWithHooks (http://localhost:3000/static/js/bundle.js:50628:20)
     at updateFunctionComponent (http://localhost:3000/static/js/bundle.js:52321:17)
@@ -177,171 +15,51 @@ ReferenceError: selectedDate is not defined
     at workLoopSync (http://localhost:3000/static/js/bundle.js:54873:38)
     at renderRootSync (http://localhost:3000/static/js/bundle.js:54857:7)
     at performWorkOnRoot (http://localhost:3000/static/js/bundle.js:54621:42)
-ERROR
-setDateList is not defined
-ReferenceError: setDateList is not defined
-    at http://localhost:3000/main.e3d27d41a2c8a2d1f181.hot-update.js:68:9
-ERROR
-setDateList is not defined
-ReferenceError: setDateList is not defined
-    at http://localhost:3000/main.e3d27d41a2c8a2d1f181.hot-update.js:68:9
 
 
 
-Read all files carefully and solve this isuse carefully and give me updated file carefully
 
-// src/pages/History.jsx
 
-import React, { useEffect, useState } from 'react';
-// import { Container, MenuItem, Select, InputLabel, FormControl } from '@mui/material';
-import { Container, MenuItem, Select, InputLabel, FormControl, Grid, Button, Typography } from '@mui/material';
+// src/pages/RealtimeDetails.jsx
+
+import React from 'react';
+import { Container, Typography, Button } from '@mui/material';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import LoadingSpinner from '../components/LoadingSpinner';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
 import DataTable from '../components/DataTable';
-import { partitionList } from '../services/occupancy.service'; // or hardcode your list
-import { fetchHistory } from '../api/occupancy.service';
-import { useNavigate } from 'react-router-dom';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+import { useParams, useNavigate } from 'react-router-dom';
 
-export default function History() {
-  const [location, setLocation] = useState('');
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+const columns = [
+  { field: 'ObjectName1', headerName: 'Name' },
+  { field: 'Door', headerName: 'Door' },
+  { field: 'Swipe_Time', headerName: 'Time' },
+  { field: 'PersonnelType', headerName: 'Type' },
+  // add more as desired
+];
 
-  useEffect(() => {
-    setLoading(true);
-    fetchHistory(location || null).then(json => {
-      setData(json);
-      setLoading(false);
-
-     // if top-level (all LACA), capture dateList
-     if (!location) {
-       setDateList(json.summaryByDate.map(d => d.date));
-     }
-    
-    });
-
-  }, [location]);
+export default function RealtimeDetails() {
+     const { partition } = useParams();            
+  const { data, loading, error } = useLiveOccupancy(1000);
 
   if (loading) return <LoadingSpinner />;
-  if (!data) return null;
-
-
- // when location==’’: user must pick a date first
- if (!location && !selectedDate) {
-   return (
-     <>
-       <Header />
-       <Container sx={{ mt: 2 }}>
-         <Typography variant="h6">Select a date:</Typography>
-         <FormControl fullWidth sx={{ mt: 1 }}>
-           <InputLabel>Date</InputLabel>
-          <Select
-             value={selectedDate}
-             label="Date"
-             onChange={e => setSelected(e.target.value)}
-           >
-             {dateList.map(d => (
-               <MenuItem key={d} value={d}>{d}</MenuItem>
-             ))}
-           </Select>
-         </FormControl>
-       </Container>
-       <Footer />
-     </>
-   );
- }
- // after picking a date, find that summary
- const daySummary = data.summaryByDate.find(d => d.date === selectedDate);
- // build cards for each partition in that day
- const partitionCards = Object.entries(daySummary.partitions).map(([name, stats]) => ({
-   title: name,
-   stats: [
-     { label: 'Total',       value: stats.total },
-     { label: 'Employees',   value: stats.Employee },
-     { label: 'Contractors', value: stats.Contractor }
-   ]
- }));
-
-
-
-
-  // Prepare a line chart of total vs date
-  const chartData = data.summaryByDate.map(d => ({
-    name: d.date,
-    value: d.region.total
-  }));
-
-  // Columns for details
-  const columns = [
-    { field: 'ObjectName1', headerName: 'Name' },
-    { field: 'SwipeDate', headerName: 'Date' },
-    { field: 'PersonnelType', headerName: 'Type' },
-    // add more
-  ];
+  if (error)   return <Container><p>Error loading data</p></Container>;
 
   return (
     <>
       <Header />
       <Container sx={{ mt: 2 }}>
 
-       {location ? (
-         <Button onClick={() => setLocation('')} variant="outlined">
-           ← Back to all dates
-         </Button>
-       ) : (
-         <Button onClick={() => setSelected('')} variant="outlined">
-           ← Change date
-         </Button>
-       )}
-
-
+       <Button onClick={() => navigate(-1)} variant="outlined">
+         ← Back to dashboard
+       </Button>
        <Typography variant="h5" sx={{ my: 2 }}>
-         {location
-           ? `History for ${location}`
-           : `Summary for ${selectedDate}`
-         }
+         Realtime details for “{partition}”
        </Typography>
-
-       <Grid container spacing={2}>
-         {partitionCards.map(card => (
-           <Grid item xs={12} sm={6} md={4} key={card.title}>
-             <Button
-               fullWidth
-               variant="outlined"
-               onClick={() => {
-                 // if already in partition view, do nothing
-                 if (!location) setLocation(card.title);
-               }}
-             >
-               <SummaryCard title={card.title} stats={card.stats} />
-             </Button>
-           </Grid>
-         ))}
-       </Grid>
-
-
-        <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel id="loc-label">Partition</InputLabel>
-          <Select
-            labelId="loc-label"
-            value={location}
-            label="Partition"
-            onChange={e => setLocation(e.target.value)}
-          >
-            <MenuItem value="">All LACA</MenuItem>
-            {partitionList.map(p => (
-              <MenuItem key={p} value={p}>{p}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <ChartCard title="Historical Total by Date" data={chartData} />
-
         <DataTable columns={columns} rows={data.details} />
+
+
       </Container>
       <Footer />
     </>
