@@ -1,3 +1,69 @@
+// src/pages/RealtimeDetails.jsx
+
+import React from 'react';
+import { Container, Typography, Button } from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import DataTable from '../components/DataTable';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+const columns = [
+  { field: 'ObjectName1',  headerName: 'Name' },
+  { field: 'Door',         headerName: 'Door' },
+  { field: 'Swipe_Time',   headerName: 'Time' },
+  { field: 'PersonnelType',headerName: 'Type' },
+];
+
+export default function RealtimeDetails() {
+  // 1) Grab the “partition” URL param
+  const { partition } = useParams();
+
+  // 2) Get navigate()
+  const navigate = useNavigate();
+
+  // 3) Poll the live‐occupancy API
+  const { data, loading, error } = useLiveOccupancy(1000);
+
+  if (loading) return <LoadingSpinner />;
+  if (error) {
+    return (
+      <Container>
+        <Typography color="error">Error loading data</Typography>
+      </Container>
+    );
+  }
+
+  // 4) Only show rows belonging to this partition
+  const rows = data.details.filter(r => r.PartitionName2 === partition);
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2 }}>
+        {/* Back button uses navigate */}
+        <Button onClick={() => navigate(-1)} variant="outlined">
+          ← Back to dashboard
+        </Button>
+
+        <Typography variant="h5" sx={{ my: 2 }}>
+          Realtime details for “{partition}”
+        </Typography>
+
+        <DataTable columns={columns} rows={rows} />
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
 // src/pages/Dashboard.jsx
 
 import React from 'react';
