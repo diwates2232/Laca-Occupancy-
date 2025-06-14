@@ -1,123 +1,83 @@
-// src/pages/Dashboard.jsx
+Download the React DevTools for a better development experience: https://react.dev/link/react-devtools
+react-dom-client.development.js:2600 In HTML, <button> cannot be a descendant of <button>.
+This will cause a hydration error.
 
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Grid,
-  Box,
-  Typography,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Button,
-  CardActionArea,
-} from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useNavigate } from 'react-router-dom';
+  ...
+    <Styled(div) as="div" ref={null} className="MuiBox-root" theme={{...}} sx={{mt:4}}>
+      <Insertion>
+      <div className="MuiBox-roo...">
+        <Typography>
+        <Accordion sx={{mb:1}}>
+          <MuiAccordion-root square={false} sx={{mb:1}} className="MuiAccordi..." ref={null} ...>
+            <Insertion>
+            <Paper square={false} className="MuiAccordi...">
+              <MuiPaper-root as="div" ownerState={{square:false, ...}} className="MuiPaper-r..." ref={null} style={{...}}>
+                <Insertion>
+                <div className="MuiPaper-r..." style={{...}}>
+                  <MuiAccordion-heading className="MuiAccordi..." ref={null} ownerState={{sx:{mb:1}, ...}}>
+                    <Insertion>
+                    <h3 className="MuiAccordi...">
+                      <AccordionSummary expandIcon={<ForwardRef(ExpandMoreIcon)>}>
+                        <MuiAccordionSummary-root onClick={function onClick} focusRipple={false} disableRipple={true} ...>
+                          <Insertion>
+                          <ButtonBase onClick={function onClick} focusRipple={false} disableRipple={true} ...>
+                            <MuiButtonBase-root as="button" className="MuiButtonB..." ownerState={{...}} ...>
+                              <Insertion>
+>                             <button
+>                               className="MuiButtonBase-root MuiAccordionSummary-root MuiAccordionSummary-gutters css..."
+>                               onBlur={function}
+>                               onClick={function onClick}
+>                               onContextMenu={function}
+>                               onFocus={function}
+>                               onKeyDown={function}
+>                               onKeyUp={function}
+>                               onMouseDown={function}
+>                               onMouseLeave={function}
+>                               onMouseUp={function}
+>                               onDragLeave={function}
+>                               onTouchEnd={function}
+>                               onTouchMove={function}
+>                               onTouchStart={function}
+>                               tabIndex={0}
+>                               type="button"
+>                               disabled={false}
+>                               aria-expanded={false}
+>                               ref={function}
+>                             >
+                                ...
+                                  <MuiButton-root ownerState={{size:"small", ...}} className="MuiButton-..." ...>
+                                    <Insertion>
+                                    <ButtonBase className="MuiButton-..." component="button" disabled={null} ...>
+                                      <MuiButtonBase-root as="button" className="MuiButtonB..." ownerState={{...}} ...>
+                                        <Insertion>
+>                                       <button
+>                                         className="MuiButtonBase-root MuiButton-root MuiButton-outlined MuiButton-ou..."
+>                                         onBlur={function}
+>                                         onClick={function onClick}
+>                                         onContextMenu={function}
+>                                         onFocus={function}
+>                                         onKeyDown={function}
+>                                         onKeyUp={function}
+>                                         onMouseDown={function}
+>                                         onMouseLeave={function}
+>                                         onMouseUp={function}
+>                                         onDragLeave={function}
+>                                         onTouchEnd={function}
+>                                         onTouchMove={function}
+>                                         onTouchStart={function}
+>                                         tabIndex={0}
+>                                         type="button"
+>                                         disabled={null}
+>                                         id={undefined}
+>                                         ref={function}
+>                                       >
+                  ...
+        ...
 
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import LoadingSpinner from '../components/LoadingSpinner';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-
-import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
-
-export default function Dashboard() {
-  const { data, loading, error } = useLiveOccupancy(1000);
-  const [lastUpdate, setLastUpdate] = useState(null);
-  const navigate = useNavigate();
-
-  // update last‐update timestamp
-  useEffect(() => {
-    if (data) {
-      setLastUpdate(new Date().toLocaleTimeString());
-    }
-  }, [data]);
-
-  if (loading) return <LoadingSpinner />;
-  if (error)   return <Container>Error loading live data</Container>;
-
-  const { today, realtime } = data;
-
-  // prepare bar‐chart data
-  const partitionData = Object.entries(realtime).map(([name, stats]) => ({
-    name,
-    value: stats.total
-  }));
-
-  return (
-    <>
-      <Header />
-      <Container sx={{ mt: 2, mb: 4 }}>
-
-        {/* Top Row: Title + Last Updated */}
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h5">LACA Headcount</Typography>
-          <Typography variant="body2" color="textSecondary">
-            Last updated: {lastUpdate}
-          </Typography>
-        </Box>
-
-        {/* Today's Totals */}
-        <SummaryCard
-          title="Today's Totals"
-          stats={[
-            { label: 'Total',       value: today.total },
-            { label: 'Employees',   value: today.Employee },
-            { label: 'Contractors', value: today.Contractor }
-          ]}
-        />
-
-        {/* Realtime Partition Chart */}
-        <Box mt={4}>
-          <Typography variant="h6" gutterBottom>Realtime by Partition</Typography>
-          <ChartCard data={partitionData} />
-        </Box>
-
-        {/* Floor‐wise Accordions per Partition */}
-        <Box mt={4}>
-          <Typography variant="h6" gutterBottom>Partition Detail (Floor-wise)</Typography>
-          {Object.entries(realtime).map(([partName, stats]) => (
-            <Accordion key={partName} sx={{ mb: 1 }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Box flexGrow={1}>
-                  <Typography variant="subtitle1">{partName}</Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    Total: {stats.total} — Emp: {stats.Employee}, Cont: {stats.Contractor}
-                  </Typography>
-                </Box>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={e => {
-                    e.stopPropagation();
-                    navigate(`/realtime/${encodeURIComponent(partName)}`);
-                  }}
-                >
-                  View All Swipes
-                </Button>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Grid container spacing={1}>
-                  {Object.entries(stats.floors || {}).map(([floor, count]) => (
-                    <Grid item key={floor} xs={6} sm={4} md={3}>
-                      <SummaryCard
-                        title={floor}
-                        stats={[{ label: 'Count', value: count }]}
-                      />
-                    </Grid>
-                  ))}
-                </Grid>
-              </AccordionDetails>
-            </Accordion>
-          ))}
-        </Box>
-      </Container>
-      <Footer />
-    </>
-  );
-}
+validateDOMNesting @ react-dom-client.development.js:2600Understand this error
+react-dom-client.development.js:2626 <button> cannot contain a nested <button>.
+See this log for the ancestor stack trace.
+(anonymous) @ react-dom-client.development.js:2626Understand this error
 
 
 
@@ -125,281 +85,5 @@ export default function Dashboard() {
 
 
 
-
-below are the API breakdown . Expected result for Ui like initially display 
-LACA headcount (  "today": {
-    "total": 14,
-    "Employee": 1,
-    "Contractor": 13)
-
-then go With partation 
-CR.Costa Rica Partition" ,AR.Cordoba": etc
-then Update Live data as per Floor Wise , building Wise ..
-
- "CR.Costa Rica Partition": {
-      "total": 5,
-      "Employee": 0,
-      "Contractor": 5,
-      "floors": {
-        "Building F4": 1,
-        "Building A3": 1,
-        "Building A1": 1,
-        "Building E3": 2
-      }
-
-like this .....
-
-then at the end Display details , 
-
-http://localhost:3001/api/occupancy/live-summary
-
-{
-  "success": true,
-  "today": {
-    "total": 14,
-    "Employee": 1,
-    "Contractor": 13
-  },
-  "realtime": {
-    "CR.Costa Rica Partition": {
-      "total": 5,
-      "Employee": 0,
-      "Contractor": 5,
-      "floors": {
-        "Building F4": 1,
-        "Building A3": 1,
-        "Building A1": 1,
-        "Building E3": 2
-      }
-    },
-    "AR.Cordoba": {
-      "total": 3,
-      "Employee": 0,
-      "Contractor": 3,
-      "floors": {
-        "1st Floor": 2,
-        "2nd Floor": 1
-      }
-    },
-    "BR.Sao Paulo": {
-      "total": 1,
-      "Employee": 0,
-      "Contractor": 1,
-      "floors": {
-        "6th Floor": 1
-      }
-    }
-  },
-  "details": [
-    {
-      "LocaleMessageTime": "2025-06-14T03:10:02.000Z",
-      "Dateonly": "2025-06-14",
-      "Swipe_Time": "03:10:02",
-      "EmployeeID": "W0022873",
-      "PersonGUID": "98DA6E7A-3EE1-47AA-B843-599EB1A6EF21",
-      "ObjectName1": "Hernandez, Sofia",
-      "Door": "LACA CR F4 IT Room",
-      "PersonnelType": "Contractor",
-      "CardNumber": "612791",
-      "Text5": "Santa Ana - Parque Empresarial",
-      "PartitionName2": "CR.Costa Rica Partition",
-      "AdmitCode": "Admit",
-      "Direction": "InDirection"
-    },
-    {
-      "LocaleMessageTime": "2025-06-14T03:12:16.000Z",
-      "Dateonly": "2025-06-14",
-      "Swipe_Time": "03:12:16",
-      "EmployeeID": "W0013046",
-      "PersonGUID": "9EE15706-B3DE-451D-9B11-DE7E734E02C6",
-      "ObjectName1": "Mena, Evelyn",
-      "Door": "LACA CR A3 Main Lobby Door",
-      "PersonnelType": "Contractor",
-      "CardNumber": "613101",
-      "Text5": "Santa Ana - Parque Empresarial",
-      "PartitionName2": "CR.Costa Rica Partition",
-      "AdmitCode": "Admit",
-      "Direction": "InDirection"
-    },
-    {
-      "LocaleMessageTime": "2025-06-14T00:07:03.000Z",
-      "Dateonly": "2025-06-14",
-      "Swipe_Time": "00:07:03",
-      "EmployeeID": "320262",
-      "PersonGUID": "0CFA95F6-D477-412A-9EF3-714748784986",
-      "ObjectName1": "Flores, Pablo Alonso",
-      "Door": "LACA CR F4 Main Lobby Door",
-      "PersonnelType": "Employee",
-      "CardNumber": "420467",
-      "Text5": "Santa Ana - Parque Empresarial",
-      "PartitionName2": "CR.Costa Rica Partition",
-      "AdmitCode": "Admit",
-      "Direction": "OutDirection"
-    },
-    {
-      "LocaleMessageTime": "2025-06-14T03:01:16.000Z",
-      "Dateonly": "2025-06-14",
-      "Swipe_Time": "03:01:16",
-      "EmployeeID": "W0027028",
-      "PersonGUID": "BABF026D-2B38-4383-AE16-EC6BF2C1BDD5",
-      "ObjectName1": "Chinchilla, Norita",
-      "Door": "LACA CR E3 Main Lobby",
-      "PersonnelType": "Contractor",
-      "CardNumber": "617155",
-      "Text5": "Santa Ana - Parque Empresarial",
-      "PartitionName2": "CR.Costa Rica Partition",
-      "AdmitCode": "Admit",
-      "Direction": "OutDirection"
-    },
-    {
-      "LocaleMessageTime": "2025-06-14T02:52:22.000Z",
-      "Dateonly": "2025-06-14",
-      "Swipe_Time": "02:52:22",
-      "EmployeeID": "W0020261",
-      "PersonGUID": "A5D4AFCF-BF71-48E8-A387-693B20820960",
-      "ObjectName1": "Parrales, Jorge",
-      "Door": "LACA CR A1 Main Lobby Door",
-      "PersonnelType": "Contractor",
-      "CardNumber": "612769",
-      "Text5": "Santa Ana - Parque Empresarial",
-      "PartitionName2": "CR.Costa Rica Partition",
-      "AdmitCode": "Admit",
-      "Direction": "OutDirection"
-    },
-    {
-      "LocaleMessageTime": "2025-06-14T03:00:09.000Z",
-      "Dateonly": "2025-06-14",
-      "Swipe_Time": "03:00:09",
-      "EmployeeID": "W0026430",
-      "PersonGUID": "5E48DF0A-8926-4635-894B-0CCB5F63EF94",
-      "ObjectName1": "Reyes, Angela",
-      "Door": "LACA CR A1 Main Lobby Door",
-      "PersonnelType": "Contractor",
-      "CardNumber": "617103",
-      "Text5": "Santa Ana - Parque Empresarial",
-      "PartitionName2": "CR.Costa Rica Partition",
-      "AdmitCode": "Admit",
-      "Direction": "InDirection"
-    },
-    {
-      "LocaleMessageTime": "2025-06-14T01:56:42.000Z",
-      "Dateonly": "2025-06-14",
-      "Swipe_Time": "01:56:42",
-      "EmployeeID": "W0024932",
-      "PersonGUID": "16C837CE-FBA4-4B66-AF32-1C96DF122222",
-      "ObjectName1": "Porras, Tirza",
-      "Door": "LACA CR E3 Main Lobby",
-      "PersonnelType": "Contractor",
-      "CardNumber": "613095",
-      "Text5": "Santa Ana - Parque Empresarial",
-      "PartitionName2": "CR.Costa Rica Partition",
-      "AdmitCode": "Admit",
-      "Direction": "InDirection"
-    },
-    {
-      "LocaleMessageTime": "2025-06-14T01:56:45.000Z",
-      "Dateonly": "2025-06-14",
-      "Swipe_Time": "01:56:45",
-      "EmployeeID": "W0017751",
-      "PersonGUID": "6C15C9F1-55E9-4AD8-B7E3-AB826F986DA8",
-      "ObjectName1": "Cruz, Alisson",
-      "Door": "LACA CR E3 Main Lobby",
-      "PersonnelType": "Contractor",
-      "CardNumber": "613103",
-      "Text5": "Santa Ana - Parque Empresarial",
-      "PartitionName2": "CR.Costa Rica Partition",
-      "AdmitCode": "Admit",
-      "Direction": "InDirection"
-    },
-    {
-      "LocaleMessageTime": "2025-06-14T06:10:27.000Z",
-      "Dateonly": "2025-06-14",
-      "Swipe_Time": "06:10:27",
-      "EmployeeID": "W0026146",
-      "PersonGUID": "AE191490-D301-41F9-9E31-D9FA49F8690A",
-      "ObjectName1": "Montenegro, Norma",
-      "Door": "LACA ARG MOLINETE 1 IN",
-      "PersonnelType": "Contractor",
-      "CardNumber": "617920",
-      "Text5": "Buenos Aires - Montevideo 825",
-      "PartitionName2": "AR.Cordoba",
-      "AdmitCode": "Admit",
-      "Direction": "InDirection"
-    },
-    {
-      "LocaleMessageTime": "2025-06-14T05:35:30.000Z",
-      "Dateonly": "2025-06-14",
-      "Swipe_Time": "05:35:30",
-      "EmployeeID": "0",
-      "PersonGUID": "6E3DA56A-0EDF-4E4F-83DC-E7B025C7C3E6",
-      "ObjectName1": "Argentina, VIS_ARG_012 012",
-      "Door": "LACA ARG MOLINETE 1 IN",
-      "PersonnelType": "Visitor",
-      "CardNumber": "422090",
-      "Text5": "Buenos Aires - Montevideo 825",
-      "PartitionName2": "AR.Cordoba",
-      "AdmitCode": "Admit",
-      "Direction": "InDirection"
-    },
-    {
-      "LocaleMessageTime": "2025-06-14T05:35:33.000Z",
-      "Dateonly": "2025-06-14",
-      "Swipe_Time": "05:35:33",
-      "EmployeeID": "0",
-      "PersonGUID": "B6E5BC94-A91B-4C4A-ABCA-503BD654B4E0",
-      "ObjectName1": "Argentina, VIS_ARG_011 011",
-      "Door": "LACA ARG MOLINETE 2 IN",
-      "PersonnelType": "Visitor",
-      "CardNumber": "422088",
-      "Text5": "Buenos Aires - Montevideo 825",
-      "PartitionName2": "AR.Cordoba",
-      "AdmitCode": "Admit",
-      "Direction": "InDirection"
-    },
-    {
-      "LocaleMessageTime": "2025-06-14T06:06:32.000Z",
-      "Dateonly": "2025-06-14",
-      "Swipe_Time": "06:06:32",
-      "EmployeeID": "W0026512",
-      "PersonGUID": "CEEB10CB-6AF8-4490-8731-A2A63B810E34",
-      "ObjectName1": "Bellido, Vanesa",
-      "Door": "LACA ARG MOLINETE 2 OUT",
-      "PersonnelType": "Contractor",
-      "CardNumber": "617947",
-      "Text5": "Buenos Aires - Montevideo 825",
-      "PartitionName2": "AR.Cordoba",
-      "AdmitCode": "Admit",
-      "Direction": "OutDirection"
-    },
-    {
-      "LocaleMessageTime": "2025-06-14T05:55:20.000Z",
-      "Dateonly": "2025-06-14",
-      "Swipe_Time": "05:55:20",
-      "EmployeeID": "W0026497",
-      "PersonGUID": "19106BBF-3DA7-4F2C-B9F4-AA9BA07106A4",
-      "ObjectName1": "Da Silva, Cleildes Maria",
-      "Door": "LACA BR 6TH FLOOR MAIN ENTRANCE DOOR",
-      "PersonnelType": "Contractor",
-      "CardNumber": "613026",
-      "Text5": "BRA - Sao Paulo - Rua Hungria, No. 1400",
-      "PartitionName2": "BR.Sao Paulo",
-      "AdmitCode": "Admit",
-      "Direction": "InDirection"
-    },
-    {
-      "LocaleMessageTime": "2025-06-14T06:09:26.000Z",
-      "Dateonly": "2025-06-14",
-      "Swipe_Time": "06:09:26",
-      "EmployeeID": "W0024741",
-      "PersonGUID": "6F359D5A-4484-49A8-87DE-867659B1884F",
-      "ObjectName1": "Herrera, Alexis",
-      "Door": "LACA ARG MOLINETE 3 OUT",
-      "PersonnelType": "Contractor",
-      "CardNumber": "616964",
-      "Text5": "Buenos Aires - Montevideo 825",
-      "PartitionName2": "AR.Cordoba",
-      "AdmitCode": "Admit",
-      "Direction": "OutDirection"
-    }
-  ]
-}
+Solve above Error and for Live Occupancy Realtime by Partition
+this Blocks are not display any data 
