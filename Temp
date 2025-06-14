@@ -1,3 +1,558 @@
+// src/api/occupancy.service.js
+
+const BASE = process.env.REACT_APP_API_BASE || ''; // e.g. http://localhost:3001
+
+/**
+ * GET /api/occupancy/live-summary
+ * returns:
+ * {
+ *   success: true,
+ *   today: { total, Employee, Contractor },
+ *   realtime: { [partition]: { total, Employee, Contractor, floors: { [floor]: count } } },
+ *   details: [ ...last-swipe records... ]
+ * }
+ */
+export async function fetchLiveSummary() {
+  const res = await fetch(`${BASE}/api/occupancy/live-summary`);
+  if (!res.ok) throw new Error(`Live summary fetch failed: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * GET /api/occupancy/history
+ * returns:
+ * {
+ *   success: true,
+ *   summaryByDate: [ { date, day, region, partitions } ],
+ *   details: [ ...first-swipe records... ]
+ * }
+ */
+export async function fetchHistory(location) {
+  const url = location
+    ? `${BASE}/api/occupancy/history/${encodeURIComponent(location)}`
+    : `${BASE}/api/occupancy/history`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`History fetch failed: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * GET /api/occupancy/history/:location
+ * identical to fetchHistory(location) when you pass location.
+ * Provided here if you want an explicit name.
+ */
+export async function fetchHistoryByLocation(location) {
+  return fetchHistory(location);
+}
+
+
+
+
+
+// src/api/occupancy.service.js
+
+const BASE = process.env.REACT_APP_API_BASE || '';
+
+export async function fetchLiveSummary() {
+  const res = await fetch(`${BASE}/api/occupancy/live-summary`);
+  if (!res.ok) throw new Error(`Live summary fetch failed: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchHistory(location) {
+  const url = location
+    ? `${BASE}/api/occupancy/history/${encodeURIComponent(location)}`
+    : `${BASE}/api/occupancy/history`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`History fetch failed: ${res.status}`);
+  return res.json();
+}
+
+
+
+
+
+// src/hooks/useLiveOccupancy.js
+
+import { useState, useEffect, useRef } from 'react';
+import { fetchLiveSummary } from '../api/occupancy.service';
+
+export function useLiveOccupancy(interval = 1000) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const timer = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      try {
+        const json = await fetchLiveSummary();
+        if (!active) return;
+        setData(json);
+        setLoading(false);
+      } catch (e) {
+        if (!active) return;
+        setError(e);
+        setLoading(false);
+      }
+    }
+
+    load();
+    timer.current = setInterval(load, interval);
+
+    return () => {
+      active = false;
+      clearInterval(timer.current);
+    };
+  }, [interval]);
+
+  return { data, loading, error };
+}
+
+
+
+
+
+// src/components/LoadingSpinner.jsx
+
+import React from 'react';
+import { CircularProgress, Box } from '@mui/material';
+
+export default function LoadingSpinner() {
+  return (
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      height="100%"
+    >
+      <CircularProgress />
+    </Box>
+  );
+}
+
+
+
+
+
+
+
+// src/components/Header.jsx
+
+import React from 'react';
+import { AppBar, Toolbar, Typography } from '@mui/material';
+
+export default function Header() {
+  return (
+    <AppBar position="static" color="primary">
+      <Toolbar>
+        <Typography variant="h6" component="div">
+          Western Union • LACA Occupancy
+        </Typography>
+      </Toolbar>
+    </AppBar>
+  );
+}
+
+
+
+
+
+// src/components/Footer.jsx
+
+import React from 'react';
+import { Box, Typography } from '@mui/material';
+
+export default function Footer() {
+  return (
+    <Box component="footer" p={2} textAlign="center">
+      <Typography variant="body2" color="textSecondary">
+        © {new Date().getFullYear()} Western Union. All rights reserved.
+      </Typography>
+    </Box>
+  );
+}
+
+
+
+
+
+
+
+
+
+// src/components/SummaryCard.jsx
+
+import React from 'react';
+import { Card, CardContent, Typography, Grid } from '@mui/material';
+
+export default function SummaryCard({ title, stats }) {
+  return (
+    <Card variant="outlined" sx={{ mb: 2 }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>{title}</Typography>
+        <Grid container spacing={2}>
+          {stats.map(({ label, value }) => (
+            <Grid item key={label}>
+              <Typography variant="subtitle1">{label}</Typography>
+              <Typography variant="h5">{value}</Typography>
+            </Grid>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+// src/components/ChartCard.jsx
+
+import React from 'react';
+import { Card, CardContent, Typography } from '@mui/material';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer
+} from 'recharts';
+
+export default function ChartCard({ title, data, dataKey = 'value' }) {
+  return (
+    <Card variant="outlined" sx={{ mb: 2, height: 300 }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>{title}</Typography>
+        <ResponsiveContainer width="100%" height="90%">
+          <BarChart data={data}>
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey={dataKey} fill="#FFC107" />
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
+// src/components/DataTable.jsx
+
+import React from 'react';
+import {
+  Table, TableHead, TableBody, TableRow, TableCell, Paper, TableContainer
+} from '@mui/material';
+
+export default function DataTable({ columns, rows }) {
+  return (
+    <TableContainer component={Paper} sx={{ mt: 2 }}>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            {columns.map(c => <TableCell key={c.field}>{c.headerName}</TableCell>)}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows.map((row, i) => (
+            <TableRow key={i}>
+              {columns.map(c => (
+                <TableCell key={c.field}>{row[c.field]}</TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+}
+
+
+
+
+
+
+// src/utils/dateHelpers.js
+
+export function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' });
+}
+
+
+
+
+
+
+// src/routes/AppRoutes.jsx
+
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Dashboard from '../pages/Dashboard';
+import RealtimeDetails from '../pages/RealtimeDetails';
+import History from '../pages/History';
+
+export default function AppRoutes() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/realtime" element={<RealtimeDetails />} />
+        <Route path="/history" element={<History />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+
+
+
+
+
+
+// src/pages/Dashboard.jsx
+
+import React from 'react';
+import { Container } from '@mui/material';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+
+  if (loading) return <LoadingSpinner />;
+  if (error)   return <Container><p>Error loading data</p></Container>;
+
+  const { today, realtime } = data;
+
+  const partitionData = Object.entries(realtime).map(([name, stats]) => ({
+    name,
+    value: stats.total
+  }));
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2 }}>
+        <SummaryCard
+          title="Today's Headcount"
+          stats={[
+            { label: 'Total', value: today.total },
+            { label: 'Employees', value: today.Employee },
+            { label: 'Contractors', value: today.Contractor }
+          ]}
+        />
+        <ChartCard
+          title="Realtime Occupancy by Partition"
+          data={partitionData}
+        />
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+// src/pages/RealtimeDetails.jsx
+
+import React from 'react';
+import { Container } from '@mui/material';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import DataTable from '../components/DataTable';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+const columns = [
+  { field: 'ObjectName1', headerName: 'Name' },
+  { field: 'Door', headerName: 'Door' },
+  { field: 'Swipe_Time', headerName: 'Time' },
+  { field: 'PersonnelType', headerName: 'Type' },
+  // add more as desired
+];
+
+export default function RealtimeDetails() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+
+  if (loading) return <LoadingSpinner />;
+  if (error)   return <Container><p>Error loading data</p></Container>;
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2 }}>
+        <DataTable columns={columns} rows={data.details} />
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+// src/pages/History.jsx
+
+import React, { useEffect, useState } from 'react';
+import { Container, MenuItem, Select, InputLabel, FormControl } from '@mui/material';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import DataTable from '../components/DataTable';
+import { fetchHistory } from '../api/occupancy.service';
+import { partitionList } from '../services/occupancy.service'; // or hardcode your list
+
+export default function History() {
+  const [location, setLocation] = useState('');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchHistory(location || null).then(json => {
+      setData(json);
+      setLoading(false);
+    });
+  }, [location]);
+
+  if (loading) return <LoadingSpinner />;
+  if (!data) return null;
+
+  // Prepare a line chart of total vs date
+  const chartData = data.summaryByDate.map(d => ({
+    name: d.date,
+    value: d.region.total
+  }));
+
+  // Columns for details
+  const columns = [
+    { field: 'ObjectName1', headerName: 'Name' },
+    { field: 'SwipeDate', headerName: 'Date' },
+    { field: 'PersonnelType', headerName: 'Type' },
+    // add more
+  ];
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2 }}>
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel id="loc-label">Partition</InputLabel>
+          <Select
+            labelId="loc-label"
+            value={location}
+            label="Partition"
+            onChange={e => setLocation(e.target.value)}
+          >
+            <MenuItem value="">All LACA</MenuItem>
+            {partitionList.map(p => (
+              <MenuItem key={p} value={p}>{p}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <ChartCard title="Historical Total by Date" data={chartData} />
+
+        <DataTable columns={columns} rows={data.details} />
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+// src/App.jsx
+
+import React from 'react';
+import AppRoutes from './routes/AppRoutes';
+
+export default function App() {
+  return <AppRoutes />;
+}
+
+
+
+
+
+
+// src/index.js
+
+import React from 'react';
+import ReactDOM from 'react-dom';
+import App from './App';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import westernUnionTheme from './theme/westernUnionTheme';
+import reportWebVitals from './reportWebVitals';
+
+const theme = createTheme(westernUnionTheme);
+
+ReactDOM.render(
+  <ThemeProvider theme={theme}>
+    <App />
+  </ThemeProvider>,
+  document.getElementById('root')
+);
+
+reportWebVitals();
+
+
+
+
+
+
+
+
+
+// src/theme/westernUnionTheme.js
+
+export default {
+  palette: {
+    primary: { main: '#FFC107' },   // WU Yellow
+    secondary: { main: '#000000' }, // WU Black
+    background: { default: '#FFFFFF' }
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif'
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # 1. Root folder
 New-Item -ItemType Directory -Path "$HOME\Desktop\laca-occupancy-frontend" -Force
 Set-Location "$HOME\Desktop\laca-occupancy-frontend"
