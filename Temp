@@ -1,3 +1,13 @@
+curl http://localhost:3001/api/occupancy/live-summary
+curl http://localhost:3001/api/occupancy/history
+curl http://localhost:3001/api/occupancy/history/AR.Cordoba
+
+
+
+
+
+
+
 // src/utils/doorMap.js
 
 module.exports = [
