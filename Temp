@@ -1,3 +1,44 @@
+--- a/server.js
++++ b/server.js
+@@ -12,12 +12,14 @@ const app = express();
+ // mount your routers under /api
+-app.use('/api', employeeRoutes);
+-
+-// Pune SSE (live occupancy)
+-app.use(
+-  '/api/live-occupancy',
+-  noBuffering,
+-  liveOccupancyRoutes
+-);
++app.use('/api', employeeRoutes);
+
++// Pune SSE (live occupancy)
++app.use(
++  '/api',
++  noBuffering,
++  liveOccupancyRoutes
++);
+
+ // Denver SSE (live occupancy)
+-app.use(
+-  '/api/live-occupancy/denver',
+-  noBuffering,
+-  occupancyDenverRoutes
+-);
++app.use(
++  '/api',
++  noBuffering,
++  occupancyDenverRoutes
++);
+
+
+
+
+
+
+
+
+
 C:\Users\W0024618\Desktop\swipeData\employee-ai-insights\routes\liveOccupancyRoutes.js
 
 
