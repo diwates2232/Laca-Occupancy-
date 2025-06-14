@@ -1,4 +1,11 @@
 {
+
+rm -rf node_modules package-lock.json
+
+
+
+
+
   "name": "laca-occupancy-frontend",
   "version": "0.1.0",
   "private": true,
