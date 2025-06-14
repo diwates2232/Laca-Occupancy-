@@ -1,3 +1,72 @@
+# 1. Root folder
+New-Item -ItemType Directory -Path "$HOME\Desktop\laca-occupancy-frontend" -Force
+Set-Location "$HOME\Desktop\laca-occupancy-frontend"
+
+# 2. Public area
+$publicDirs = @(
+  'public',
+  'public\assets',
+  'public\assets\fonts'
+)
+foreach ($d in $publicDirs) {
+  New-Item -ItemType Directory -Path $d -Force | Out-Null
+}
+New-Item -ItemType File -Path 'public\index.html' -Force | Out-Null
+New-Item -ItemType File -Path 'public\assets\logo.png' -Force | Out-Null
+
+# 3. src structure
+$srcDirs = @(
+  'src\api',
+  'src\assets\images',
+  'src\assets\styles',
+  'src\components',
+  'src\pages',
+  'src\routes',
+  'src\theme',
+  'src\utils'
+)
+foreach ($d in $srcDirs) {
+  New-Item -ItemType Directory -Path $d -Force | Out-Null
+}
+
+# 4. Create files
+$files = @(
+  'src\api\occupancy.service.js',
+  'src\assets\images\.gitkeep',
+  'src\assets\styles\.gitkeep',
+  'src\components\Header.jsx',
+  'src\components\Footer.jsx',
+  'src\components\SummaryCard.jsx',
+  'src\components\ChartCard.jsx',
+  'src\components\DataTable.jsx',
+  'src\components\LoadingSpinner.jsx',
+  'src\pages\Dashboard.jsx',
+  'src\pages\RealtimeDetails.jsx',
+  'src\pages\History.jsx',
+  'src\routes\AppRoutes.jsx',
+  'src\theme\westernUnionTheme.js',
+  'src\utils\dateHelpers.js',
+  'src\App.jsx',
+  'src\index.js',
+  'src\reportWebVitals.js',
+  '.env',
+  'package.json',
+  'README.md'
+)
+foreach ($f in $files) {
+  New-Item -ItemType File -Path $f -Force | Out-Null
+}
+
+Write-Host "Project structure created at $PWD"
+
+
+
+
+
+
+
+
+
 # 1. Create the root folder and cd into it
 mkdir -p ~/Desktop/laca-occupancy-frontend
 cd ~/Desktop/laca-occupancy-frontend
