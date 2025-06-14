@@ -1,3 +1,22 @@
+
+// src/services/occupancy.service.js
+
+export const partitionList = [
+  'Costa Rica',
+  'Mexico',
+  'Argentina',
+  'Panama',
+  'Peru',
+  'Brazil'
+];
+
+
+
+
+
+
+
+
 ERROR in ./src/pages/History.jsx 16:0-62
 Module not found: Error: Can't resolve '../services/occupancy.service' in 'C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages'
 
