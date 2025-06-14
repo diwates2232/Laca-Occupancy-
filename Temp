@@ -1,3 +1,400 @@
+// src/theme/westernUnionTheme.js
+export default {
+  palette: {
+    primary: {
+      main: '#FFC107',    // WU Yellow
+      contrastText: '#000'
+    },
+    secondary: {
+      main: '#000000',    // WU Black
+      contrastText: '#FFF'
+    },
+    background: {
+      default: '#FFFFFF',
+      paper: '#FFFDE7'
+    }
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h5: { fontWeight: 600 },
+    h6: { fontWeight: 500 }
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none'
+        }
+      }
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderColor: '#FFC107'
+        }
+      }
+    }
+  }
+};
+
+
+
+
+
+
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import App from './App';
+import reportWebVitals from './reportWebVitals';
+import westernUnionTheme from './theme/westernUnionTheme';
+
+const theme = createTheme(westernUnionTheme);
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <ThemeProvider theme={theme}>
+      <App />
+    </ThemeProvider>
+  </React.StrictMode>
+);
+
+reportWebVitals();
+
+
+
+
+
+
+import React, { useEffect, useState } from 'react';
+import { Container, Grid, CardActionArea, Typography, Box } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const navigate = useNavigate();
+
+  // update lastUpdate timestamp whenever data changes
+  useEffect(() => {
+    if (data) {
+      setLastUpdate(new Date().toLocaleTimeString());
+    }
+  }, [data]);
+
+  if (loading) return <LoadingSpinner />;
+  if (error)   return <Container>Error loading data</Container>;
+
+  const { today, realtime } = data;
+
+  const partitionData = Object.entries(realtime).map(([name, stats]) => ({
+    name, value: stats.total
+  }));
+
+  const partitionCards = Object.entries(realtime).map(([name, stats]) => ({
+    title: name,
+    stats: [
+      { label: 'Total',       value: stats.total },
+      { label: 'Employees',   value: stats.Employee },
+      { label: 'Contractors', value: stats.Contractor }
+    ]
+  }));
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2, mb: 4 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="h6">Today's Headcount</Typography>
+          <Typography variant="body2" color="textSecondary">
+            Last updated: {lastUpdate}
+          </Typography>
+        </Box>
+
+        <SummaryCard
+          title="Overview"
+          stats={[
+            { label: 'Total',       value: today.total },
+            { label: 'Employees',   value: today.Employee },
+            { label: 'Contractors', value: today.Contractor }
+          ]}
+        />
+
+        <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
+          Realtime by Partition
+        </Typography>
+        <ChartCard data={partitionData} />
+
+        <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
+          Quick Details
+        </Typography>
+        <Grid container spacing={2}>
+          {partitionCards.map(card => (
+            <Grid item xs={12} sm={6} md={4} key={card.title}>
+              <CardActionArea
+                onClick={() => navigate(`/realtime/${encodeURIComponent(card.title)}`)}
+              >
+                <SummaryCard title={card.title} stats={card.stats} />
+              </CardActionArea>
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+import React, { useEffect, useState } from 'react';
+import { Container, Typography, Button, Box } from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import DataTable from '../components/DataTable';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+const columns = [
+  { field: 'ObjectName1',  headerName: 'Name' },
+  { field: 'Door',         headerName: 'Door' },
+  { field: 'Swipe_Time',   headerName: 'Time' },
+  { field: 'PersonnelType',headerName: 'Type' },
+];
+
+export default function RealtimeDetails() {
+  const { partition } = useParams();
+  const navigate = useNavigate();
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState(null);
+
+  useEffect(() => {
+    if (data) {
+      setLastUpdate(new Date().toLocaleTimeString());
+    }
+  }, [data]);
+
+  if (loading) return <LoadingSpinner />;
+  if (error) {
+    return (
+      <Container>
+        <Typography color="error">Error loading data</Typography>
+      </Container>
+    );
+  }
+
+  const rows = data.details.filter(r => r.PartitionName2 === partition);
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2, mb: 4 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Button onClick={() => navigate(-1)} variant="outlined">
+            ← Back
+          </Button>
+          <Typography variant="h5">
+            {partition}
+          </Typography>
+          <Typography variant="body2" color="textSecondary">
+            Updated: {lastUpdate}
+          </Typography>
+        </Box>
+
+        <DataTable columns={columns} rows={rows} />
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Grid,
+  Button,
+  Typography,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
+  Breadcrumbs,
+  Link
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SummaryCard from '../components/SummaryCard';
+import { fetchHistory } from '../api/occupancy.service';
+
+export default function History() {
+  const [location, setLocation]         = useState('');
+  const [dateList, setDateList]         = useState([]);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [data, setData]                 = useState(null);
+  const [loading, setLoading]           = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setLoading(true);
+    fetchHistory(location || null).then(json => {
+      setData(json);
+      setLoading(false);
+      if (!location) {
+        setDateList(json.summaryByDate.map(d => d.date));
+      }
+    });
+  }, [location]);
+
+  if (loading) return <LoadingSpinner />;
+  if (!data)    return null;
+
+  // 1) Pick a date
+  if (!location && !selectedDate) {
+    return (
+      <>
+        <Header />
+        <Container sx={{ mt: 2 }}>
+          <Typography variant="h6">Select a date:</Typography>
+          <FormControl fullWidth sx={{ mt: 1 }}>
+            <InputLabel>Date</InputLabel>
+            <Select
+              value={selectedDate}
+              label="Date"
+              onChange={e => setSelectedDate(e.target.value)}
+            >
+              {dateList.map(d => (
+                <MenuItem key={d} value={d}>{d}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Container>
+        <Footer />
+      </>
+    );
+  }
+
+  // 2) Show partition summaries for that date
+  if (!location) {
+    const daySummary = data.summaryByDate.find(d => d.date === selectedDate);
+    const partitionCards = Object.entries(daySummary.partitions).map(([name, stats]) => ({
+      title: name,
+      stats: [
+        { label: 'Total',       value: stats.total },
+        { label: 'Employees',   value: stats.Employee },
+        { label: 'Contractors', value: stats.Contractor }
+      ],
+    }));
+
+    return (
+      <>
+        <Header />
+        <Container sx={{ mt: 2, mb: 4 }}>
+          <Breadcrumbs separator="›" aria-label="breadcrumb">
+            <Link component="button" onClick={() => setSelectedDate('')}>
+              Dates
+            </Link>
+            <Typography color="text.primary">{selectedDate}</Typography>
+          </Breadcrumbs>
+
+          <Typography variant="h5" sx={{ my: 2 }}>
+            Partitions on {selectedDate}
+          </Typography>
+
+          <Grid container spacing={2}>
+            {partitionCards.map(card => (
+              <Grid item xs={12} sm={6} md={4} key={card.title}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => setLocation(card.title)}
+                >
+                  <SummaryCard title={card.title} stats={card.stats} />
+                </Button>
+              </Grid>
+            ))}
+          </Grid>
+        </Container>
+        <Footer />
+      </>
+    );
+  }
+
+  // 3) Drilled into a partition: show its daily totals
+  const partitionSummary = data.summaryByDate.map(d => ({
+    title: d.date,
+    stats: [
+      { label: 'Total',       value: d.region.total },
+      { label: 'Employees',   value: d.region.Employee },
+      { label: 'Contractors', value: d.region.Contractor }
+    ]
+  }));
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2, mb: 4 }}>
+        <Breadcrumbs separator="›" aria-label="breadcrumb">
+          <Link component="button" onClick={() => setLocation('')}>
+            {selectedDate}
+          </Link>
+          <Typography color="text.primary">{location}</Typography>
+        </Breadcrumbs>
+
+        <Typography variant="h5" sx={{ my: 2 }}>
+          History for {location}
+        </Typography>
+
+        <Grid container spacing={2}>
+          {partitionSummary.map(card => (
+            <Grid item xs={12} sm={6} md={4} key={card.title}>
+              <SummaryCard title={card.title} stats={card.stats} />
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Now read all three page details and Give me more interactive and dynamic pages also make strickly Western union theme carefully ,
 
 
