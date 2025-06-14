@@ -1,95 +1,19 @@
+// src/index.js
 
-// src/services/occupancy.service.js
+import React from 'react';
+import ReactDOM from 'react-dom';
+import App from './App';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import westernUnionTheme from './theme/westernUnionTheme';
+import reportWebVitals from './reportWebVitals';
 
-export const partitionList = [
-  'Costa Rica',
-  'Mexico',
-  'Argentina',
-  'Panama',
-  'Peru',
-  'Brazil'
-];
+const theme = createTheme(westernUnionTheme);
 
+ReactDOM.render(
+  <ThemeProvider theme={theme}>
+    <App />
+  </ThemeProvider>,
+  document.getElementById('root')
+);
 
-
-
-
-
-
-
-ERROR in ./src/pages/History.jsx 16:0-62
-Module not found: Error: Can't resolve '../services/occupancy.service' in 'C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages'
-
-
-
-// src/pages/History.jsx
-
-import React, { useEffect, useState } from 'react';
-import { Container, MenuItem, Select, InputLabel, FormControl } from '@mui/material';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import LoadingSpinner from '../components/LoadingSpinner';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import DataTable from '../components/DataTable';
-import { fetchHistory } from '../api/occupancy.service';
-import { partitionList } from '../services/occupancy.service'; // or hardcode your list
-
-export default function History() {
-  const [location, setLocation] = useState('');
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    fetchHistory(location || null).then(json => {
-      setData(json);
-      setLoading(false);
-    });
-  }, [location]);
-
-  if (loading) return <LoadingSpinner />;
-  if (!data) return null;
-
-  // Prepare a line chart of total vs date
-  const chartData = data.summaryByDate.map(d => ({
-    name: d.date,
-    value: d.region.total
-  }));
-
-  // Columns for details
-  const columns = [
-    { field: 'ObjectName1', headerName: 'Name' },
-    { field: 'SwipeDate', headerName: 'Date' },
-    { field: 'PersonnelType', headerName: 'Type' },
-    // add more
-  ];
-
-  return (
-    <>
-      <Header />
-      <Container sx={{ mt: 2 }}>
-        <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel id="loc-label">Partition</InputLabel>
-          <Select
-            labelId="loc-label"
-            value={location}
-            label="Partition"
-            onChange={e => setLocation(e.target.value)}
-          >
-            <MenuItem value="">All LACA</MenuItem>
-            {partitionList.map(p => (
-              <MenuItem key={p} value={p}>{p}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <ChartCard title="Historical Total by Date" data={chartData} />
-
-        <DataTable columns={columns} rows={data.details} />
-      </Container>
-      <Footer />
-    </>
-  );
-}
-
+reportWebVitals();
