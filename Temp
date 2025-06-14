@@ -1,3 +1,130 @@
+// src/pages/Dashboard.jsx
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Typography,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Grid,
+  CardActionArea,
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (loading) return <LoadingSpinner />;
+  if (error)   return <Container>Error loading live data</Container>;
+
+  const { today, realtime } = data;
+
+  // chart data
+  const partitionData = Object.entries(realtime).map(([name, stats]) => ({
+    name,
+    value: stats.total
+  }));
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2, mb: 4 }}>
+
+        {/* Header */}
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="h5">LACA Headcount</Typography>
+          <Typography variant="body2" color="textSecondary">
+            Last updated: {lastUpdate}
+          </Typography>
+        </Box>
+
+        {/* Today's Totals */}
+        <SummaryCard
+          title="Today's Totals"
+          stats={[
+            { label: 'Total',       value: today.total },
+            { label: 'Employees',   value: today.Employee },
+            { label: 'Contractors', value: today.Contractor }
+          ]}
+        />
+
+        {/* Bar Chart */}
+        <Box mt={4}>
+          <Typography variant="h6" gutterBottom>Realtime by Partition</Typography>
+          <ChartCard title="" data={partitionData} />
+        </Box>
+
+        {/* Floor-wise Accordions */}
+        <Box mt={4}>
+          <Typography variant="h6" gutterBottom>Partition Detail (Floor-wise)</Typography>
+          {Object.entries(realtime).map(([partName, stats]) => (
+            <Accordion key={partName} sx={{ mb: 1 }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Box flexGrow={1}>
+                  <Typography variant="subtitle1">{partName}</Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    Total: {stats.total} — Emp: {stats.Employee}, Cont: {stats.Contractor}
+                  </Typography>
+                </Box>
+                {/* replaced nested Button with Typography */}
+                <Typography
+                  variant="button"
+                  sx={{ cursor: 'pointer', ml: 2 }}
+                  onClick={e => {
+                    e.stopPropagation();
+                    navigate(`/realtime/${encodeURIComponent(partName)}`);
+                  }}
+                >
+                  View All Swipes
+                </Typography>
+              </AccordionSummary>
+
+              <AccordionDetails>
+                <Grid container spacing={1}>
+                  {stats.floors && Object.entries(stats.floors).map(([floor, count]) => (
+                    <Grid item key={floor} xs={6} sm={4} md={3}>
+                      <SummaryCard
+                        title={floor}
+                        stats={[{ label: 'Count', value: count }]}
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              </AccordionDetails>
+            </Accordion>
+          ))}
+        </Box>
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
 Download the React DevTools for a better development experience: https://react.dev/link/react-devtools
 react-dom-client.development.js:2600 In HTML, <button> cannot be a descendant of <button>.
 This will cause a hydration error.
