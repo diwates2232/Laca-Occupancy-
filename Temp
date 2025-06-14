@@ -1,3 +1,164 @@
+// src/pages/History.jsx
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Grid,
+  Button,
+  Typography,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SummaryCard from '../components/SummaryCard';
+
+import { fetchHistory } from '../api/occupancy.service';
+
+export default function History() {
+  const [location, setLocation]     = useState('');     // partition name when drilled
+  const [dateList, setDateList]     = useState([]);     // all available dates
+  const [selectedDate, setSelectedDate] = useState(''); // date you picked
+  const [data, setData]             = useState(null);
+  const [loading, setLoading]       = useState(true);
+
+  const navigate = useNavigate();
+
+  // Fetch either global history or partition-specific history
+  useEffect(() => {
+    setLoading(true);
+    fetchHistory(location || null).then(json => {
+      setData(json);
+      setLoading(false);
+
+      // if top-level (all LACA), grab the list of dates
+      if (!location && json.summaryByDate) {
+        setDateList(json.summaryByDate.map(d => d.date));
+      }
+    });
+  }, [location]);
+
+  if (loading) return <LoadingSpinner />;
+  if (!data)    return null;
+
+  // 1) If we're at top-level and haven't picked a date yet → show date picker
+  if (!location && !selectedDate) {
+    return (
+      <>
+        <Header />
+        <Container sx={{ mt: 2 }}>
+          <Typography variant="h6">Select a date:</Typography>
+          <FormControl fullWidth sx={{ mt: 1 }}>
+            <InputLabel>Date</InputLabel>
+            <Select
+              value={selectedDate}
+              label="Date"
+              onChange={e => setSelectedDate(e.target.value)}
+            >
+              {dateList.map(d => (
+                <MenuItem key={d} value={d}>{d}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Container>
+        <Footer />
+      </>
+    );
+  }
+
+  // 2) Once a date is picked and still top-level → show cards per partition
+  if (!location) {
+    const daySummary = data.summaryByDate.find(d => d.date === selectedDate);
+
+    // Build a card for each partition
+    const partitionCards = Object.entries(daySummary.partitions).map(([name, stats]) => ({
+      title: name,
+      stats: [
+        { label: 'Total',       value: stats.total },
+        { label: 'Employees',   value: stats.Employee },
+        { label: 'Contractors', value: stats.Contractor }
+      ]
+    }));
+
+    return (
+      <>
+        <Header />
+        <Container sx={{ mt: 2 }}>
+          <Button onClick={() => setSelectedDate('')} variant="outlined">
+            ← Change date
+          </Button>
+
+          <Typography variant="h5" sx={{ my: 2 }}>
+            Summary for {selectedDate}
+          </Typography>
+
+          <Grid container spacing={2}>
+            {partitionCards.map(card => (
+              <Grid item xs={12} sm={6} md={4} key={card.title}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => setLocation(card.title)}
+                >
+                  <SummaryCard title={card.title} stats={card.stats} />
+                </Button>
+              </Grid>
+            ))}
+          </Grid>
+        </Container>
+        <Footer />
+      </>
+    );
+  }
+
+  // 3) If we're drilled into a partition → show its history summaryByDate
+  //    (for partition endpoints, summaryByDate is an array of { date, day, region })
+  const partitionSummary = data.summaryByDate.map(d => ({
+    title: d.date,
+    stats: [
+      { label: 'Total',       value: d.region.total },
+      { label: 'Employees',   value: d.region.Employee },
+      { label: 'Contractors', value: d.region.Contractor }
+    ]
+  }));
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2 }}>
+        <Button onClick={() => setLocation('')} variant="outlined">
+          ← Back to all dates
+        </Button>
+
+        <Typography variant="h5" sx={{ my: 2 }}>
+          History for {location}
+        </Typography>
+
+        <Grid container spacing={2}>
+          {partitionSummary.map(card => (
+            <Grid item xs={12} sm={6} md={4} key={card.title}>
+              <SummaryCard title={card.title} stats={card.stats} />
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
 C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\History.jsx
 
 
