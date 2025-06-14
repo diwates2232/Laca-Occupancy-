@@ -1,3 +1,205 @@
+// controllers/liveOccupancyController.js
+
+const { DateTime }     = require('luxon');
+const { sql, getPool } = require('../config/db');
+const doorZoneMap      = require('../data/doorZoneMap');
+const zoneFloorMap     = require('../data/zoneFloorMap');
+const ertMembers       = require('../data/puneErtMembers.json');
+
+const warnedKeys = new Set();
+
+function getTodayString() {
+  return DateTime.now()
+    .setZone('Asia/Kolkata')
+    .toFormat('yyyy-LL-dd');
+}
+
+function normalizeZoneKey(rawDoor, rawDir) { /* …unchanged… */ }
+function normalizePersonName(raw) { /* …unchanged… */ }
+function mapDoorToZone(rawDoor, rawDir) { /* …unchanged… */ }
+
+async function fetchNewEvents(since) {
+  const pool = await getPool();
+  const req  = pool.request();
+  req.input('since', sql.DateTime2, since);
+
+  const { recordset } = await req.query(`
+    WITH CombinedQuery AS (
+      SELECT
+        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
+        /* …other fields… */
+      FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLog] t1
+      /* …joins… */
+      WHERE
+        t1.MessageType       = 'CardAdmitted'
+        AND t1.PartitionName2 = 'APAC.Default'
+        -- <<< changed here from >= to >
+        AND DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) > @since
+    )
+    SELECT
+      LocaleMessageTime,
+      /* …convert/dateonly/swipe_time… */
+    FROM CombinedQuery
+    ORDER BY LocaleMessageTime ASC;
+  `);
+
+  return recordset;
+}
+
+// buildOccupancy, buildVisitedToday, etc. … all unchanged …
+
+exports.getLiveOccupancy = async (req, res) => {
+  try {
+    await getPool();
+    res.writeHead(200, {
+      'Content-Type':  'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection':    'keep-alive'
+    });
+    res.write('\n');
+
+    let lastSeen = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const events = [];
+
+    const push = async () => {
+      // prune events not from today
+      /* …unchanged… */
+
+      const fresh = await fetchNewEvents(lastSeen);
+      if (fresh.length) {
+        lastSeen = fresh[fresh.length - 1].LocaleMessageTime;
+        events.push(...fresh);
+      }
+
+      const occupancy  = await buildOccupancy(events);
+      const todayStats = buildVisitedToday(events);
+
+      occupancy.totalVisitedToday = todayStats.total;
+      occupancy.visitedToday      = { /* … */ };
+
+      // <<< keep the unique id + flush
+      const sid = Date.now();
+      res.write(`id: ${sid}\n`);
+      res.write(`data: ${JSON.stringify(occupancy)}\n\n`);
+      if (typeof res.flush === 'function') res.flush();
+    };
+
+    await push();
+    const timer = setInterval(push, 2000);
+    req.on('close', () => clearInterval(timer));
+  } catch (err) {
+    console.error('Live occupancy SSE error:', err);
+    if (!res.headersSent) res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+
+
+
+
+// controllers/denverLiveOccupancyController.js
+
+const { DateTime }       = require('luxon');
+const { denver }         = require('../config/siteConfig');
+const doorFloorMap       = require('../data/denverDoorFloorMap');
+const { monitoredDoors } = require('../data/strictDoorList');
+const sql                = require('mssql');
+const normalizeKey       = require('../data/normalizeKey');
+
+const warnedKeys = new Set();
+const normalizedMonitoredKeys = new Set(
+  Object.entries(monitoredDoors).map(([door, dir]) => normalizeKey(door, dir))
+);
+
+function mapDoorToFloor(rawDoor, rawDir) { /* …unchanged… */ }
+function stripTimeSuffix(doorRaw)      { /* …unchanged… */ }
+
+async function fetchNewEvents(since) {
+  const pool = await denver.poolPromise;
+  const req  = pool.request();
+  req.input('since', sql.DateTime2, since);
+
+  const { recordset } = await req.query(`
+    WITH CombinedQuery AS (
+      SELECT
+        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
+        /* …other fields… */
+      FROM ACVSUJournal_00010027.dbo.ACVSUJournalLog t1
+      /* …joins… */
+      WHERE
+        t1.MessageType   = 'CardAdmitted'
+        AND t1.ObjectName2 LIKE '%HQ%'
+        -- <<< changed here from >= to >
+        AND DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) > @since
+    )
+    SELECT
+      LocaleMessageTime,
+      /* …convert/dateonly/swipe_time… */
+    FROM CombinedQuery
+    ORDER BY LocaleMessageTime ASC;
+  `);
+
+  return recordset;
+}
+
+// isTodayInDenver, computeVisitedToday, buildOccupancyForToday, etc. … all unchanged …
+
+exports.getDenverLiveOccupancy = async (req, res) => {
+  try {
+    await denver.poolPromise;
+    res.writeHead(200, {
+      'Content-Type':  'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection':    'keep-alive'
+    });
+    res.write('\n');
+
+    let lastSeen = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const events = [];
+
+    const push = async () => {
+      let fresh = [];
+      try { fresh = await fetchNewEvents(lastSeen); }
+      catch (e) { console.error('❌ fetchNewEvents error:', e); }
+
+      if (fresh.length) {
+        lastSeen = fresh[fresh.length - 1].LocaleMessageTime;
+        events.push(...fresh);
+      }
+
+      let payload;
+      try { payload = buildOccupancyForToday(events, fresh); }
+      catch (e) {
+        console.error('❌ buildOccupancyForToday error:', e);
+        payload = { /* empty fallback */ };
+      }
+
+      // <<< keep the unique id + flush
+      const sid = Date.now();
+      res.write(`id: ${sid}\n`);
+      res.write(`data: ${JSON.stringify(payload)}\n\n`);
+      if (typeof res.flush === 'function') res.flush();
+    };
+
+    await push();
+    const timer = setInterval(push, 1000);
+    req.on('close', () => clearInterval(timer));
+  } catch (err) {
+    console.error('Denver SSE endpoint error:', err);
+    if (!res.headersSent) res.status(500).end();
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
 lets Check both file carefully and fix the issue carefully , dont make unnecessary changes in this file 
 
 
