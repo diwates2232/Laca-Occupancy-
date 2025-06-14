@@ -1,4 +1,87 @@
- {
+import React from 'react';
+import AppRoutes from './routes/AppRoutes';
+
+export default function App() {
+  return <AppRoutes />;
+}
+
+
+
+
+
+
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Dashboard from '../pages/Dashboard';
+import RealtimeDetails from '../pages/RealtimeDetails';
+import History from '../pages/History';
+
+export default function AppRoutes() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/realtime" element={<RealtimeDetails />} />
+        <Route path="/history" element={<History />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+
+
+
+
+import React from 'react';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import { Container } from '@mui/material';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+
+  if (loading) return <LoadingSpinner />;
+  if (error)   return <Container>Error loading data</Container>;
+
+  const { today, realtime } = data;
+  const partitionData = Object.entries(realtime).map(([name, stats]) => ({
+    name, value: stats.total
+  }));
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2 }}>
+        <SummaryCard
+          title="Today's Headcount"
+          stats={[
+            { label: 'Total', value: today.total },
+            { label: 'Employees', value: today.Employee },
+            { label: 'Contractors', value: today.Contractor }
+          ]}
+        />
+        <ChartCard title="Realtime by Partition" data={partitionData} />
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+{
    "name": "laca-occupancy-frontend",
    "version": "1.0.0",
 +  "proxy": "http://localhost:3001",
