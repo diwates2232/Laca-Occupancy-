@@ -1,13 +1,87 @@
-import React from 'react';
-import AppRoutes from './routes/AppRoutes';
+Chek rach file line by line and and find root cause debug line by line 
+Ui not render any data on ui also there is no error in console .
 
-export default function App() {
-  return <AppRoutes />;
+
+API end Points 
+http://localhost:3001/api/occupancy/live-summary
+http://localhost:3001/api/occupancy/history
+
+http://localhost:3001/api/occupancy/history/AR.Cordoba
+
+we can change partation name 
+
+
+our issue is data is not display on ui
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\api\occupancy.service.js
+
+
+// src/api/occupancy.service.js
+
+const BASE = process.env.REACT_APP_API_BASE || '';
+// const BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001/api/occupancy/live-summary';
+
+export async function fetchLiveSummary() {
+  const res = await fetch(`${BASE}/api/occupancy/live-summary`);
+  if (!res.ok) throw new Error(`Live summary fetch failed: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchHistory(location) {
+  const url = location
+    ? `${BASE}/api/occupancy/history/${encodeURIComponent(location)}`
+    : `${BASE}/api/occupancy/history`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`History fetch failed: ${res.status}`);
+  return res.json();
 }
 
 
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\hooks
 
 
+
+// src/hooks/useLiveOccupancy.js
+
+import { useState, useEffect, useRef } from 'react';
+import { fetchLiveSummary } from '../api/occupancy.service';
+
+export function useLiveOccupancy(interval = 1000) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const timer = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      try {
+        const json = await fetchLiveSummary();
+        if (!active) return;
+        setData(json);
+        setLoading(false);
+      } catch (e) {
+        if (!active) return;
+        setError(e);
+        setLoading(false);
+      }
+    }
+
+    load();
+    timer.current = setInterval(load, interval);
+
+    return () => {
+      active = false;
+      clearInterval(timer.current);
+    };
+  }, [interval]);
+
+  return { data, loading, error };
+}
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\routes
 
 
 import React from 'react';
@@ -32,6 +106,35 @@ export default function AppRoutes() {
 
 
 
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\services\occupancy.service.js
+
+
+    // src/services/occupancy.service.js
+
+    export const partitionList = [
+    'Costa Rica',
+    'Mexico',
+    'Argentina',
+    'Panama',
+    'Peru',
+    'Brazil'
+    ];
+
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\App.jsx
+
+import React from 'react';
+import AppRoutes from './routes/AppRoutes';
+
+export default function App() {
+  return <AppRoutes />;
+}
+
+
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\Dashboard.jsx
 
 import React from 'react';
 import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
@@ -75,36 +178,121 @@ export default function Dashboard() {
 
 
 
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\History.jsx
+
+// src/pages/History.jsx
+
+import React, { useEffect, useState } from 'react';
+import { Container, MenuItem, Select, InputLabel, FormControl } from '@mui/material';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import DataTable from '../components/DataTable';
+import { fetchHistory } from '../api/occupancy.service';
+import { partitionList } from '../services/occupancy.service'; // or hardcode your list
+
+export default function History() {
+  const [location, setLocation] = useState('');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchHistory(location || null).then(json => {
+      setData(json);
+      setLoading(false);
+    });
+  }, [location]);
+
+  if (loading) return <LoadingSpinner />;
+  if (!data) return null;
+
+  // Prepare a line chart of total vs date
+  const chartData = data.summaryByDate.map(d => ({
+    name: d.date,
+    value: d.region.total
+  }));
+
+  // Columns for details
+  const columns = [
+    { field: 'ObjectName1', headerName: 'Name' },
+    { field: 'SwipeDate', headerName: 'Date' },
+    { field: 'PersonnelType', headerName: 'Type' },
+    // add more
+  ];
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2 }}>
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel id="loc-label">Partition</InputLabel>
+          <Select
+            labelId="loc-label"
+            value={location}
+            label="Partition"
+            onChange={e => setLocation(e.target.value)}
+          >
+            <MenuItem value="">All LACA</MenuItem>
+            {partitionList.map(p => (
+              <MenuItem key={p} value={p}>{p}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <ChartCard title="Historical Total by Date" data={chartData} />
+
+        <DataTable columns={columns} rows={data.details} />
+      </Container>
+      <Footer />
+    </>
+  );
+}
 
 
 
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\RealtimeDetails.jsx
 
 
+// src/pages/RealtimeDetails.jsx
 
-{
-   "name": "laca-occupancy-frontend",
-   "version": "1.0.0",
-+  "proxy": "http://localhost:3001",
-   "private": true,
-   "scripts": {
-     "start": "react-scripts start",
-     // …
-   },
-   // …
- }
+import React from 'react';
+import { Container } from '@mui/material';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import DataTable from '../components/DataTable';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+const columns = [
+  { field: 'ObjectName1', headerName: 'Name' },
+  { field: 'Door', headerName: 'Door' },
+  { field: 'Swipe_Time', headerName: 'Time' },
+  { field: 'PersonnelType', headerName: 'Type' },
+  // add more as desired
+];
+
+export default function RealtimeDetails() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+
+  if (loading) return <LoadingSpinner />;
+  if (error)   return <Container><p>Error loading data</p></Container>;
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2 }}>
+        <DataTable columns={columns} rows={data.details} />
+      </Container>
+      <Footer />
+    </>
+  );
+}
 
 
-
-
-
-- const BASE = process.env.REACT_APP_API_BASE || '';
-+ const BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
-
-
-
-
-
-
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\index.js
 // src/reportWebVitals.js
 
 const reportWebVitals = onPerfEntry => {
@@ -124,125 +312,204 @@ export default reportWebVitals;
 
 
 
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\ChartCard.jsx
 
-
-
-
-// src/index.js
+// src/components/ChartCard.jsx
 
 import React from 'react';
-import { createRoot } from 'react-dom/client';
-import App from './App';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import westernUnionTheme from './theme/westernUnionTheme';
-import reportWebVitals from './reportWebVitals';
+import { Card, CardContent, Typography } from '@mui/material';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer
+} from 'recharts';
 
-const theme = createTheme(westernUnionTheme);
-
-const container = document.getElementById('root');
-const root = createRoot(container);
-root.render(
-  <ThemeProvider theme={theme}>
-    <App />
-  </ThemeProvider>
-);
-
-// Pass a function to log or send vitals; or omit to do nothing
-reportWebVitals(console.log);
-
-
-
-
-
-
-
-
-npm install web-vitals
-
-
-npm start
+export default function ChartCard({ title, data, dataKey = 'value' }) {
+  return (
+    <Card variant="outlined" sx={{ mb: 2, height: 300 }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>{title}</Typography>
+        <ResponsiveContainer width="100%" height="90%">
+          <BarChart data={data}>
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey={dataKey} fill="#FFC107" />
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
 
 
 
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\DataTable.jsx
 
 
-
-
-
-
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width,initial-scale=1,shrink-to-fit=no"
-    />
-    <meta name="theme-color" content="#000000" />
-    <title>Western Union • LACA Occupancy Dashboard</title>
-    <!-- Favicon (optional) -->
-    <link rel="icon" href="%PUBLIC_URL%/assets/logo.png" />
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-    <!--
-      If you ever need to insert a script before React mounts,
-      you can do it here.
-    -->
-  </body>
-</html>
-
-
-
-
-
-
-// src/index.js
+// src/components/DataTable.jsx
 
 import React from 'react';
-import { createRoot } from 'react-dom/client';
-import App from './App';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import westernUnionTheme from './theme/westernUnionTheme';
-import reportWebVitals from './reportWebVitals';
+import {
+  Table, TableHead, TableBody, TableRow, TableCell, Paper, TableContainer
+} from '@mui/material';
 
-const theme = createTheme(westernUnionTheme);
+export default function DataTable({ columns, rows }) {
+  return (
+    <TableContainer component={Paper} sx={{ mt: 2 }}>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            {columns.map(c => <TableCell key={c.field}>{c.headerName}</TableCell>)}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows.map((row, i) => (
+            <TableRow key={i}>
+              {columns.map(c => (
+                <TableCell key={c.field}>{row[c.field]}</TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+}
 
-// React 18: createRoot instead of ReactDOM.render
-const container = document.getElementById('root');
-const root = createRoot(container);
-root.render(
-  <ThemeProvider theme={theme}>
-    <App />
-  </ThemeProvider>
-);
-
-// optional performance measuring
-reportWebVitals();
 
 
 
 
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\Footer.jsx
 
 
-
-// src/index.js
+// src/components/Footer.jsx
 
 import React from 'react';
-import ReactDOM from 'react-dom';
-import App from './App';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import westernUnionTheme from './theme/westernUnionTheme';
-import reportWebVitals from './reportWebVitals';
+import { Box, Typography } from '@mui/material';
 
-const theme = createTheme(westernUnionTheme);
+export default function Footer() {
+  return (
+    <Box component="footer" p={2} textAlign="center">
+      <Typography variant="body2" color="textSecondary">
+        © {new Date().getFullYear()} Western Union. All rights reserved.
+      </Typography>
+    </Box>
+  );
+}
 
-ReactDOM.render(
-  <ThemeProvider theme={theme}>
-    <App />
-  </ThemeProvider>,
-  document.getElementById('root')
-);
 
-reportWebVitals();
+
+
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\Header.jsx
+
+
+// src/components/Header.jsx
+
+import React from 'react';
+import { AppBar, Toolbar, Typography } from '@mui/material';
+
+export default function Header() {
+  return (
+    <AppBar position="static" color="primary">
+      <Toolbar>
+        <Typography variant="h6" component="div">
+          Western Union • LACA Occupancy
+        </Typography>
+      </Toolbar>
+    </AppBar>
+  );
+}
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\LoadingSpinner.jsx
+
+// src/components/LoadingSpinner.jsx
+
+import React from 'react';
+import { CircularProgress, Box } from '@mui/material';
+
+export default function LoadingSpinner() {
+  return (
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      height="100%"
+    >
+      <CircularProgress />
+    </Box>
+  );
+}
+
+
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\SummaryCard.jsx
+
+
+// src/components/SummaryCard.jsx
+
+import React from 'react';
+import { Card, CardContent, Typography, Grid } from '@mui/material';
+
+export default function SummaryCard({ title, stats }) {
+  return (
+    <Card variant="outlined" sx={{ mb: 2 }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>{title}</Typography>
+        <Grid container spacing={2}>
+          {stats.map(({ label, value }) => (
+            <Grid item key={label}>
+              <Typography variant="subtitle1">{label}</Typography>
+              <Typography variant="h5">{value}</Typography>
+            </Grid>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
