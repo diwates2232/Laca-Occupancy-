@@ -1,3 +1,304 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Dashboard from '../pages/Dashboard';
+import RealtimeDetails from '../pages/RealtimeDetails';
+import History from '../pages/History';
+
+export default function AppRoutes() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+-       <Route path="/realtime" element={<RealtimeDetails />} />
++       <Route path="/realtime/:partition" element={<RealtimeDetails />} />
+        <Route path="/history" element={<History />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+
+
+
+
+
+
+
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
++ import { useNavigate } from 'react-router-dom';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import { Container, Grid, CardActionArea } from '@mui/material';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
++ const navigate = useNavigate();
+
+  if (loading) return <LoadingSpinner />;
+  if (error)   return <Container>Error loading data</Container>;
+
+  // global today totals
+  const { today, realtime } = data;
+
+- const partitionData = Object.entries(realtime).map(([name, stats]) => ({
+-   name, value: stats.total
+- }));
++ // for bar chart
++ const partitionData = Object.entries(realtime).map(([name, stats]) => ({
++   name, value: stats.total
++ }));
++ // for cards
++ const partitionCards = Object.entries(realtime).map(([name, stats]) => ({
++   title: name,
++   stats: [
++     { label: 'Total',      value: stats.total },
++     { label: 'Employees',  value: stats.Employee },
++     { label: 'Contractors',value: stats.Contractor }
++   ]
++ }));
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2 }}>
+        {/* Today’s headcount */}
+        <SummaryCard
+          title="Today's Headcount"
+          stats={[
+            { label: 'Total',       value: today.total },
+            { label: 'Employees',   value: today.Employee },
+            { label: 'Contractors', value: today.Contractor }
+          ]}
+        />
+
+        {/* Bar chart across partitions */}
+        <ChartCard title="Realtime by Partition" data={partitionData} />
+
++       {/* Quick-cards for each partition; click into details */}
++       <Grid container spacing={2} sx={{ mt: 1 }}>
++         {partitionCards.map(card => (
++           <Grid item xs={12} sm={6} md={4} key={card.title}>
++             <CardActionArea
++               onClick={() => navigate(`/realtime/${encodeURIComponent(card.title)}`)}
++             >
++               <SummaryCard title={card.title} stats={card.stats} />
++             </CardActionArea>
++           </Grid>
++         ))}
++       </Grid>
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+-import { Container } from '@mui/material';
++import { Container, Typography, Button } from '@mui/material';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import DataTable from '../components/DataTable';
++import { useParams, useNavigate } from 'react-router-dom';
+
+const columns = [
+  { field: 'ObjectName1',  headerName: 'Name' },
+  { field: 'Door',         headerName: 'Door' },
+  { field: 'Swipe_Time',   headerName: 'Time' },
+  { field: 'PersonnelType',headerName: 'Type' },
+  // add more as desired
+];
+
+export default function RealtimeDetails() {
+  const { partition } = useParams();            // ← new
+  const navigate = useNavigate();
+  const { data, loading, error } = useLiveOccupancy(1000);
+
+  if (loading) return <LoadingSpinner />;
+  if (error)   return (
+    <Container>
+      <Typography color="error">Error loading data</Typography>
+    </Container>
+  );
+
+  // filter all swipes to just this partition
+  const rows = data.details.filter(
+    r => r.PartitionName2 === partition
+  );
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2 }}>
++       <Button onClick={() => navigate(-1)} variant="outlined">
++         ← Back to dashboard
++       </Button>
++       <Typography variant="h5" sx={{ my: 2 }}>
++         Realtime details for “{partition}”
++       </Typography>
+
+      <DataTable columns={columns} rows={rows} />
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
+import React, { useEffect, useState } from 'react';
+-import { Container, MenuItem, Select, InputLabel, FormControl } from '@mui/material';
++import { Container, MenuItem, Select, InputLabel, FormControl, Grid, Button, Typography } from '@mui/material';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+-import DataTable from '../components/DataTable';
+-import { fetchHistory } from '../api/occupancy.service';
+-import { partitionList } from '../services/occupancy.service';
++import { fetchHistory } from '../api/occupancy.service';
++import { useNavigate } from 'react-router-dom';
+
+export default function History() {
+  const [location, setLocation]     = useState('');     // for partition-specific history
+  const [dateList, setDateList]     = useState([]);
+  const [selectedDate, setSelected] = useState('');
+  const [data, setData]             = useState(null);
+  const [loading, setLoading]       = useState(true);
++ const navigate = useNavigate();
+
+  // fetch either global history or partition history
+  useEffect(() => {
+    setLoading(true);
+    fetchHistory(location || null).then(json => {
+      setData(json);
+      setLoading(false);
++     // if top-level (all LACA), capture dateList
++     if (!location) {
++       setDateList(json.summaryByDate.map(d => d.date));
++     }
+    });
+  }, [location]);
+
+  if (loading) return <LoadingSpinner />;
+  if (!data)    return null;
+
++ // when location==’’: user must pick a date first
++ if (!location && !selectedDate) {
++   return (
++     <>
++       <Header />
++       <Container sx={{ mt: 2 }}>
++         <Typography variant="h6">Select a date:</Typography>
++         <FormControl fullWidth sx={{ mt: 1 }}>
++           <InputLabel>Date</InputLabel>
++           <Select
++             value={selectedDate}
++             label="Date"
++             onChange={e => setSelected(e.target.value)}
++           >
++             {dateList.map(d => (
++               <MenuItem key={d} value={d}>{d}</MenuItem>
++             ))}
++           </Select>
++         </FormControl>
++       </Container>
++       <Footer />
++     </>
++   );
++ }
+
++ // after picking a date, find that summary
++ const daySummary = data.summaryByDate.find(d => d.date === selectedDate);
+
++ // build cards for each partition in that day
++ const partitionCards = Object.entries(daySummary.partitions).map(([name, stats]) => ({
++   title: name,
++   stats: [
++     { label: 'Total',       value: stats.total },
++     { label: 'Employees',   value: stats.Employee },
++     { label: 'Contractors', value: stats.Contractor }
++   ]
++ }));
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2 }}>
++       {location ? (
++         <Button onClick={() => setLocation('')} variant="outlined">
++           ← Back to all dates
++         </Button>
++       ) : (
++         <Button onClick={() => setSelected('')} variant="outlined">
++           ← Change date
++         </Button>
++       )}
+
++       <Typography variant="h5" sx={{ my: 2 }}>
++         {location
++           ? `History for ${location}`
++           : `Summary for ${selectedDate}`
++         }
++       </Typography>
+
++       <Grid container spacing={2}>
++         {partitionCards.map(card => (
++           <Grid item xs={12} sm={6} md={4} key={card.title}>
++             <Button
++               fullWidth
++               variant="outlined"
++               onClick={() => {
++                 // if already in partition view, do nothing
++                 if (!location) setLocation(card.title);
++               }}
++             >
++               <SummaryCard title={card.title} stats={card.stats} />
++             </Button>
++           </Grid>
++         ))}
++       </Grid>
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 http://localhost:3001/api/occupancy/live-summary
 this api need to fetch every seconds carefuly
 
