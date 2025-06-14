@@ -1,3 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,shrink-to-fit=no"
+    />
+    <meta name="theme-color" content="#000000" />
+    <title>Western Union • LACA Occupancy Dashboard</title>
+    <!-- Favicon (optional) -->
+    <link rel="icon" href="%PUBLIC_URL%/assets/logo.png" />
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!--
+      If you ever need to insert a script before React mounts,
+      you can do it here.
+    -->
+  </body>
+</html>
+
+
+
+
+
+
 // src/index.js
 
 import React from 'react';
