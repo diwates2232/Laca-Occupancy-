@@ -1,3 +1,120 @@
+// src/controllers/occupancy.controller.js
+
+const service = require('../services/occupancy.service');
+const doorMap = require('../utils/doorMap');
+
+/**
+ * Returns true if this PersonnelType counts as Employee.
+ */
+function isEmployeeType(pt) {
+  return pt === 'Employee'
+      || pt === 'Terminated Employee'
+      || pt === 'Terminated Personnel';
+}
+
+/**
+ * True only if this is the Temp Badge category.
+ */
+function isTempBadgeType(pt) {
+  return pt === 'Temp Badge';
+}
+
+/**
+ * Look up floor for a given record by matching door + direction.
+ * Returns the floor string or null if unmapped.
+ */
+function lookupFloor(partition, door, direction) {
+  const entry = doorMap.find(d =>
+    d.partition === partition && d.door === door
+  );
+  if (!entry) {
+    console.warn(`Unmapped door: ${partition} / ${door}`);
+    return null;
+  }
+  return direction === 'InDirection'
+    ? entry.inDirectionFloor
+    : entry.outDirectionFloor;
+}
+
+/**
+ * GET /api/occupancy/live-summary
+ */
+exports.getLiveSummary = async (req, res) => {
+  try {
+    const swipes = await service.fetchLiveOccupancy();
+
+    // TODAY’S HEADCOUNT: dedupe on PersonGUID by FIRST swipe of today
+    const firstByPerson = {};
+    swipes.forEach(r => {
+      const prev = firstByPerson[r.PersonGUID];
+      const t = new Date(r.LocaleMessageTime).getTime();
+      if (!prev || t < new Date(prev.LocaleMessageTime).getTime()) {
+        firstByPerson[r.PersonGUID] = r;
+      }
+    });
+    const todayRecs = Object.values(firstByPerson);
+
+    const todayCounts = { total: 0, Employee: 0, Contractor: 0 };
+    todayRecs.forEach(r => {
+      todayCounts.total++;
+      if (isEmployeeType(r.PersonnelType)) todayCounts.Employee++;
+      else todayCounts.Contractor++;
+    });
+
+    // REAL-TIME HEADCOUNT: dedupe on PersonGUID by LAST swipe, then count only InDirection
+    const lastByPerson = {};
+    swipes.forEach(r => {
+      const prev = lastByPerson[r.PersonGUID];
+      const t = new Date(r.LocaleMessageTime).getTime();
+      if (!prev || t > new Date(prev.LocaleMessageTime).getTime()) {
+        lastByPerson[r.PersonGUID] = r;
+      }
+    });
+
+    // Build per-partition → per-floor counts
+    const realtime = {}; // { partition: { total, Employee, Contractor, floors: { floorName: count } } }
+    Object.values(lastByPerson).forEach(r => {
+      if (r.Direction !== 'InDirection') {
+        // OutDirection: not currently in office
+        return;
+      }
+
+      const p = r.PartitionName2;
+      realtime[p] = realtime[p] || { total: 0, Employee: 0, Contractor: 0, floors: {} };
+
+      realtime[p].total++;
+      if (isEmployeeType(r.PersonnelType)) realtime[p].Employee++;
+      else if (isTempBadgeType(r.PersonnelType)) realtime[p].Contractor++;
+      else realtime[p].Contractor++;
+
+      const floor = lookupFloor(p, r.Door, r.Direction) || 'Unmapped';
+      realtime[p].floors[floor] = (realtime[p].floors[floor] || 0) + 1;
+    });
+
+    return res.json({
+      success: true,
+      today: todayCounts,
+      realtime,
+      details: Object.values(lastByPerson)
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Live summary failed' });
+  }
+};
+
+// … your existing getHistoricalOccupancy unchanged …
+
+
+
+
+
+
+
+
+
+
+
 This is my Current file And Give me Updated file carefully.
 as per logic .
 
