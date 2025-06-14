@@ -1,3 +1,131 @@
+// src/pages/Dashboard.jsx
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Grid,
+  Box,
+  Typography,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Button,
+  CardActionArea,
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const navigate = useNavigate();
+
+  // update last‐update timestamp
+  useEffect(() => {
+    if (data) {
+      setLastUpdate(new Date().toLocaleTimeString());
+    }
+  }, [data]);
+
+  if (loading) return <LoadingSpinner />;
+  if (error)   return <Container>Error loading live data</Container>;
+
+  const { today, realtime } = data;
+
+  // prepare bar‐chart data
+  const partitionData = Object.entries(realtime).map(([name, stats]) => ({
+    name,
+    value: stats.total
+  }));
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2, mb: 4 }}>
+
+        {/* Top Row: Title + Last Updated */}
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="h5">LACA Headcount</Typography>
+          <Typography variant="body2" color="textSecondary">
+            Last updated: {lastUpdate}
+          </Typography>
+        </Box>
+
+        {/* Today's Totals */}
+        <SummaryCard
+          title="Today's Totals"
+          stats={[
+            { label: 'Total',       value: today.total },
+            { label: 'Employees',   value: today.Employee },
+            { label: 'Contractors', value: today.Contractor }
+          ]}
+        />
+
+        {/* Realtime Partition Chart */}
+        <Box mt={4}>
+          <Typography variant="h6" gutterBottom>Realtime by Partition</Typography>
+          <ChartCard data={partitionData} />
+        </Box>
+
+        {/* Floor‐wise Accordions per Partition */}
+        <Box mt={4}>
+          <Typography variant="h6" gutterBottom>Partition Detail (Floor-wise)</Typography>
+          {Object.entries(realtime).map(([partName, stats]) => (
+            <Accordion key={partName} sx={{ mb: 1 }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Box flexGrow={1}>
+                  <Typography variant="subtitle1">{partName}</Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    Total: {stats.total} — Emp: {stats.Employee}, Cont: {stats.Contractor}
+                  </Typography>
+                </Box>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={e => {
+                    e.stopPropagation();
+                    navigate(`/realtime/${encodeURIComponent(partName)}`);
+                  }}
+                >
+                  View All Swipes
+                </Button>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Grid container spacing={1}>
+                  {Object.entries(stats.floors || {}).map(([floor, count]) => (
+                    <Grid item key={floor} xs={6} sm={4} md={3}>
+                      <SummaryCard
+                        title={floor}
+                        stats={[{ label: 'Count', value: count }]}
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              </AccordionDetails>
+            </Accordion>
+          ))}
+        </Box>
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
 below are the API breakdown . Expected result for Ui like initially display 
 LACA headcount (  "today": {
     "total": 14,
