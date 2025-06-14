@@ -1,3 +1,270 @@
+// src/App.js
+import React, { useEffect, useReducer } from 'react';
+import { Container, Navbar, Nav } from 'react-bootstrap';
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { FaSun } from 'react-icons/fa';
+
+import ZoneDetailsTable from './components/ZoneDetailsTable';
+import DashboardHome    from './pages/DashboardHome';
+import ErtPage          from './pages/ErtPage';
+
+import './App.css';
+
+// 1) Define initial state & reducer
+const initialState = {
+  summaryData: [],
+  detailsData: {},
+  floorData: [],
+  zoneBreakdown: [],
+  personnelBreakdown: [],
+  totalVisitedToday: 0,
+  personnelSummary: { employees: 0, contractors: 0 },
+  visitedToday: { employees: 0, contractors: 0, total: 0 },
+  ertStatus: {}
+};
+
+function reducer(state, { type, payload }) {
+  switch (type) {
+    case 'UPDATE_ALL':
+      return {
+        summaryData: Array.isArray(payload.summary) ? payload.summary : state.summaryData,
+        detailsData: payload.details || state.detailsData,
+        floorData: Array.isArray(payload.floorBreakdown) ? payload.floorBreakdown : state.floorData,
+        zoneBreakdown: Array.isArray(payload.zoneBreakdown) ? payload.zoneBreakdown : state.zoneBreakdown,
+        personnelBreakdown: Array.isArray(payload.personnelBreakdown) ? payload.personnelBreakdown : state.personnelBreakdown,
+        totalVisitedToday: typeof payload.totalVisitedToday === 'number' ? payload.totalVisitedToday : state.totalVisitedToday,
+        personnelSummary: payload.personnelSummary || state.personnelSummary,
+        visitedToday: payload.visitedToday || state.visitedToday,
+        ertStatus: payload.ertStatus || state.ertStatus
+      };
+    default:
+      return state;
+  }
+}
+
+function App() {
+  const location = useLocation();
+  const headerText = location.pathname === '/ert'
+    ? 'Emergency Response Team — Western Union Pune'
+    : 'Live Occupancy — Western Union Pune';
+
+  // 2) useReducer instead of many useStates
+  const [state, dispatch] = useReducer(reducer, initialState);
+
+  useEffect(() => {
+    const es = new EventSource('http://localhost:5000/api/live-occupancy');
+    es.onmessage = e => {
+      try {
+        const p = JSON.parse(e.data);
+        dispatch({ type: 'UPDATE_ALL', payload: p });
+      } catch {
+        console.error('SSE parse error');
+      }
+    };
+    es.onerror = err => {
+      console.error('SSE error', err);
+      es.close();
+    };
+    return () => es.close();
+  }, []);
+
+  return (
+    <>
+      <Navbar bg="dark" variant="dark" expand="lg" className="px-4">
+        <Navbar.Brand as={Link} to="/" className="wu-brand">{headerText}</Navbar.Brand>
+        <Nav className="ms-auto align-items-center">
+          {/* ... */}
+        </Nav>
+      </Navbar>
+
+      <Container fluid className="mt-2">
+        <Routes>
+          <Route path="/" element={
+            <DashboardHome
+              {...state}
+            />
+          }/>
+          <Route path="/details" element={<ZoneDetailsTable data={state.detailsData} />} />
+          <Route path="/ert"     element={<ErtPage ertStatus={state.ertStatus} />} />
+        </Routes>
+      </Container>
+    </>
+  );
+}
+
+export default function WrappedApp() {
+  return (
+    <BrowserRouter>
+      <div className="dark-theme">
+        <App />
+      </div>
+    </BrowserRouter>
+  );
+}
+
+
+
+
+
+
+
+// src/pages/DashboardHome.jsx
+import React, { useMemo } from 'react';
+import { Container, Row, Col } from 'react-bootstrap';
+
+import SummaryCards         from '../components/SummaryCards';
+import FloorOccupancyChart  from '../components/FloorOccupancyChart';
+import SummaryChart         from '../components/SummaryChart';
+import PersonnelDonutChart  from '../components/PersonnelDonutChart';
+
+export default function DashboardHome({
+  summaryData,
+  floorData,
+  personnelBreakdown,
+  personnelSummary,
+  totalVisitedToday,
+  visitedToday,
+  ertStatus
+}) {
+  const { employees = 0, contractors = 0 } = personnelSummary;
+  const totalOccupancy = employees + contractors;
+
+  // only re-create chartData when personnelBreakdown changes
+  const chartData = useMemo(() => {
+    return (personnelBreakdown || []).map(({ personnelType, count }) => ({
+      personnelType,
+      count
+    }));
+  }, [personnelBreakdown]);
+
+  return (
+    <Container fluid className="py-4">
+      <SummaryCards
+        totalOccupancy={totalOccupancy}
+        employeeCount={employees}
+        contractorCount={contractors}
+        totalVisitedToday={totalVisitedToday}
+        employeesVisitedToday={visitedToday.employees}
+        contractorsVisitedToday={visitedToday.contractors}
+      />
+
+      <Row className="g-4">
+        <Col md={4}>
+          <FloorOccupancyChart data={floorData} />
+        </Col>
+        <Col md={4}>
+          <SummaryChart summary={summaryData} />
+        </Col>
+        <Col md={4}>
+          <PersonnelDonutChart data={chartData} />
+        </Col>
+      </Row>
+
+      {/* footer omitted for brevity */}
+    </Container>
+  );
+}
+
+
+
+
+
+
+
+// src/components/ZoneDetailsTable.jsx
+import React, { useState, useMemo } from 'react';
+import './ZoneDetailsTable.css';
+
+function ZoneDetailsTable({ data = {} }) {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // 1) sort once per `data` change
+  const sortedEntries = useMemo(() => {
+    return Object.entries(data)
+      .sort(([, a], [, b]) => b.length - a.length);
+  }, [data]);
+
+  // 2) filter predicate depends on searchTerm only
+  const lowerTerm = searchTerm.trim().toLowerCase();
+  const matchesSearch = emp => emp.ObjectName1.toLowerCase().includes(lowerTerm);
+
+  if (!sortedEntries.length) {
+    return <p>No zone detail data available.</p>;
+  }
+
+  return (
+    <div className="zone-cards">
+      <div style={{ marginBottom: '1rem', textAlign: 'right' }}>
+        <input
+          type="text"
+          placeholder="Search employee..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}
+        />
+      </div>
+
+      {sortedEntries.map(([zone, emps]) => {
+        const filtered = lowerTerm
+          ? emps.filter(matchesSearch)
+          : emps;
+
+        if (!filtered.length) return null;
+        return (
+          <div key={zone} className="zone-card">
+            <div className="zone-header">
+              <h3>{zone}</h3>
+              <span className="zone-badge">Total: {filtered.length}</span>
+            </div>
+            <table className="zone-table">
+              {/* ... table head ... */}
+              <tbody>
+                {filtered.map((emp, i) => (
+                  <tr key={`${emp.EmployeeID}-${i}`}>
+                    <td>{emp.ObjectName1}</td>
+                    <td>{emp.Swipe_Time}</td>
+                    <td>{emp.PersonnelType}</td>
+                    <td>{emp.door}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// 3) memoize entire component
+export default React.memo(ZoneDetailsTable);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 First Check Below Files line by line and debug the issue .if not silve then i will share you components details also
 
 C:\Users\W0024618\Desktop\swipeData\client\src\App.js
