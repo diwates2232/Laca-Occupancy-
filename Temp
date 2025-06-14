@@ -1,3 +1,7 @@
+npm install react-scripts@5.0.1 --save
+
+
+
 Remove-Item -Recurse -Force node_modules
 Remove-Item -Force package-lock.json
 
