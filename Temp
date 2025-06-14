@@ -1,551 +1,189 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Dashboard from '../pages/Dashboard';
-import RealtimeDetails from '../pages/RealtimeDetails';
-import History from '../pages/History';
-
-export default function AppRoutes() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
--       <Route path="/realtime" element={<RealtimeDetails />} />
-+       <Route path="/realtime/:partition" element={<RealtimeDetails />} />
-        <Route path="/history" element={<History />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
-  );
-}
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\History.jsx
 
 
-
-
-
-
-
-
-import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
-+ import { useNavigate } from 'react-router-dom';
-import LoadingSpinner from '../components/LoadingSpinner';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import { Container, Grid, CardActionArea } from '@mui/material';
-
-export default function Dashboard() {
-  const { data, loading, error } = useLiveOccupancy(1000);
-+ const navigate = useNavigate();
-
-  if (loading) return <LoadingSpinner />;
-  if (error)   return <Container>Error loading data</Container>;
-
-  // global today totals
-  const { today, realtime } = data;
-
-- const partitionData = Object.entries(realtime).map(([name, stats]) => ({
--   name, value: stats.total
-- }));
-+ // for bar chart
-+ const partitionData = Object.entries(realtime).map(([name, stats]) => ({
-+   name, value: stats.total
-+ }));
-+ // for cards
-+ const partitionCards = Object.entries(realtime).map(([name, stats]) => ({
-+   title: name,
-+   stats: [
-+     { label: 'Total',      value: stats.total },
-+     { label: 'Employees',  value: stats.Employee },
-+     { label: 'Contractors',value: stats.Contractor }
-+   ]
-+ }));
-
-  return (
-    <>
-      <Header />
-      <Container sx={{ mt: 2 }}>
-        {/* Today’s headcount */}
-        <SummaryCard
-          title="Today's Headcount"
-          stats={[
-            { label: 'Total',       value: today.total },
-            { label: 'Employees',   value: today.Employee },
-            { label: 'Contractors', value: today.Contractor }
-          ]}
-        />
-
-        {/* Bar chart across partitions */}
-        <ChartCard title="Realtime by Partition" data={partitionData} />
-
-+       {/* Quick-cards for each partition; click into details */}
-+       <Grid container spacing={2} sx={{ mt: 1 }}>
-+         {partitionCards.map(card => (
-+           <Grid item xs={12} sm={6} md={4} key={card.title}>
-+             <CardActionArea
-+               onClick={() => navigate(`/realtime/${encodeURIComponent(card.title)}`)}
-+             >
-+               <SummaryCard title={card.title} stats={card.stats} />
-+             </CardActionArea>
-+           </Grid>
-+         ))}
-+       </Grid>
-      </Container>
-      <Footer />
-    </>
-  );
-}
+Uncaught runtime errors:
+×
+ERROR
+selectedDate is not defined
+ReferenceError: selectedDate is not defined
+    at History (http://localhost:3000/main.e3d27d41a2c8a2d1f181.hot-update.js:80:21)
+    at react-stack-bottom-frame (http://localhost:3000/static/js/bundle.js:60418:18)
+    at renderWithHooks (http://localhost:3000/static/js/bundle.js:50628:20)
+    at updateFunctionComponent (http://localhost:3000/static/js/bundle.js:52321:17)
+    at beginWork (http://localhost:3000/static/js/bundle.js:52907:16)
+    at runWithFiberInDEV (http://localhost:3000/static/js/bundle.js:48399:68)
+    at performUnitOfWork (http://localhost:3000/static/js/bundle.js:54980:93)
+    at workLoopSync (http://localhost:3000/static/js/bundle.js:54873:38)
+    at renderRootSync (http://localhost:3000/static/js/bundle.js:54857:7)
+    at performWorkOnRoot (http://localhost:3000/static/js/bundle.js:54621:42)
+ERROR
+setDateList is not defined
+ReferenceError: setDateList is not defined
+    at http://localhost:3000/main.e3d27d41a2c8a2d1f181.hot-update.js:68:9
+ERROR
+setDateList is not defined
+ReferenceError: setDateList is not defined
+    at http://localhost:3000/main.e3d27d41a2c8a2d1f181.hot-update.js:68:9
 
 
 
+Read all files carefully and solve this isuse carefully
 
-
-
-
-
-import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
--import { Container } from '@mui/material';
-+import { Container, Typography, Button } from '@mui/material';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import LoadingSpinner from '../components/LoadingSpinner';
-import DataTable from '../components/DataTable';
-+import { useParams, useNavigate } from 'react-router-dom';
-
-const columns = [
-  { field: 'ObjectName1',  headerName: 'Name' },
-  { field: 'Door',         headerName: 'Door' },
-  { field: 'Swipe_Time',   headerName: 'Time' },
-  { field: 'PersonnelType',headerName: 'Type' },
-  // add more as desired
-];
-
-export default function RealtimeDetails() {
-  const { partition } = useParams();            // ← new
-  const navigate = useNavigate();
-  const { data, loading, error } = useLiveOccupancy(1000);
-
-  if (loading) return <LoadingSpinner />;
-  if (error)   return (
-    <Container>
-      <Typography color="error">Error loading data</Typography>
-    </Container>
-  );
-
-  // filter all swipes to just this partition
-  const rows = data.details.filter(
-    r => r.PartitionName2 === partition
-  );
-
-  return (
-    <>
-      <Header />
-      <Container sx={{ mt: 2 }}>
-+       <Button onClick={() => navigate(-1)} variant="outlined">
-+         ← Back to dashboard
-+       </Button>
-+       <Typography variant="h5" sx={{ my: 2 }}>
-+         Realtime details for “{partition}”
-+       </Typography>
-
-      <DataTable columns={columns} rows={rows} />
-      </Container>
-      <Footer />
-    </>
-  );
-}
-
-
-
-
-
-
-
-
+// src/pages/History.jsx
 
 import React, { useEffect, useState } from 'react';
--import { Container, MenuItem, Select, InputLabel, FormControl } from '@mui/material';
-+import { Container, MenuItem, Select, InputLabel, FormControl, Grid, Button, Typography } from '@mui/material';
+// import { Container, MenuItem, Select, InputLabel, FormControl } from '@mui/material';
+import { Container, MenuItem, Select, InputLabel, FormControl, Grid, Button, Typography } from '@mui/material';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import LoadingSpinner from '../components/LoadingSpinner';
 import SummaryCard from '../components/SummaryCard';
 import ChartCard from '../components/ChartCard';
--import DataTable from '../components/DataTable';
--import { fetchHistory } from '../api/occupancy.service';
--import { partitionList } from '../services/occupancy.service';
-+import { fetchHistory } from '../api/occupancy.service';
-+import { useNavigate } from 'react-router-dom';
+import DataTable from '../components/DataTable';
+import { partitionList } from '../services/occupancy.service'; // or hardcode your list
+import { fetchHistory } from '../api/occupancy.service';
+import { useNavigate } from 'react-router-dom';
 
 export default function History() {
-  const [location, setLocation]     = useState('');     // for partition-specific history
-  const [dateList, setDateList]     = useState([]);
-  const [selectedDate, setSelected] = useState('');
-  const [data, setData]             = useState(null);
-  const [loading, setLoading]       = useState(true);
-+ const navigate = useNavigate();
+  const [location, setLocation] = useState('');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  // fetch either global history or partition history
   useEffect(() => {
     setLoading(true);
     fetchHistory(location || null).then(json => {
       setData(json);
       setLoading(false);
-+     // if top-level (all LACA), capture dateList
-+     if (!location) {
-+       setDateList(json.summaryByDate.map(d => d.date));
-+     }
+
+     // if top-level (all LACA), capture dateList
+     if (!location) {
+       setDateList(json.summaryByDate.map(d => d.date));
+     }
+    
     });
+
   }, [location]);
 
   if (loading) return <LoadingSpinner />;
-  if (!data)    return null;
+  if (!data) return null;
 
-+ // when location==’’: user must pick a date first
-+ if (!location && !selectedDate) {
-+   return (
-+     <>
-+       <Header />
-+       <Container sx={{ mt: 2 }}>
-+         <Typography variant="h6">Select a date:</Typography>
-+         <FormControl fullWidth sx={{ mt: 1 }}>
-+           <InputLabel>Date</InputLabel>
-+           <Select
-+             value={selectedDate}
-+             label="Date"
-+             onChange={e => setSelected(e.target.value)}
-+           >
-+             {dateList.map(d => (
-+               <MenuItem key={d} value={d}>{d}</MenuItem>
-+             ))}
-+           </Select>
-+         </FormControl>
-+       </Container>
-+       <Footer />
-+     </>
-+   );
-+ }
 
-+ // after picking a date, find that summary
-+ const daySummary = data.summaryByDate.find(d => d.date === selectedDate);
+ // when location==’’: user must pick a date first
+ if (!location && !selectedDate) {
+   return (
+     <>
+       <Header />
+       <Container sx={{ mt: 2 }}>
+         <Typography variant="h6">Select a date:</Typography>
+         <FormControl fullWidth sx={{ mt: 1 }}>
+           <InputLabel>Date</InputLabel>
+          <Select
+             value={selectedDate}
+             label="Date"
+             onChange={e => setSelected(e.target.value)}
+           >
+             {dateList.map(d => (
+               <MenuItem key={d} value={d}>{d}</MenuItem>
+             ))}
+           </Select>
+         </FormControl>
+       </Container>
+       <Footer />
+     </>
+   );
+ }
+ // after picking a date, find that summary
+ const daySummary = data.summaryByDate.find(d => d.date === selectedDate);
+ // build cards for each partition in that day
+ const partitionCards = Object.entries(daySummary.partitions).map(([name, stats]) => ({
+   title: name,
+   stats: [
+     { label: 'Total',       value: stats.total },
+     { label: 'Employees',   value: stats.Employee },
+     { label: 'Contractors', value: stats.Contractor }
+   ]
+ }));
 
-+ // build cards for each partition in that day
-+ const partitionCards = Object.entries(daySummary.partitions).map(([name, stats]) => ({
-+   title: name,
-+   stats: [
-+     { label: 'Total',       value: stats.total },
-+     { label: 'Employees',   value: stats.Employee },
-+     { label: 'Contractors', value: stats.Contractor }
-+   ]
-+ }));
+
+
+
+  // Prepare a line chart of total vs date
+  const chartData = data.summaryByDate.map(d => ({
+    name: d.date,
+    value: d.region.total
+  }));
+
+  // Columns for details
+  const columns = [
+    { field: 'ObjectName1', headerName: 'Name' },
+    { field: 'SwipeDate', headerName: 'Date' },
+    { field: 'PersonnelType', headerName: 'Type' },
+    // add more
+  ];
 
   return (
     <>
       <Header />
       <Container sx={{ mt: 2 }}>
-+       {location ? (
-+         <Button onClick={() => setLocation('')} variant="outlined">
-+           ← Back to all dates
-+         </Button>
-+       ) : (
-+         <Button onClick={() => setSelected('')} variant="outlined">
-+           ← Change date
-+         </Button>
-+       )}
 
-+       <Typography variant="h5" sx={{ my: 2 }}>
-+         {location
-+           ? `History for ${location}`
-+           : `Summary for ${selectedDate}`
-+         }
-+       </Typography>
+       {location ? (
+         <Button onClick={() => setLocation('')} variant="outlined">
+           ← Back to all dates
+         </Button>
+       ) : (
+         <Button onClick={() => setSelected('')} variant="outlined">
+           ← Change date
+         </Button>
+       )}
 
-+       <Grid container spacing={2}>
-+         {partitionCards.map(card => (
-+           <Grid item xs={12} sm={6} md={4} key={card.title}>
-+             <Button
-+               fullWidth
-+               variant="outlined"
-+               onClick={() => {
-+                 // if already in partition view, do nothing
-+                 if (!location) setLocation(card.title);
-+               }}
-+             >
-+               <SummaryCard title={card.title} stats={card.stats} />
-+             </Button>
-+           </Grid>
-+         ))}
-+       </Grid>
+
+       <Typography variant="h5" sx={{ my: 2 }}>
+         {location
+           ? `History for ${location}`
+           : `Summary for ${selectedDate}`
+         }
+       </Typography>
+
+       <Grid container spacing={2}>
+         {partitionCards.map(card => (
+           <Grid item xs={12} sm={6} md={4} key={card.title}>
+             <Button
+               fullWidth
+               variant="outlined"
+               onClick={() => {
+                 // if already in partition view, do nothing
+                 if (!location) setLocation(card.title);
+               }}
+             >
+               <SummaryCard title={card.title} stats={card.stats} />
+             </Button>
+           </Grid>
+         ))}
+       </Grid>
+
+
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel id="loc-label">Partition</InputLabel>
+          <Select
+            labelId="loc-label"
+            value={location}
+            label="Partition"
+            onChange={e => setLocation(e.target.value)}
+          >
+            <MenuItem value="">All LACA</MenuItem>
+            {partitionList.map(p => (
+              <MenuItem key={p} value={p}>{p}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <ChartCard title="Historical Total by Date" data={chartData} />
+
+        <DataTable columns={columns} rows={data.details} />
       </Container>
       <Footer />
     </>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-http://localhost:3001/api/occupancy/live-summary
-this api need to fetch every seconds carefuly
-
-{"success":true,"today":{"total":9,"Employee":1,"Contractor":8},"realtime":{"CR.Costa Rica Partition":{"total":5,"Employee":0,"Contractor":5,"floors":{"Building A2":1,"Building F4":1," Building B1":1,"Building E3":2}}},"details":[{"LocaleMessageTime":"2025-06-14T01:55:34.000Z","Dateonly":"2025-06-14","Swipe_Time":"01:55:34","EmployeeID":"W0022873","PersonGUID":"98DA6E7A-3EE1-47AA-B843-599EB1A6EF21","ObjectName1":"Hernandez, Sofia","Door":"LACA CR B1 Main Lobby Door","PersonnelType":"Contractor","CardNumber":"612791","Text5":"Santa Ana - Parque Empresarial","PartitionName2":"CR.Costa Rica Partition","AdmitCode":"Admit","Direction":"OutDirection"},{"LocaleMessageTime":"2025-06-14T01:54:34.000Z","Dateonly":"2025-06-14","Swipe_Time":"01:54:34","EmployeeID":"W0013046","PersonGUID":"9EE15706-B3DE-451D-9B11-DE7E734E02C6","ObjectName1":"Mena, Evelyn","Door":"LACA CR A2 Main Lobby Door","PersonnelType":"Contractor","CardNumber":"613101","Text5":"Santa Ana - Parque Empresarial","PartitionName2":"CR.Costa Rica Partition","AdmitCode":"Admit","Direction":"InDirection"},{"LocaleMessageTime":"2025-06-14T00:07:03.000Z","Dateonly":"2025-06-14","Swipe_Time":"00:07:03","EmployeeID":"320262","PersonGUID":"0CFA95F6-D477-412A-9EF3-714748784986","ObjectName1":"Flores, Pablo Alonso","Door":"LACA CR F4 Main Lobby Door","PersonnelType":"Employee","CardNumber":"420467","Text5":"Santa Ana - Parque Empresarial","PartitionName2":"CR.Costa Rica Partition","AdmitCode":"Admit","Direction":"OutDirection"},{"LocaleMessageTime":"2025-06-14T02:02:16.000Z","Dateonly":"2025-06-14","Swipe_Time":"02:02:16","EmployeeID":"W0027028","PersonGUID":"BABF026D-2B38-4383-AE16-EC6BF2C1BDD5","ObjectName1":"Chinchilla, Norita","Door":"LACA CR F4 Main Lobby Door","PersonnelType":"Contractor","CardNumber":"617155","Text5":"Santa Ana - Parque Empresarial","PartitionName2":"CR.Costa Rica Partition","AdmitCode":"Admit","Direction":"InDirection"},{"LocaleMessageTime":"2025-06-14T00:43:57.000Z","Dateonly":"2025-06-14","Swipe_Time":"00:43:57","EmployeeID":"W0020261","PersonGUID":"A5D4AFCF-BF71-48E8-A387-693B20820960","ObjectName1":"Parrales, Jorge","Door":"LACA CR A1 Main Lobby Door","PersonnelType":"Contractor","CardNumber":"612769","Text5":"Santa Ana - Parque Empresarial","PartitionName2":"CR.Costa Rica Partition","AdmitCode":"Admit","Direction":"OutDirection"},{"LocaleMessageTime":"2025-06-14T01:55:30.000Z","Dateonly":"2025-06-14","Swipe_Time":"01:55:30","EmployeeID":"W0026430","PersonGUID":"5E48DF0A-8926-4635-894B-0CCB5F63EF94","ObjectName1":"Reyes, Angela","Door":"LACA CR B1 Main Lobby Door","PersonnelType":"Contractor","CardNumber":"617103","Text5":"Santa Ana - Parque Empresarial","PartitionName2":"CR.Costa Rica Partition","AdmitCode":"Admit","Direction":"InDirection"},{"LocaleMessageTime":"2025-06-14T01:56:42.000Z","Dateonly":"2025-06-14","Swipe_Time":"01:56:42","EmployeeID":"W0024932","PersonGUID":"16C837CE-FBA4-4B66-AF32-1C96DF122222","ObjectName1":"Porras, Tirza","Door":"LACA CR E3 Main Lobby","PersonnelType":"Contractor","CardNumber":"613095","Text5":"Santa Ana - Parque Empresarial","PartitionName2":"CR.Costa Rica Partition","AdmitCode":"Admit","Direction":"InDirection"},{"LocaleMessageTime":"2025-06-14T01:56:45.000Z","Dateonly":"2025-06-14","Swipe_Time":"01:56:45","EmployeeID":"W0017751","PersonGUID":"6C15C9F1-55E9-4AD8-B7E3-AB826F986DA8","ObjectName1":"Cruz, Alisson","Door":"LACA CR E3 Main Lobby","PersonnelType":"Contractor","CardNumber":"613103","Text5":"Santa Ana - Parque Empresarial","PartitionName2":"CR.Costa Rica Partition","AdmitCode":"Admit","Direction":"InDirection"},{"LocaleMessageTime":"2025-06-14T04:30:58.000Z","Dateonly":"2025-06-14","Swipe_Time":"04:30:58","EmployeeID":"W0026146","PersonGUID":"AE191490-D301-41F9-9E31-D9FA49F8690A","ObjectName1":"Montenegro, Norma","Door":"LACA ARG 1st Floor Main Entrance","PersonnelType":"Contractor","CardNumber":"617920","Text5":"Buenos Aires - Montevideo 825","PartitionName2":"AR.Cordoba","AdmitCode":"Admit","Direction":"OutDirection"}]}
-
-for this APi Display Summary part like 
-"today": {
-    "total": 9,
-    "Employee": 1,
-    "Contractor": 8
-"realtime": {
-    "CR.Costa Rica Partition": {
-      "total": 5,
-      "Employee": 0,
-      "Contractor": 5,
-      "floors": {
-        "Building A2": 1,
-        "Building F4": 1,
-        " Building B1": 1,
-        "Building E3": 2
-      }
-    }
-  },
-
-
-in one page there are 5 to 6 partations 
-so in first page display only summary and display details in next page 
-"details": [
-    {
-      "LocaleMessageTime": "2025-06-14T01:55:34.000Z",
-      "Dateonly": "2025-06-14",
-      "Swipe_Time": "01:55:34",
-      "EmployeeID": "W0022873",
-      "PersonGUID": "98DA6E7A-3EE1-47AA-B843-599EB1A6EF21",
-      "ObjectName1": "Hernandez, Sofia",
-      "Door": "LACA CR B1 Main Lobby Door",
-      "PersonnelType": "Contractor",
-      "CardNumber": "612791",
-      "Text5": "Santa Ana - Parque Empresarial",
-      "PartitionName2": "CR.Costa Rica Partition",
-      "AdmitCode": "Admit",
-      "Direction": "OutDirection"
-    },
-
-this part
-
-
-
-
-ok 
-
-
-http://localhost:3001/api/occupancy/history
-
-
-  "success": true,
-  "summaryByDate": [
-    {
-      "date": "2025-06-07",
-      "day": "Saturday",
-      "region": {
-        "name": "LACA",
-        "total": 75,
-        "Employee": 28,
-        "Contractor": 47
-      },
-      "partitions": {
-        "CR.Costa Rica Partition": {
-          "total": 51,
-          "Employee": 19,
-          "Contractor": 31,
-          "TempBadge": 1
-        },
-        "AR.Cordoba": {
-          "total": 21,
-          "Employee": 8,
-          "Contractor": 13
-        },
-        "BR.Sao Paulo": {
-          "total": 1,
-          "Employee": 0,
-          "Contractor": 1
-        },
-        "PA.Panama City": {
-          "total": 1,
-          "Employee": 0,
-          "Contractor": 1
-        },
-        "MX.Mexico City": {
-          "total": 1,
-          "Employee": 1,
-          "Contractor": 0
-        }
-      }
-    },
-    {
-      "date": "2025-06-08",
-      "day": "Sunday",
-      "region": {
-        "name": "LACA",
-        "total": 44,
-        "Employee": 24,
-        "Contractor": 20
-      },
-      "partitions": {
-        "CR.Costa Rica Partition": {
-          "total": 39,
-          "Employee": 24,
-          "Contractor": 15,
-          "TempBadge": 0
-        },
-        "AR.Cordoba": {
-          "total": 5,
-          "Employee": 0,
-          "Contractor": 5
-        }
-      }
-    },
-    {
-      "date": "2025-06-09",
-      "day": "Monday",
-      "region": {
-        "name": "LACA",
-        "total": 969,
-        "Employee": 843,
-        "Contractor": 126
-      },
-      "partitions": {
-        "CR.Costa Rica Partition": {
-          "total": 572,
-          "Employee": 503,
-          "Contractor": 68,
-          "TempBadge": 1
-        },
-        "AR.Cordoba": {
-          "total": 235,
-          "Employee": 200,
-          "Contractor": 35
-        },
-        "BR.Sao Paulo": {
-          "total": 73,
-          "Employee": 61,
-          "Contractor": 12
-        },
-        "MX.Mexico City": {
-          "total": 31,
-          "Employee": 27,
-          "Contractor": 4
-        },
-        "PE.Lima": {
-          "total": 35,
-          "Employee": 31,
-          "Contractor": 4
-        },
-        "PA.Panama City": {
-          "total": 23,
-          "Employee": 21,
-          "Contractor": 2
-        }
-      }
-    },
-    {
-      "date": "2025-06-10",
-      "day": "Tuesday",
-      "region": {
-        "name": "LACA",
-        "total": 1342,
-        "Employee": 1199,
-        "Contractor": 143
-      },
-      "partitions": {
-        "CR.Costa Rica Partition": {
-          "total": 845,
-          "Employee": 774,
-          "Contractor": 70,
-          "TempBadge": 1
-        },
-        "AR.Cordoba": {
-          "total": 282,
-          "Employee": 235,
-          "Contractor": 47
-        },
-        "BR.Sao Paulo": {
-          "total": 80,
-          "Employee": 67,
-          "Contractor": 13
-        },
-        "PA.Panama City": {
-          "total": 23,
-          "Employee": 21,
-          "Contractor": 2
-        },
-        "MX.Mexico City": {
-          "total": 57,
-          "Employee": 51,
-          "Contractor": 6
-        },
-        "PE.Lima": {
-          "total": 55,
-          "Employee": 51,
-          "Contractor": 4
-        }
-      }
-    },
-
-
-
-
-for a historocal headcount display like in summary day , date , partation summary
-and below only forthis specific day details 
-
-only
-
-
-
-http://localhost:3001/api/occupancy/history/AR.Cordoba
-
-{
-  "success": true,
-  "summaryByDate": [
-    {
-      "date": "2025-06-07",
-      "day": "Saturday",
-      "region": {
-        "name": "AR.Cordoba",
-        "total": 21,
-        "Employee": 8,
-        "Contractor": 13
-      }
-    },
-    {
-      "date": "2025-06-08",
-      "day": "Sunday",
-      "region": {
-        "name": "AR.Cordoba",
-        "total": 5,
-        "Employee": 0,
-        "Contractor": 5
-      }
-
-
-this api same workd as above api we can change partation name as costa rica , argentina like 
-so sisplay result step by step and make ui interactive 
-so guide me step step to update each file 
-
-
-
-
-
 
