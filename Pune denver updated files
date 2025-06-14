@@ -1,6 +1,3 @@
-
-
-
 // controllers/denverLiveOccupancyController.js
 
 const { DateTime }       = require('luxon');
