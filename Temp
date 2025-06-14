@@ -1,3 +1,15 @@
+npm install react-router-dom @mui/material @emotion/react @emotion/styled recharts @mui/icons-material
+
+
+yarn add react-router-dom @mui/material @emotion/react @emotion/styled recharts @mui/icons-material
+
+
+
+
+
+
+
+
 // src/api/occupancy.service.js
 
 const BASE = process.env.REACT_APP_API_BASE || ''; // e.g. http://localhost:3001
