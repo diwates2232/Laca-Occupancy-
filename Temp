@@ -1,3 +1,121 @@
+ exports.getLiveOccupancy = async (req, res) => {
+   try {
+     await getPool();
+     res.writeHead(200, {
+       'Content-Type':  'text/event-stream',
+       'Cache-Control': 'no-cache',
+       'Connection':    'keep-alive'
+     });
+     res.write('\n');
+
+-    // pull last 24h on startup
+-    let lastSeen = new Date(Date.now() - 24*60*60*1000);
++    // start from “now” so we only get fresh swipes
++    let lastSeen = new Date();
+     const events = [];
+
+     const push = async () => {
+       // prune events not from today
+       const today = getTodayString();
+       for (let i = events.length - 1; i >= 0; i--) {
+         if (events[i].Dateonly !== today) events.splice(i, 1);
+       }
+
+       const fresh = await fetchNewEvents(lastSeen);
+
+       if (fresh.length) {
+-        lastSeen = fresh[fresh.length - 1].LocaleMessageTime;
++        // bump cursor to “right now” so next fetch looks only > now
++        lastSeen = new Date();
+         events.push(...fresh);
+       }
+
+       // build occupancy + today counts
+       const occupancy  = await buildOccupancy(events);
+       const todayStats = buildVisitedToday(events);
+       occupancy.totalVisitedToday = todayStats.total;
+       occupancy.visitedToday      = { /* … */ };
+
+       // SSE push
+       const sid = Date.now();
+       res.write(`id: ${sid}\n`);
+       res.write(`data: ${JSON.stringify(occupancy)}\n\n`);
+       if (typeof res.flush === 'function') res.flush();
+     };
+
+     // initial push + polling
+     await push();
+     const timer = setInterval(push, 2000);
+     req.on('close', () => clearInterval(timer));
+   } catch (err) {
+     console.error('Live occupancy SSE error:', err);
+     if (!res.headersSent) res.status(500).json({ error: 'Internal Server Error' });
+   }
+ };
+
+
+
+
+ exports.getDenverLiveOccupancy = async (req, res) => {
+   try {
+     await denver.poolPromise;
+     res.writeHead(200, {
+       'Content-Type':  'text/event-stream',
+       'Cache-Control': 'no-cache',
+       'Connection':    'keep-alive'
+     });
+     res.write('\n');
+
+-    let lastSeen = new Date(Date.now() - 24 * 60 * 60 * 1000);
++    // start from “now” so we only get new swipes
++    let lastSeen = new Date();
+     const events = [];
+
+     const push = async () => {
+       let fresh = [];
+       try { fresh = await fetchNewEvents(lastSeen); }
+       catch (e) { console.error('❌ fetchNewEvents error:', e); }
+
+       if (fresh.length) {
+-        lastSeen = fresh[fresh.length - 1].LocaleMessageTime;
++        // advance cursor to current time
++        lastSeen = new Date();
+         events.push(...fresh);
+       }
+
+       let payload;
+       try { payload = buildOccupancyForToday(events, fresh); }
+       catch (e) {
+         console.error('❌ buildOccupancyForToday error:', e);
+         payload = { /* empty fallback */ };
+       }
+
+       // SSE push
+       const sid = Date.now();
+       res.write(`id: ${sid}\n`);
+       res.write(`data: ${JSON.stringify(payload)}\n\n`);
+       if (typeof res.flush === 'function') res.flush();
+     };
+
+     await push();
+     const timer = setInterval(push, 1000);
+     req.on('close', () => clearInterval(timer));
+   } catch (err) {
+     console.error('Denver SSE endpoint error:', err);
+     if (!res.headersSent) res.status(500).end();
+   }
+ };
+
+
+
+
+
+
+
+
+
+
+
 PS C:\Users\W0024618\Desktop\swipeData\employee-ai-insights> node server.js
 Server running at http://localhost:5000
 ✅ MSSQL pool connected
