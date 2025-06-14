@@ -1,3 +1,82 @@
+--- a/server.js
++++ b/server.js
+@@ -1,6 +1,7 @@
+ const express = require('express');
+ const cors    = require('cors');
++const path    = require('path');
+ 
+ const employeeRoutes        = require('./routes/employeeRoutes');
+ const liveOccupancyRoutes   = require('./routes/liveOccupancyRoutes');
+@@ -9,14 +10,33 @@ const occupancyDenverRoutes = require('./routes/occupancyDenverRoutes');
+ 
+ const app = express();
+ app.use(cors());
++app.use(express.json());
++
++// --- middleware to disable proxy buffering for SSE endpoints ---
++const noBuffering = (req, res, next) => {
++  // Nginx or other proxies honor this header to stream chunks immediately
++  res.set('X-Accel-Buffering', 'no');
++  next();
++};
++
+ // simple sanity-check
+ app.get('/ping', (req, res) => res.send('pong'));
+ 
+ // mount your routers under /api
+-app.use('/api', employeeRoutes);           // /api/employees
+-app.use('/api', liveOccupancyRoutes);      // /api/live-occupancy
+-app.use('/api', occupancyDenverRoutes);    // /api/live-occupancy/denver
+-app.use('/api', occupancyDenverRoutes);    // /api/live-occupancy-denver and /api/inout-inconsistency-denver
++app.use('/api/employees', employeeRoutes);
++
++// Pune SSE (live occupancy)
++app.use(
++  '/api/live-occupancy',
++  noBuffering,
++  liveOccupancyRoutes
++);
++
++// Denver SSE (live occupancy)
++app.use(
++  '/api/live-occupancy/denver',
++  noBuffering,
++  occupancyDenverRoutes
++);
+ 
+ // debug: list registered endpoints
+ if (app._router && Array.isArray(app._router.stack)) {
+@@ -28,9 +48,9 @@ if (app._router && Array.isArray(app._router.stack)) {
+   app._router.stack.forEach(layer => {
+     if (layer.route && layer.route.path) {
+       const methods = Object
+-        .keys(layer.route.methods)
+-        .map(m => m.toUpperCase())
+-        .join(',');
++        .keys(layer.route.methods)
++        .map(m => m.toUpperCase())
++        .join(',');
+       console.log(`  ${methods}\t${layer.route.path}`);
+     }
+   });
+@@ -38,7 +58,7 @@ app.get('/health', (req, res) => res.send('OK'));
+ const PORT = process.env.PORT || 5001;
+ app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 lets check this file and give me updated files carefully. debug issue carefully
 
 C:\Users\W0024618\Desktop\swipeData\employee-ai-insights\server.js
