@@ -1,3 +1,87 @@
+--- controllers/liveOccupancyController.js
+@@ async function fetchNewEvents(since) {
+-  const { recordset } = await req.query(`...`);
++  console.log('🔎 [Pune] fetchNewEvents called with since =', since.toISOString());
++  const { recordset } = await req.query(`
+      WITH CombinedQuery AS (
+        /* … */
+        AND DATEADD(MINUTE,-1* t1.MessageLocaleOffset, t1.MessageUTC) > @since
+      )
+      /* … */
+  `);
++  console.log(`📥 [Pune] fetched ${recordset.length} rows:`,
++    recordset.map(r => r.LocaleMessageTime.toISOString()));
+  
+  return recordset;
+}
+
+
+
+
+
+--- controllers/denverLiveOccupancyController.js
+@@ async function fetchNewEvents(since) {
+-  const { recordset } = await req.query(`...`);
++  console.log('🔎 [Denver] fetchNewEvents called with since =', since.toISOString());
++  const { recordset } = await req.query(`
+      WITH CombinedQuery AS (
+        /* … */
+        AND DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) > @since
+      )
+      /* … */
+  `);
++  console.log(`📥 [Denver] fetched ${recordset.length} rows:`,
++    recordset.map(r => r.LocaleMessageTime.toISOString()));
+  
+  return recordset;
+}
+
+
+
+
+
+
+--- controllers/liveOccupancyController.js
+@@ const push = async () => {
+-      if (fresh.length) {
+-        lastSeen = fresh[fresh.length - 1].LocaleMessageTime;
+-        events.push(...fresh);
+-      }
++      if (fresh.length) {
++        const newLast = fresh[fresh.length - 1].LocaleMessageTime;
++        console.log('✅ [Pune] updating lastSeen from', lastSeen.toISOString(), '→', newLast.toISOString());
++        lastSeen = newLast;
++        events.push(...fresh);
++      } else {
++        console.log('⚠️ [Pune] no fresh swipes since', lastSeen.toISOString());
++      }
+
+
+
+
+--- controllers/denverLiveOccupancyController.js
+@@ const push = async () => {
+-    if (fresh.length) {
+-      lastSeen = fresh[fresh.length - 1].LocaleMessageTime;
+-      events.push(...fresh);
+-    }
++    if (fresh.length) {
++      const newLast = fresh[fresh.length - 1].LocaleMessageTime;
++      console.log('✅ [Denver] updating lastSeen from', lastSeen.toISOString(), '→', newLast.toISOString());
++      lastSeen = newLast;
++      events.push(...fresh);
++    } else {
++      console.log('⚠️ [Denver] no fresh swipes since', lastSeen.toISOString());
++    }
+
+
+
+
+
+
+
+
+
 // controllers/liveOccupancyController.js
 
 const { DateTime }     = require('luxon');
