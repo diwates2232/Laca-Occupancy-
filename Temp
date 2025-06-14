@@ -1,6 +1,35 @@
 // src/index.js
 
 import React from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import westernUnionTheme from './theme/westernUnionTheme';
+import reportWebVitals from './reportWebVitals';
+
+const theme = createTheme(westernUnionTheme);
+
+// React 18: createRoot instead of ReactDOM.render
+const container = document.getElementById('root');
+const root = createRoot(container);
+root.render(
+  <ThemeProvider theme={theme}>
+    <App />
+  </ThemeProvider>
+);
+
+// optional performance measuring
+reportWebVitals();
+
+
+
+
+
+
+
+// src/index.js
+
+import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
