@@ -1,3 +1,81 @@
+// src/pages/Dashboard.jsx
+
+import React from 'react';
+import { Container, Grid, CardActionArea } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const navigate = useNavigate();
+
+  if (loading) return <LoadingSpinner />;
+  if (error)   return <Container>Error loading data</Container>;
+
+  const { today, realtime } = data;
+
+  // Data for the bar chart
+  const partitionData = Object.entries(realtime).map(([name, stats]) => ({
+    name,
+    value: stats.total
+  }));
+
+  // Cards for each partition
+  const partitionCards = Object.entries(realtime).map(([name, stats]) => ({
+    title: name,
+    stats: [
+      { label: 'Total',       value: stats.total },
+      { label: 'Employees',   value: stats.Employee },
+      { label: 'Contractors', value: stats.Contractor }
+    ]
+  }));
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2 }}>
+        {/* Today's totals */}
+        <SummaryCard
+          title="Today's Headcount"
+          stats={[
+            { label: 'Total',       value: today.total },
+            { label: 'Employees',   value: today.Employee },
+            { label: 'Contractors', value: today.Contractor }
+          ]}
+        />
+
+        {/* Overall realtime bar chart */}
+        <ChartCard title="Realtime by Partition" data={partitionData} />
+
+        {/* Summary cards for each partition; click into details */}
+        <Grid container spacing={2} sx={{ mt: 2 }}>
+          {partitionCards.map(card => (
+            <Grid item xs={12} sm={6} md={4} key={card.title}>
+              <CardActionArea
+                onClick={() => navigate(`/realtime/${encodeURIComponent(card.title)}`)}
+              >
+                <SummaryCard title={card.title} stats={card.stats} />
+              </CardActionArea>
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
 Read below error and solve this issue carefully and give me updated file carefully
 
 Uncaught runtime errors:
