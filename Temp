@@ -1,3 +1,57 @@
+@@ exports.getLiveOccupancy = async (req, res) => {
+-    // initial headers…
++    // initial headers…
+     res.writeHead(200, {
+       'Content-Type':  'text/event-stream',
+       'Cache-Control': 'no-cache',
+       'Connection':    'keep-alive'
+     });
+     res.write('\n');
+
+@@    const push = async () => {
+-      res.write(`data: ${JSON.stringify(occupancy)}\n\n`);
++      // add an `id:` so EventSource treats even identical payloads as “new”
++      const sid = Date.now();
++      res.write(`id: ${sid}\n`);
++      res.write(`data: ${JSON.stringify(occupancy)}\n\n`);
++
++      // explicitly flush (requires Node v13+ or express `res.flush` via compression middleware)
++      if (typeof res.flush === 'function') {
++        res.flush();
++      }
+
+
+
+
+@@ exports.getDenverLiveOccupancy = async (req, res) => {
+     res.writeHead(200, {
+       'Content-Type':  'text/event-stream',
+       'Cache-Control': 'no-cache',
+       'Connection':    'keep-alive'
+     });
+     res.write('\n');
+
+@@    const push = async () => {
+-    res.write(`data: ${JSON.stringify(payload)}\n\n`);
++    // tag with a unique id and flush right away
++    const sid = Date.now();
++    res.write(`id: ${sid}\n`);
++    res.write(`data: ${JSON.stringify(payload)}\n\n`);
++    if (typeof res.flush === 'function') {
++      res.flush();
++    }
+
+
+
+
+
+
+
+
+
+
+
+
 Read below file carefully and line by line and debug the issue and solve this issue quickly
 
 
