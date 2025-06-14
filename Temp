@@ -1,3 +1,237 @@
+// src/pages/Dashboard.jsx
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Typography,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Grid,
+  CardActionArea,
+  Skeleton,
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const navigate = useNavigate();
+
+  // update timestamp on each data change
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) {
+    return (
+      <Container sx={{ mt: 4 }}>
+        <Typography color="error">Error loading live data</Typography>
+      </Container>
+    );
+  }
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2, mb: 4 }}>
+        {/* Header */}
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="h5">LACA Headcount</Typography>
+          {loading ? (
+            <Skeleton variant="text" width={100} />
+          ) : (
+            <Typography variant="body2" color="textSecondary">
+              Last updated: {lastUpdate}
+            </Typography>
+          )}
+        </Box>
+
+        {/* Today's Totals */}
+        {loading ? (
+          <Skeleton variant="rectangular" height={100} />
+        ) : (
+          <SummaryCard
+            title="Today's Totals"
+            stats={[
+              { label: 'Total',       value: data.today.total },
+              { label: 'Employees',   value: data.today.Employee },
+              { label: 'Contractors', value: data.today.Contractor }
+            ]}
+          />
+        )}
+
+        {/* Bar Chart */}
+        <Box mt={4}>
+          <Typography variant="h6" gutterBottom>Realtime by Partition</Typography>
+          {loading ? (
+            <Skeleton variant="rectangular" height={300} />
+          ) : (
+            <ChartCard
+              title=""
+              data={Object.entries(data.realtime).map(([name, stats]) => ({
+                name,
+                value: stats.total
+              }))}
+              dataKey="value"
+            />
+          )}
+        </Box>
+
+        {/* Floor-wise Accordions */}
+        <Box mt={4}>
+          <Typography variant="h6" gutterBottom>Partition Detail (Floor-wise)</Typography>
+          {loading
+            ? Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} variant="rectangular" height={80} sx={{ mb: 1 }} />
+              ))
+            : Object.entries(data.realtime).map(([partName, stats]) => (
+                <Accordion key={partName} sx={{ mb: 1 }}>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Box flexGrow={1}>
+                      <Typography variant="subtitle1">{partName}</Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        Total: {stats.total} — Emp: {stats.Employee}, Cont: {stats.Contractor}
+                      </Typography>
+                    </Box>
+                    <Typography
+                      variant="button"
+                      sx={{ cursor: 'pointer', ml: 2 }}
+                      onClick={e => {
+                        e.stopPropagation();
+                        navigate(`/realtime/${encodeURIComponent(partName)}`);
+                      }}
+                    >
+                      View All Swipes
+                    </Typography>
+                  </AccordionSummary>
+
+                  <AccordionDetails>
+                    {stats.floors && Object.entries(stats.floors).length > 0 ? (
+                      <Grid container spacing={1}>
+                        {Object.entries(stats.floors).map(([floor, count]) => (
+                          <Grid item key={floor} xs={6} sm={4} md={3}>
+                            <SummaryCard
+                              title={floor}
+                              stats={[{ label: 'Count', value: count }]}
+                            />
+                          </Grid>
+                        ))}
+                      </Grid>
+                    ) : (
+                      <Typography variant="body2" color="textSecondary">
+                        No floor data.
+                      </Typography>
+                    )}
+                  </AccordionDetails>
+                </Accordion>
+              ))
+          }
+        </Box>
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+// src/pages/RealtimeDetails.jsx
+
+import React, { useEffect, useState } from 'react';
+import { Container, Typography, Box, Skeleton } from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import DataTable from '../components/DataTable';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+const columns = [
+  { field: 'ObjectName1',  headerName: 'Name' },
+  { field: 'Door',         headerName: 'Door' },
+  { field: 'Swipe_Time',   headerName: 'Time' },
+  { field: 'PersonnelType',headerName: 'Type' },
+];
+
+export default function RealtimeDetails() {
+  const { partition } = useParams();
+  const navigate = useNavigate();
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState(null);
+
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) {
+    return (
+      <Container sx={{ mt: 4 }}>
+        <Typography color="error">Error loading data</Typography>
+      </Container>
+    );
+  }
+
+  const rows = data?.details.filter(r => r.PartitionName2 === partition) || [];
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2, mb: 4 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography
+            variant="button"
+            onClick={() => navigate(-1)}
+            sx={{ cursor: 'pointer' }}
+          >
+            ← Back
+          </Typography>
+          <Typography variant="h5">{partition}</Typography>
+          {loading ? (
+            <Skeleton width={100} />
+          ) : (
+            <Typography variant="body2" color="textSecondary">
+              Updated: {lastUpdate}
+            </Typography>
+          )}
+        </Box>
+
+        {loading ? (
+          <LoadingSpinner />
+        ) : rows.length > 0 ? (
+          <DataTable columns={columns} rows={rows} />
+        ) : (
+          <Typography>No swipes recorded yet for this partition.</Typography>
+        )}
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\RealtimeDetails.jsx
 
 import React, { useEffect, useState } from 'react';
