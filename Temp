@@ -1,3 +1,119 @@
+// src/controllers/occupancy.controller.js
+
+const service = require('../services/occupancy.service');
+const doorMap = require('../utils/doorMap');  // your generated mapping
+
+// Determine Employee vs Contractor
+function isEmployeeType(pt) {
+  return pt === 'Employee'
+      || pt === 'Terminated Employee'
+      || pt === 'Terminated Personnel';
+}
+
+// Find mapping entry for a given partition + door
+function findDoorEntry(partition, doorName) {
+  return doorMap.find(
+    d => d.partition === partition && d.door === doorName
+  );
+}
+
+exports.getLiveSummary = async (req, res) => {
+  try {
+    const swipes = await service.fetchLiveOccupancy();
+
+    // Split today's swipes by first vs last
+    const firstByPerson = {};
+    const lastByPerson  = {};
+
+    swipes.forEach(r => {
+      const t = new Date(r.LocaleMessageTime).getTime();
+      const guid = r.PersonGUID;
+
+      // First swipe
+      if (!firstByPerson[guid] ||
+          t < new Date(firstByPerson[guid].LocaleMessageTime).getTime()
+      ) {
+        firstByPerson[guid] = r;
+      }
+
+      // Last swipe
+      if (!lastByPerson[guid] ||
+          t > new Date(lastByPerson[guid].LocaleMessageTime).getTime()
+      ) {
+        lastByPerson[guid] = r;
+      }
+    });
+
+    // 1. Today’s Headcount from firstByPerson
+    const todayRecs = Object.values(firstByPerson);
+    let todayEmployee   = 0;
+    let todayContractor = 0;
+
+    todayRecs.forEach(r => {
+      if (isEmployeeType(r.PersonnelType)) todayEmployee++;
+      else todayContractor++;
+    });
+
+    const todayHeadcount = todayEmployee + todayContractor;
+
+    // 2. Real-Time Headcount from lastByPerson (only InDirection)
+    const realtimeRecs = Object.values(lastByPerson)
+      .filter(r => r.Direction === 'InDirection');
+
+    let realtimeEmployee   = 0;
+    let realtimeContractor = 0;
+
+    // Optionally, you could build a floor breakdown here
+    realtimeRecs.forEach(r => {
+      // Normalize door → floor
+      const entry = findDoorEntry(r.PartitionName2, r.Door);
+      if (!entry) {
+        console.warn(
+          `Unmapped door: partition=${r.PartitionName2}, door="${r.Door}"`
+        );
+      }
+      // Count Employee vs Contractor
+      if (isEmployeeType(r.PersonnelType)) realtimeEmployee++;
+      else realtimeContractor++;
+    });
+
+    const realtimeHeadcount = realtimeEmployee + realtimeContractor;
+
+    // 3. Respond
+    return res.json({
+      success: true,
+      today: {
+        headcount: todayHeadcount,
+        Employee:  todayEmployee,
+        Contractor: todayContractor
+      },
+      realtime: {
+        headcount: realtimeHeadcount,
+        Employee:  realtimeEmployee,
+        Contractor: realtimeContractor
+      },
+      details: {
+        today:   todayRecs,
+        realtime: realtimeRecs
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Live summary failed' });
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
 curl http://localhost:3001/api/occupancy/live-summary
 curl http://localhost:3001/api/occupancy/history
 curl http://localhost:3001/api/occupancy/history/AR.Cordoba
