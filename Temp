@@ -1,3 +1,63 @@
+# 1. Create the root folder and cd into it
+mkdir -p ~/Desktop/laca-occupancy-frontend
+cd ~/Desktop/laca-occupancy-frontend
+
+# 2. Public area
+mkdir -p public/assets/fonts
+touch public/index.html
+touch public/assets/logo.png
+
+# 3. src structure
+mkdir -p src/api
+mkdir -p src/assets/images
+mkdir -p src/assets/styles
+mkdir -p src/components
+mkdir -p src/pages
+mkdir -p src/routes
+mkdir -p src/theme
+mkdir -p src/utils
+
+# 4. Create all the files
+touch \
+  src/api/occupancy.service.js \
+  src/assets/images/.gitkeep \
+  src/assets/styles/.gitkeep \
+  src/components/Header.jsx \
+  src/components/Footer.jsx \
+  src/components/SummaryCard.jsx \
+  src/components/ChartCard.jsx \
+  src/components/DataTable.jsx \
+  src/components/LoadingSpinner.jsx \
+  src/pages/Dashboard.jsx \
+  src/pages/RealtimeDetails.jsx \
+  src/pages/History.jsx \
+  src/routes/AppRoutes.jsx \
+  src/theme/westernUnionTheme.js \
+  src/utils/dateHelpers.js \
+  src/App.jsx \
+  src/index.js \
+  src/reportWebVitals.js \
+  .env \
+  package.json \
+  README.md
+
+# 5. Initialize with React (optional if you want CRA boilerplate)
+# npx create-react-app . --template cra-template-pwa
+
+# 6. Install dependencies
+# npm install @mui/material @emotion/react @emotion/styled recharts react-router-dom
+
+
+
+
+
+
+
+
+
+
+
+
 // src/controllers/occupancy.controller.js
 
 const service = require('../services/occupancy.service');
