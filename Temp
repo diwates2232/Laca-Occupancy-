@@ -1,3 +1,68 @@
+// src/reportWebVitals.js
+
+const reportWebVitals = onPerfEntry => {
+  if (onPerfEntry && onPerfEntry instanceof Function) {
+    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+      getCLS(onPerfEntry);
+      getFID(onPerfEntry);
+      getFCP(onPerfEntry);
+      getLCP(onPerfEntry);
+      getTTFB(onPerfEntry);
+    });
+  }
+};
+
+export default reportWebVitals;
+
+
+
+
+
+
+
+
+// src/index.js
+
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import westernUnionTheme from './theme/westernUnionTheme';
+import reportWebVitals from './reportWebVitals';
+
+const theme = createTheme(westernUnionTheme);
+
+const container = document.getElementById('root');
+const root = createRoot(container);
+root.render(
+  <ThemeProvider theme={theme}>
+    <App />
+  </ThemeProvider>
+);
+
+// Pass a function to log or send vitals; or omit to do nothing
+reportWebVitals(console.log);
+
+
+
+
+
+
+
+
+npm install web-vitals
+
+
+npm start
+
+
+
+
+
+
+
+
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
