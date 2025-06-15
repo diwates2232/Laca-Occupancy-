@@ -3,6 +3,179 @@
 import React, { useEffect, useState } from 'react';
 import {
   Container,
+  Grid,
+  Typography,
+  Box,
+  Skeleton
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) {
+    return (
+      <Container sx={{ mt: 4 }}>
+        <Typography color="error">Error loading live data</Typography>
+      </Container>
+    );
+  }
+
+  const regions     = data?.realtime || {};
+  const partitions  = Object.keys(regions);
+
+  // Today’s metrics
+  const todayTot    = data?.today?.total    ?? 0;
+  const todayEmp    = data?.today?.Employee ?? 0;
+  const todayCont   = data?.today?.Contractor ?? 0;
+
+  // Realtime sums across all partitions
+  const realtimeTot = partitions.reduce((sum, key) =>
+    sum + (regions[key]?.total || 0), 0);
+  const realtimeEmp = partitions.reduce((sum, key) =>
+    sum + (regions[key]?.Employee || 0), 0);
+  const realtimeCont= partitions.reduce((sum, key) =>
+    sum + (regions[key]?.Contractor || 0), 0);
+
+  return (
+    <>
+      <Header />
+
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        {/* Title */}
+        <Box mb={2}>
+          <Typography variant="h5">LACA Dashboard</Typography>
+          {!loading && (
+            <Typography variant="body2" color="textSecondary">
+              Last updated: {lastUpdate}
+            </Typography>
+          )}
+        </Box>
+
+        {/* 1) Today vs Realtime Headcount */}
+        <Grid container spacing={2}>
+          {loading
+            ? [0,1].map(i => (
+                <Grid item xs={12} sm={6} key={i}>
+                  <Skeleton variant="rectangular" height={150} />
+                </Grid>
+              ))
+            : (
+              <>
+                <Grid item xs={12} sm={6}>
+                  <SummaryCard
+                    title="Today’s Total Headcount"
+                    total={todayTot}
+                    stats={[
+                      { label: 'Employees',   value: todayEmp },
+                      { label: 'Contractors', value: todayCont }
+                    ]}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <SummaryCard
+                    title="Realtime Headcount"
+                    total={realtimeTot}
+                    stats={[
+                      { label: 'Employees',   value: realtimeEmp },
+                      { label: 'Contractors', value: realtimeCont }
+                    ]}
+                  />
+                </Grid>
+              </>
+            )
+          }
+        </Grid>
+
+        {/* 2) Partition Grid */}
+        <Box mt={4}>
+          <Typography variant="h6" gutterBottom>
+            Partitions
+          </Typography>
+          {loading ? (
+            <Skeleton variant="rectangular" height={250} />
+          ) : (
+            <Grid container spacing={2}>
+              {partitions.map(key => {
+                const p = regions[key];
+                return (
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={key}>
+                    <SummaryCard
+                      title={`${key.split('.').pop()} Partition`}
+                      total={p.total}
+                      stats={[
+                        { label: 'Employees',   value: p.Employee },
+                        { label: 'Contractors', value: p.Contractor },
+                        ...(p.TempBadge != null
+                          ? [{ label: 'TempBadge', value: p.TempBadge }]
+                          : [])
+                      ]}
+                    />
+                  </Grid>
+                );
+              })}
+            </Grid>
+          )}
+        </Box>
+
+        {/* 3) Live totals chart */}
+        <Box mt={5}>
+          <Typography variant="h6" gutterBottom>
+            Live Totals by Partition
+          </Typography>
+          {loading ? (
+            <Skeleton variant="rectangular" height={350} />
+          ) : (
+            <ChartCard
+              title="Partition Totals"
+              chartHeight={350}
+              data={partitions.map(key => ({
+                name: key.split('.').pop(),
+                value: regions[key].total
+              }))}
+            />
+          )}
+        </Box>
+
+        {/* 4) Partition Drill‐down */}
+        <Box mt={5}>
+          <SummaryCard
+            title="Partition Drill‐down"
+            total={null}
+            stats={[{ label: 'Select a partition above to see details', value: '' }]}
+          />
+        </Box>
+      </Container>
+
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+// src/pages/Dashboard.jsx
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
   Box,
   Grid,
   Typography,
