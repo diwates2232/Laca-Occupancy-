@@ -1,196 +1,12 @@
-// src/pages/Dashboard.jsx
-
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  Skeleton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
-  Divider
-} from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
-import { partitionList } from '../services/occupancy.service';
-
-export default function Dashboard() {
-  const { data, loading, error } = useLiveOccupancy(1000);
-  const [lastUpdate, setLastUpdate] = useState('');
-  const [partition, setPartition] = useState('');
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (data) setLastUpdate(new Date().toLocaleTimeString());
-  }, [data]);
-
-  if (error) {
-    return (
-      <Box width="100%" py={4}>
-        <Typography color="error" align="center">
-          Error loading live data
-        </Typography>
-      </Box>
-    );
-  }
-
-  // Build and sort partitions by total descending
-  const regions = data?.realtime || {};
-  const partitions = partitionList.map(name => {
-    const key = Object.keys(regions).find(k => k.includes(name));
-    const p = key ? regions[key] : {};
-    return {
-      name,
-      total: p.total || 0,
-      Employee: p.Employee || 0,
-      Contractor: p.Contractor || 0,
-      TempBadge: p.TempBadge || 0,
-      floors: p.floors || {}
-    };
-  }).sort((a, b) => b.total - a.total);
-
-  // Today vs realtime totals
-  const todayTot  = data?.today?.total    ?? 0;
-  const todayEmp  = data?.today?.Employee ?? 0;
-  const todayCont = data?.today?.Contractor ?? 0;
-  const realtimeTot  = partitions.reduce((sum,p) => sum + p.total, 0);
-  const realtimeEmp  = partitions.reduce((sum,p) => sum + p.Employee, 0);
-  const realtimeCont = partitions.reduce((sum,p) => sum + p.Contractor, 0);
-
-  return (
-    <>
-      <Header />
-
-      {/* full-bleed container */}
-      <Container
-        maxWidth={false}
-        disableGutters
-        sx={{ width: '100%', pt: 2, pb: 4 }}
-      >
-
-        {/* Top summary via flex */}
-        <Box display="flex" alignItems="stretch" sx={{ mb: 4, width: '100%' }}>
-          <Box sx={{ flex: 1 }}>
-            <SummaryCard
-              title="Today’s Headcount"
-              total={todayTot}
-              stats={[
-                { label: 'Employees',   value: todayEmp },
-                { label: 'Contractors', value: todayCont }
-              ]}
-              sx={{ height: 180 }}
-            />
-          </Box>
-
-          <Divider orientation="vertical" flexItem sx={{ mx: 2, borderColor: 'grey.400' }} />
-
-          <Box sx={{ flex: 1 }}>
-            <SummaryCard
-              title="Realtime Headcount"
-              total={realtimeTot}
-              stats={[
-                { label: 'Employees',   value: realtimeEmp },
-                { label: 'Contractors', value: realtimeCont }
-              ]}
-              sx={{ height: 180 }}
-            />
-          </Box>
-        </Box>
-
-        {/* Partition cards */}
-        <Box mt={4} sx={{ width: '100%', display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-          {!loading ? partitions.map(p => (
-            <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 16px)' }}>
-              <SummaryCard
-                title={p.name}
-                total={p.total}
-                stats={[
-                  { label: 'Employees',   value: p.Employee },
-                  { label: 'Contractors', value: p.Contractor },
-                  ...(p.TempBadge ? [{ label: 'TempBadge', value: p.TempBadge }] : [])
-                ]}
-              />
-            </Box>
-          )) : <Skeleton variant="rectangular" width="100%" height={240} />}
-        </Box>
-
-        {/* Live totals chart */}
-        <Box mt={4} sx={{ width: '100%' }}>
-          <Typography variant="h6" gutterBottom>
-            Live Totals by Partition
-          </Typography>
-          {loading
-            ? <Skeleton variant="rectangular" width="100%" height={280} />
-            : <ChartCard
-                title="Partition Totals"
-                chartHeight={280}
-                data={partitions.map(p => ({ name: p.name, value: p.total }))}
-              />
-          }
-        </Box>
-
-        {/* Partition drill-down */}
-        <Box mt={4} sx={{ width: '100%' }}>
-          <FormControl fullWidth size="small">
-            <InputLabel>Select Partition</InputLabel>
-            <Select
-              value={partition}
-              label="Select Partition"
-              onChange={e => setPartition(e.target.value)}
-            >
-              <MenuItem value="">— All —</MenuItem>
-              {partitions.map(p => (
-                <MenuItem key={p.name} value={p.name}>{p.name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {partition && (
-            <Box mt={3}>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                <Typography variant="h6">{partition} – Floor Breakdown</Typography>
-                <Button
-                  variant="contained"
-                  onClick={() => navigate(`/realtime/${encodeURIComponent(partition)}`)}
-                >
-                  See Swipe Details
-                </Button>
-              </Box>
-              <ChartCard
-                title="Live Floor Counts"
-                chartHeight={240}
-                data={Object.entries(
-                  partitions.find(p => p.name === partition)?.floors || {}
-                ).map(([floor, cnt]) => ({ name: floor, value: cnt }))}
-              />
-            </Box>
-          )}
-        </Box>
-      </Container>
-
-      <Footer />
-    </>
-  );
-}
-
-
-
-
-
-
-
-
 As per below file  data are populates from left side 
 it correctly starts from left side edge but its not Touch With right side edege 
 alao cards and Charts are need to sort as per headCounts Value strickly
+Red below file line by line then give me updated file Carefully.
+
+Dont make unnecessary changes , Keep all things as it is carefully
+
+//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\Dashboard.jsx
+
 
 //C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\Dashboard.jsx
 
@@ -461,6 +277,11 @@ export default function Dashboard() {
     </>
   );
 }
+
+
+
+
+
 
 
 
