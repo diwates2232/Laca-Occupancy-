@@ -1,3 +1,32 @@
+- {partitions.map(p => (
+-   <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+-     <SummaryCard
+-       title={`${p.name} Partition`}
+-       total={p.total}
+-       stats={[ /* ... */ ]}
+-       sx={{ width: '100%' }}
+-     />
+-   </Box>
+- ))}
++ {partitions.map(p => (
++   <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
++     <SummaryCard
++       title={p.name}           // ← no more “Partition”
++       total={p.total}
++       stats={[ /* ... */ ]}
++       sx={{ width: '100%' }}
++     />
++   </Box>
++ ))}
+
+
+
+
+
+
+
+
+
 // src/pages/Dashboard.jsx
 
 import React, { useEffect, useState } from 'react';
