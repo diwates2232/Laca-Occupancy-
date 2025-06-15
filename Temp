@@ -1,3 +1,111 @@
+Now lets Check all files carefully and Update as per requirnment 
+
+//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\ChartCard.jsx
+
+import React from 'react';
+import { Card, CardContent, Typography, Box } from '@mui/material';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer
+} from 'recharts';
+
+export default function ChartCard({
+  title,
+  data = [],
+  dataKey = 'value',
+  chartHeight = 250,
+}) {
+  if (!Array.isArray(data) || data.length === 0) {
+    return (
+      <Card variant="outlined" sx={{ mb: 2 }}>
+        <CardContent sx={{ textAlign: 'center', p: 1 }}>
+          <Typography variant="h6" gutterBottom fontWeight="bold">
+            {title}
+          </Typography>
+          <Typography variant="body2" color="textSecondary">
+            No data to display.
+          </Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card variant="outlined" sx={{ mb: 2 }}>
+      <CardContent sx={{ textAlign: 'center', p: 1 }}>
+        <Typography variant="h6" gutterBottom fontWeight="bold">
+          {title}
+        </Typography>
+        <Box sx={{ width: '100%', height: chartHeight, mt: 1 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data}>
+              <XAxis dataKey="name" tick={{ fontWeight: 'bold', fontSize: 12 }} />
+              <YAxis tick={{ fontWeight: 'bold', fontSize: 12 }} />
+              <Tooltip />
+              <Bar dataKey={dataKey} fill="#FFC107" />
+            </BarChart>
+          </ResponsiveContainer>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
+//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\SummaryCard.jsx 
+
+import React from 'react';
+import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
+
+export default function SummaryCard({ title, total, stats, sx = {} }) {
+  return (
+    <Card variant="outlined" sx={{ px: 1, py: 2, ...sx }}>
+      <CardContent sx={{ textAlign: 'center', p: 1 }}>
+        <Typography variant="subtitle1" gutterBottom fontWeight="bold">
+          {title}
+        </Typography>
+
+        {total != null && (
+          <Box display="flex" justifyContent="center" alignItems="baseline" mb={1}>
+            <Typography variant="h4" fontWeight="bold" sx={{ mr: 1 }}>
+              {total}
+            </Typography>
+            <Typography variant="caption" color="textSecondary">
+              Total
+            </Typography>
+          </Box>
+        )}
+
+        <Grid container spacing={0.5} justifyContent="center">
+          {stats.map(({ label, value }) => (
+            <Grid item xs={6} key={label}>
+              <Typography variant="caption" color="textSecondary" fontWeight="bold">
+                {label}
+              </Typography>
+              <Typography variant="h6" fontWeight="bold">
+                {value}
+              </Typography>
+            </Grid>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
+
+
+
+//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\Dashboard.jsx
+
 import React, { useEffect, useState } from 'react';
 import {
   Container,
@@ -215,437 +323,42 @@ export default function Dashboard() {
 
 
 
-
-
-
-import React from 'react';
-import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
-
-export default function SummaryCard({ title, total, stats, sx = {} }) {
-  return (
-    <Card variant="outlined" sx={{ px: 1, py: 2, ...sx }}>
-      <CardContent sx={{ textAlign: 'center', p: 1 }}>
-        <Typography variant="subtitle1" gutterBottom fontWeight="bold">
-          {title}
-        </Typography>
-
-        {total != null && (
-          <Box display="flex" justifyContent="center" alignItems="baseline" mb={1}>
-            <Typography variant="h4" fontWeight="bold" sx={{ mr: 1 }}>
-              {total}
-            </Typography>
-            <Typography variant="caption" color="textSecondary">
-              Total
-            </Typography>
-          </Box>
-        )}
-
-        <Grid container spacing={0.5} justifyContent="center">
-          {stats.map(({ label, value }) => (
-            <Grid item xs={6} key={label}>
-              <Typography variant="caption" color="textSecondary" fontWeight="bold">
-                {label}
-              </Typography>
-              <Typography variant="h6" fontWeight="bold">
-                {value}
-              </Typography>
-            </Grid>
-          ))}
-        </Grid>
-      </CardContent>
-    </Card>
-  );
-}
-
-
-
-
-
-
-
-import React from 'react';
-import { Card, CardContent, Typography, Box } from '@mui/material';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer
-} from 'recharts';
-
-export default function ChartCard({
-  title,
-  data = [],
-  dataKey = 'value',
-  chartHeight = 250,
-}) {
-  if (!Array.isArray(data) || data.length === 0) {
-    return (
-      <Card variant="outlined" sx={{ mb: 2 }}>
-        <CardContent sx={{ textAlign: 'center', p: 1 }}>
-          <Typography variant="h6" gutterBottom fontWeight="bold">
-            {title}
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            No data to display.
-          </Typography>
-        </CardContent>
-      </Card>
-    );
+// src/theme/westernUnionTheme.js
+export default {
+  palette: {
+    primary: {
+      main: '#FFC107',    // WU Yellow
+      contrastText: '#000'
+    },
+    secondary: {
+      main: '#000000',    // WU Black
+      contrastText: '#FFF'
+    },
+    background: {
+      default: '#FFFFFF',
+      paper: '#FFFDE7'
+    }
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h5: { fontWeight: 600 },
+    h6: { fontWeight: 500 }
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none'
+        }
+      }
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderColor: '#FFC107'
+        }
+      }
+    }
   }
-
-  return (
-    <Card variant="outlined" sx={{ mb: 2 }}>
-      <CardContent sx={{ textAlign: 'center', p: 1 }}>
-        <Typography variant="h6" gutterBottom fontWeight="bold">
-          {title}
-        </Typography>
-        <Box sx={{ width: '100%', height: chartHeight, mt: 1 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data}>
-              <XAxis dataKey="name" tick={{ fontWeight: 'bold', fontSize: 12 }} />
-              <YAxis tick={{ fontWeight: 'bold', fontSize: 12 }} />
-              <Tooltip />
-              <Bar dataKey={dataKey} fill="#FFC107" />
-            </BarChart>
-          </ResponsiveContainer>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// src/pages/Dashboard.jsx
-
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Box,
-  Grid,
-  Typography,
-  Skeleton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
-  Divider            // ← import Divider
-} from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
-import { partitionList } from '../services/occupancy.service';
-
-export default function Dashboard() {
-  const { data, loading, error } = useLiveOccupancy(1000);
-  const [lastUpdate, setLastUpdate] = useState('');
-  const [partition, setPartition]   = useState('');
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (data) setLastUpdate(new Date().toLocaleTimeString());
-  }, [data]);
-
-  if (error) {
-    return (
-      <Box width="100%" py={4}>
-        <Typography color="error" align="center">
-          Error loading live data
-        </Typography>
-      </Box>
-    );
-  }
-
-  const regions = data?.realtime || {};
-  const partitions = partitionList.map(name => {
-    const key = Object.keys(regions).find(k => k.includes(name));
-    const p = key ? regions[key] : {};
-    return {
-      name,
-      total: p.total || 0,
-      Employee: p.Employee || 0,
-      Contractor: p.Contractor || 0,
-      TempBadge: p.TempBadge || 0,
-      floors: p.floors || {}
-    };
-  });
-
-  const todayTot  = data?.today?.total    ?? 0;
-  const todayEmp  = data?.today?.Employee ?? 0;
-  const todayCont = data?.today?.Contractor ?? 0;
-
-  const realtimeTot  = partitions.reduce((sum,p) => sum + p.total, 0);
-  const realtimeEmp  = partitions.reduce((sum,p) => sum + p.Employee, 0);
-  const realtimeCont = partitions.reduce((sum,p) => sum + p.Contractor, 0);
-
-  return (
-    <>
-      <Header />
-
-      <Container maxWidth="xl" disableGutters sx={{ pt: 0, pb: 0 }}>
-
-       {/* Top summary: two full-width rectangles */}
-       <Grid
-         container
-         alignItems="stretch"
-         justifyContent="space-between"
-         spacing={0}
-         sx={{ mb: 4, px: 2 }}
-       >
-         <Grid item xs={12} md={5}>
-
-
-
-            <SummaryCard
-              title="Today’s Headcount"
-              total={todayTot}
-              stats={[
-                { label: 'Employees',   value: todayEmp },
-                { label: 'Contractors', value: todayCont }
-              ]}
-         // force rectangle: full height
-           sx={{ height: 180, width: '100%' }}
-            />
-          </Grid>
-
-         {/* vertical divider */}
-         <Grid item>
-           <Divider orientation="vertical" flexItem sx={{ borderColor: 'grey.400', mx: 1 }} />
-         </Grid>
-             <Grid item xs={12} md={5}>
-
-            <SummaryCard
-              title="Realtime Headcount"
-              total={realtimeTot}
-              stats={[
-                { label: 'Employees',   value: realtimeEmp },
-                { label: 'Contractors', value: realtimeCont }
-              ]}
-         sx={{ height: 180, width: '100%' }}
-            />
-          </Grid>
-        </Grid>
-
-        {/* Partition cards */}
-        <Box mt={4}>
-          <Typography variant="h6" gutterBottom>
-            Partitions
-            {!loading && (
-              <Typography
-                variant="body2"
-                color="textSecondary"
-                component="span"
-                sx={{ ml: 2 }}
-              >
-                Last updated: {lastUpdate}
-              </Typography>
-            )}
-          </Typography>
-
-          {loading
-            ? <Skeleton variant="rectangular" height={240} />
-            : (
-              <Grid container spacing={1}>
-                {partitions.map(p => (
-                  <Grid item xs={6} sm={4} md={2} key={p.name}>
-                    <SummaryCard
-                      title={`${p.name} Partition`}
-                      total={p.total}
-                      stats={[
-                        { label: 'Employees',   value: p.Employee },
-                        { label: 'Contractors', value: p.Contractor },
-                        ...(p.TempBadge
-                          ? [{ label: 'TempBadge', value: p.TempBadge }]
-                          : [])
-                      ]}
-                    />
-                  </Grid>
-                ))}
-              </Grid>
-            )}
-        </Box>
-
-        {/* Live totals chart */}
-        <Box mt={4}>
-          <Typography variant="h6" gutterBottom>
-            Live Totals by Partition
-          </Typography>
-          {loading
-            ? <Skeleton variant="rectangular" height={280} />
-            : <ChartCard
-                title="Partition Totals"
-                chartHeight={280}
-                data={partitions.map(p => ({ name: p.name, value: p.total }))}
-              />
-          }
-        </Box>
-
-        {/* Partition drill-down */}
-        <Box mt={4}>
-          <FormControl fullWidth size="small">
-            <InputLabel>Select Partition</InputLabel>
-            <Select
-              value={partition}
-              label="Select Partition"
-              onChange={e => setPartition(e.target.value)}
-            >
-              <MenuItem value="">— All —</MenuItem>
-              {partitions.map(p => (
-                <MenuItem key={p.name} value={p.name}>
-                  {p.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {partition && !loading && (
-            <Box mt={3}>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                <Typography variant="h6">
-                  {partition} – Floor Breakdown
-                </Typography>
-                <Button
-                  variant="contained"
-                  onClick={() =>
-                    navigate(`/realtime/${encodeURIComponent(partition)}`)
-                  }
-                >
-                  See Swipe Details
-                </Button>
-              </Box>
-              <ChartCard
-                title="Live Floor Counts"
-                chartHeight={240}
-                data={Object.entries(
-                  partitions.find(p => p.name === partition)?.floors || {}
-                ).map(([floor, cnt]) => ({ name: floor, value: cnt }))}
-              />
-            </Box>
-          )}
-        </Box>
-
-      </Container>
-
-      <Footer />
-    </>
-  );
-}
-
-
-
-
-
-//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\ChartCard.jsx
-
-import React from 'react';
-import { Card, CardContent, Typography, Box } from '@mui/material';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer
-} from 'recharts';
-
-export default function ChartCard({
-  title,
-  data = [],
-  dataKey = 'value',
-  chartHeight = 250,
-}) {
-  if (!Array.isArray(data) || data.length === 0) {
-    return (
-      <Card variant="outlined" sx={{ mb: 2 }}>
-        <CardContent sx={{ textAlign: 'center', p: 1 }}>
-          <Typography variant="h6" gutterBottom fontWeight="bold">
-            {title}
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            No data to display.
-          </Typography>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card variant="outlined" sx={{ mb: 2 }}>
-      <CardContent sx={{ textAlign: 'center', p: 1 }}>
-        <Typography variant="h6" gutterBottom fontWeight="bold">
-          {title}
-        </Typography>
-        <Box sx={{ width: '100%', height: chartHeight, mt: 1 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data}>
-              <XAxis dataKey="name" tick={{ fontWeight: 'bold', fontSize: 12 }} />
-              <YAxis tick={{ fontWeight: 'bold', fontSize: 12 }} />
-              <Tooltip />
-              <Bar dataKey={dataKey} fill="#FFC107" />
-            </BarChart>
-          </ResponsiveContainer>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-}
-
-
-
-
-
-
-// C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\SummaryCard.jsx
-import React from 'react';
-import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
-
-export default function SummaryCard({ title, total, stats }) {
-  return (
-    <Card variant="outlined" sx={{ height: '100%', px: 1, py: 2 }}>
-      <CardContent sx={{ textAlign: 'center', p: 1 }}>
-        <Typography variant="subtitle1" gutterBottom fontWeight="bold">
-          {title}
-        </Typography>
-
-        {total != null && (
-          <Box display="flex" justifyContent="center" alignItems="baseline" mb={1}>
-            <Typography variant="h4" fontWeight="bold" sx={{ mr: 1 }}>
-              {total}
-            </Typography>
-            <Typography variant="caption" color="textSecondary">
-              Total
-            </Typography>
-          </Box>
-        )}
-
-        <Grid container spacing={0.5} justifyContent="center">
-          {stats.map(({ label, value }) => (
-            <Grid item xs={6} key={label}>
-              <Typography variant="caption" color="textSecondary" fontWeight="bold">
-                {label}
-              </Typography>
-              <Typography variant="h6" fontWeight="bold">
-                {value}
-              </Typography>
-            </Grid>
-          ))}
-        </Grid>
-      </CardContent>
-    </Card>
-  );
-}
-
-
-
-
-
-
+};
 
