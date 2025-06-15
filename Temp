@@ -1,3 +1,65 @@
+// src/api/occupancy.service.js
+
+// Point to your backend when no REACT_APP_API_BASE is set
+const BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
+
+export async function fetchLiveSummary() {
+  const res = await fetch(`${BASE}/api/occupancy/live-summary`);
+  if (!res.ok) throw new Error(`Live summary fetch failed: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchHistory(location) {
+  const url = location
+    ? `${BASE}/api/occupancy/history/${encodeURIComponent(location)}`
+    : `${BASE}/api/occupancy/history`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`History fetch failed: ${res.status}`);
+  return res.json();
+}
+
+
+
+
+{/* Bar Chart */}
+<Box mt={4}>
+  <Typography variant="h6" gutterBottom>Realtime by Partition</Typography>
+- {loading ? (
+-   <Skeleton variant="rectangular" height={300} />
+- ) : (
+-   <ChartCard
+-     title=""
+-     data={Object.entries(data.realtime).map(([name, stats]) => ({
+-       name,
+-       value: stats.total
+-     }))}
+-     dataKey="value"
+-   />
+- )}
++ {loading
++   ? <Skeleton variant="rectangular" height={300} />
++   : <ChartCard
++       title="Partitions"
++       data={Object.entries(data.realtime).map(([name, stats]) => ({
++         name,
++         value: stats.total
++       }))}
++     />
++ }
+</Box>
+
+
+
+
+
+
+
+
+
+
+
+
+
 C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\api\occupancy.service.js
 
 // src/api/occupancy.service.js
