@@ -1,3 +1,146 @@
+// src/pages/Dashboard.jsx
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Typography,
+  Grid,
+  Button,
+  Skeleton
+} from '@mui/material';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+  const [selectedPartition, setSelectedPartition] = useState(null);
+
+  // Update timestamp when new data arrives
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) {
+    return (
+      <Container sx={{ mt: 4 }}>
+        <Typography color="error">Error loading live data</Typography>
+      </Container>
+    );
+  }
+
+  // Global today stats
+  const todayStats = !loading && [
+    { label: 'Employees',   value: data.today.Employee },
+    { label: 'Contractors', value: data.today.Contractor }
+  ];
+
+  // Partition names
+  const partitions = !loading ? Object.keys(data.realtime) : [];
+
+  // If one partition is selected, get its floor breakdown
+  const floorData = selectedPartition && data?.realtime[selectedPartition]?.floors;
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2, mb: 4 }}>
+
+        {/* 1) Title + Last Updated */}
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="h5">LACA Headcount</Typography>
+          {loading
+            ? <Skeleton width={100} />
+            : <Typography variant="body2" color="textSecondary">
+                Updated: {lastUpdate}
+              </Typography>
+          }
+        </Box>
+
+        {/* 2) Today Headcount Card */}
+        {loading
+          ? <Skeleton variant="rectangular" height={100} />
+          : <SummaryCard title="Today’s Headcount" stats={todayStats} />
+        }
+
+        {/* 3) Either Partition List or Floor Chart */}
+        {!selectedPartition ? (
+          <>
+            {/* Partition cards */}
+            <Box mt={4}>
+              <Typography variant="h6" gutterBottom>Realtime Headcount by Partition</Typography>
+              {loading ? (
+                <Skeleton variant="rectangular" height={200} />
+              ) : (
+                <Grid container spacing={2}>
+                  {partitions.map(name => {
+                    const stats = data.realtime[name];
+                    return (
+                      <Grid item xs={12} sm={6} md={4} key={name}>
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          onClick={() => setSelectedPartition(name)}
+                        >
+                          <Box textAlign="left">
+                            <Typography variant="subtitle1">
+                              {name.replace(/^.*\./, '')}
+                            </Typography>
+                            <Typography variant="h6">
+                              {stats.total} total
+                            </Typography>
+                          </Box>
+                        </Button>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              )}
+            </Box>
+          </>
+        ) : (
+          <>
+            {/* Floor-wise breakdown for selected partition */}
+            <Box mt={4} mb={2} display="flex" justifyContent="space-between">
+              <Typography variant="h6">
+                {selectedPartition.replace(/^.*\./, '')} – Floor Breakdown
+              </Typography>
+              <Button onClick={() => setSelectedPartition(null)}>
+                ← Back to Partitions
+              </Button>
+            </Box>
+
+            {loading ? (
+              <Skeleton variant="rectangular" height={300} />
+            ) : (
+              <ChartCard
+                title="Floor Counts"
+                data={Object.entries(floorData || {}).map(([floor, count]) => ({
+                  name: floor,
+                  value: count
+                }))}
+              />
+            )}
+          </>
+        )}
+
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
 import React from 'react';
 import { AppBar, Toolbar, Box, Typography } from '@mui/material';
 import WuLogo from '../assets/wu-logo.png';      // ← put your WU logo here
