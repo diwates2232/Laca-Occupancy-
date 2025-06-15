@@ -1,100 +1,9 @@
--      <Container maxWidth="xl" disableGutters sx={{ pt: 2, pb: 4 }}>
-+      <Container
-+        maxWidth="xl"
-+        disableGutters
-+        sx={{
-+          pt: 2,
-+          pb: 4,
-+          width: '100vw',
-+          ml: '-50vw',
-+          left: '50%',
-+          position: 'relative'
-+        }}
-+      >
+As per below file  data are populates from left side 
+it correctly starts from left side edge but its not Touch With right side edege 
+alao cards and Charts are need to sort as per headCounts Value strickly
 
-         {/* Top summary via flexbox */}
-         <Box
--          display="flex"
--          alignItems="stretch"
--          sx={{ mb: 4, px: 2, width: '100%' }}
-+          display="flex"
-+          alignItems="stretch"
-+          sx={{ mb: 4, width: '100%' }}
-         >
-           {/* Today’s Headcount */}
-           ...
+//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\Dashboard.jsx
 
-         {/* Partition cards */}
--        <Box mt={4} sx={{ px: 2 }}>
-+        <Box mt={4}>
-           <Typography variant="h6" gutterBottom>
-             Partitions
-             ...
-
--          {loading ? (
--            <Skeleton variant="rectangular" height={240} />
--          ) : (
--            <Box display="flex" flexWrap="wrap" gap={8}>
-+          {loading ? (
-+            <Skeleton variant="rectangular" height={240} />
-+          ) : (
-+            <Box display="flex" flexWrap="wrap" gap={8}>
-               {partitions.map(p => (
-                 <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
-                   ...
-
-         {/* Live totals chart */}
--        <Box mt={4} sx={{ px: 2 }}>
-+        <Box mt={4}>
-           <Typography variant="h6" gutterBottom>
-             Live Totals by Partition
-           </Typography>
-           ...
-
-         {/* Partition drill-down */}
--        <Box mt={4} sx={{ px: 2 }}>
-+        <Box mt={4}>
-           <FormControl fullWidth size="small">
-             ...
-
-
-
-
-
-
-
-
-
-- {partitions.map(p => (
--   <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
--     <SummaryCard
--       title={`${p.name} Partition`}
--       total={p.total}
--       stats={[ /* ... */ ]}
--       sx={{ width: '100%' }}
--     />
--   </Box>
-- ))}
-+ {partitions.map(p => (
-+   <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
-+     <SummaryCard
-+       title={p.name}           // ← no more “Partition”
-+       total={p.total}
-+       stats={[ /* ... */ ]}
-+       sx={{ width: '100%' }}
-+     />
-+   </Box>
-+ ))}
-
-
-
-
-
-
-
-
-
-// src/pages/Dashboard.jsx
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -130,7 +39,7 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <Box width="100%" py={4}>
+      <Box width="100vw%" py={4}>
         <Typography color="error" align="center">
           Error loading live data
         </Typography>
@@ -166,14 +75,34 @@ export default function Dashboard() {
     <>
       <Header />
 
-      <Container maxWidth="xl" disableGutters sx={{ pt: 2, pb: 4 }}>
+      {/* <Container maxWidth="xl" disableGutters sx={{ pt: 2, pb: 4 }}> */}
+
+      <Container
+        maxWidth="xl"
+        disableGutters
+       sx={{
+         pt: 2,
+          pb: 4,
+          width: '100vw',
+          ml: '-50vw',
+          left: '50%',
+          position: 'relative'
+        }}
+     >
+
 
         {/* Top summary via flexbox */}
         <Box
-          display="flex"
-          alignItems="stretch"
-          sx={{ mb: 4, px: 2, width: '100%' }}
-        >
+          // display="flex"
+          // alignItems="stretch"
+          // sx={{ mb: 4, px: 2, width: '100vw%' }}
+
+
+       display="flex"
+         alignItems="stretch"
+          sx={{ mb: 4, width: '100vw%' }}
+        > 
+
           {/* Today’s Headcount */}
           <Box sx={{ flex: 1 }}>
             <SummaryCard
@@ -183,7 +112,7 @@ export default function Dashboard() {
                 { label: 'Employees',   value: todayEmp },
                 { label: 'Contractors', value: todayCont }
               ]}
-              sx={{ height: 180, width: '100%' }}
+              sx={{ height: 150, width: '100vw%' }}
             />
           </Box>
 
@@ -191,7 +120,7 @@ export default function Dashboard() {
           <Divider
             orientation="vertical"
             flexItem
-            sx={{ mx: 2, borderColor: 'grey.400' }}
+            sx={{ mx: 2 }}
           />
 
           {/* Realtime Headcount */}
@@ -203,7 +132,7 @@ export default function Dashboard() {
                 { label: 'Employees',   value: realtimeEmp },
                 { label: 'Contractors', value: realtimeCont }
               ]}
-              sx={{ height: 180, width: '100%' }}
+              sx={{ height: 150, width: '100vw%' }}
             />
           </Box>
         </Box>
@@ -227,11 +156,11 @@ export default function Dashboard() {
           {loading ? (
             <Skeleton variant="rectangular" height={240} />
           ) : (
-            <Box display="flex" flexWrap="wrap" gap={8}>
+            <Box display="flex" flexWrap="wrap" gap={1}>
               {partitions.map(p => (
                 <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
                   <SummaryCard
-                    title={`${p.name} Partition`}
+                    title={`${p.name}`}
                     total={p.total}
                     stats={[
                       { label: 'Employees',   value: p.Employee },
@@ -240,7 +169,7 @@ export default function Dashboard() {
                         ? [{ label: 'TempBadge', value: p.TempBadge }]
                         : [])
                     ]}
-                    sx={{ width: '100%' }}
+                    sx={{ width: '100vw%' }}
                   />
                 </Box>
               ))}
@@ -316,297 +245,32 @@ export default function Dashboard() {
 
       </Container>
 
-      <Footer />
+        <footer style={{
+        backgroundColor: '#000000',
+        color: '#FFC107',
+        padding: '1.5rem 0',
+        textAlign: 'center',
+        marginTop: '0rem',
+        borderTop: '2px solid #FFC107',
+        fontSize: '0.95rem',
+        lineHeight: '1.6'
+      }}>
+        <div><strong>Global Security Operations Center</strong><br/>
+          Live HeadCount against Occupancy dashboard for Western Union — Real-time occupancy, floor activity, and personnel insights.
+        </div>
+        <div style={{ marginTop: '0.75rem' }}>
+          Contact us:&nbsp;
+          <a href="mailto:GSOC-GlobalSecurityOperationCenter.SharedMailbox@westernunion.com"
+             style={{ color: '#FFC107', textDecoration: 'underline' }}>
+            GSOC Mail
+          </a>&nbsp;|&nbsp;
+          Landline:&nbsp;<span style={{ color: '#FFC107' }}>+91-020-67632394</span>
+        </div>
+      </footer>
+
     </>
   );
 }
-
-
-
-
-
-
-
-
-
-
-//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\Dashboard.jsx
-
-
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Box,
-  Grid,
-  Typography,
-  Skeleton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
-  Divider
-} from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
-import { partitionList } from '../services/occupancy.service';
-
-export default function Dashboard() {
-  const { data, loading, error } = useLiveOccupancy(1000);
-  const [lastUpdate, setLastUpdate] = useState('');
-  const [partition, setPartition]   = useState('');
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (data) setLastUpdate(new Date().toLocaleTimeString());
-  }, [data]);
-
-  if (error) {
-    return (
-      <Box width="100%" py={4}>
-        <Typography color="error" align="center">
-          Error loading live data
-        </Typography>
-      </Box>
-    );
-  }
-
-  // build partitions from realtime data
-  const regions = data?.realtime || {};
-  const partitions = partitionList.map(name => {
-    const key = Object.keys(regions).find(k => k.includes(name));
-    const p = key ? regions[key] : {};
-    return {
-      name,
-      total: p.total || 0,
-      Employee: p.Employee || 0,
-      Contractor: p.Contractor || 0,
-      TempBadge: p.TempBadge || 0,
-      floors: p.floors || {}
-    };
-  });
-
-  // today vs realtime totals
-  const todayTot  = data?.today?.total    ?? 0;
-  const todayEmp  = data?.today?.Employee ?? 0;
-  const todayCont = data?.today?.Contractor ?? 0;
-  const realtimeTot  = partitions.reduce((sum,p) => sum + p.total, 0);
-  const realtimeEmp  = partitions.reduce((sum,p) => sum + p.Employee, 0);
-  const realtimeCont = partitions.reduce((sum,p) => sum + p.Contractor, 0);
-
-  return (
-    <>
-      <Header />
-
-      <Container maxWidth="xl" disableGutters sx={{ pt: 2, pb: 4 }}>
-
-        {/* Top summary: two half-width rectangles */}
-        <Grid
-          container
-          alignItems="stretch"
-          justifyContent="space-between"
-          spacing={0}
-          sx={{ mb: 4 }}
-        >
-          <Grid item xs={12} md={6}>
-            <SummaryCard
-              title="Today’s Headcount"
-              total={todayTot}
-              stats={[
-                { label: 'Employees',   value: todayEmp },
-                { label: 'Contractors', value: todayCont }
-              ]}
-              sx={{ height: 180, width: '100%' }}
-            />
-          </Grid>
-
-          <Grid item>
-            <Divider
-              orientation="vertical"
-              flexItem
-              sx={{ borderColor: 'grey.400', mx: 1 }}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <SummaryCard
-              title="Realtime Headcount"
-              total={realtimeTot}
-              stats={[
-                { label: 'Employees',   value: realtimeEmp },
-                { label: 'Contractors', value: realtimeCont }
-              ]}
-              sx={{ height: 180, width: '100%' }}
-            />
-          </Grid>
-        </Grid>
-
-        {/* Partition cards */}
-        <Box mt={4} sx={{ px: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            Partitions
-            {!loading && (
-              <Typography
-                variant="body2"
-                color="textSecondary"
-                component="span"
-                sx={{ ml: 2 }}
-              >
-                Last updated: {lastUpdate}
-              </Typography>
-            )}
-          </Typography>
-
-          {loading
-            ? <Skeleton variant="rectangular" height={240} />
-            : (
-              <Grid container spacing={1}>
-                {partitions.map(p => (
-                  <Grid item xs={6} sm={4} md={2} key={p.name}>
-                    <SummaryCard
-                      title={`${p.name} Partition`}
-                      total={p.total}
-                      stats={[
-                        { label: 'Employees',   value: p.Employee },
-                        { label: 'Contractors', value: p.Contractor },
-                        ...(p.TempBadge
-                          ? [{ label: 'TempBadge', value: p.TempBadge }]
-                          : [])
-                      ]}
-                      sx={{ width: '100%' }}
-                    />
-                  </Grid>
-                ))}
-              </Grid>
-            )}
-        </Box>
-
-        {/* Live totals chart */}
-        <Box mt={4} sx={{ px: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            Live Totals by Partition
-          </Typography>
-          {loading
-            ? <Skeleton variant="rectangular" height={280} />
-            : <ChartCard
-                title="Partition Totals"
-                chartHeight={280}
-                data={partitions.map(p => ({ name: p.name, value: p.total }))}
-              />
-          }
-        </Box>
-
-        {/* Partition drill-down */}
-        <Box mt={4} sx={{ px: 2 }}>
-          <FormControl fullWidth size="small">
-            <InputLabel>Select Partition</InputLabel>
-            <Select
-              value={partition}
-              label="Select Partition"
-              onChange={e => setPartition(e.target.value)}
-            >
-              <MenuItem value="">— All —</MenuItem>
-              {partitions.map(p => (
-                <MenuItem key={p.name} value={p.name}>
-                  {p.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {partition && !loading && (
-            <Box mt={3}>
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={1}
-                sx={{ px: 2 }}
-              >
-                <Typography variant="h6">
-                  {partition} – Floor Breakdown
-                </Typography>
-                <Button
-                  variant="contained"
-                  onClick={() =>
-                    navigate(`/realtime/${encodeURIComponent(partition)}`)
-                  }
-                >
-                  See Swipe Details
-                </Button>
-              </Box>
-              <ChartCard
-                title="Live Floor Counts"
-                chartHeight={240}
-                data={Object.entries(
-                  partitions.find(p => p.name === partition)?.floors || {}
-                ).map(([floor, cnt]) => ({ name: floor, value: cnt }))}
-              />
-            </Box>
-          )}
-        </Box>
-
-      </Container>
-
-      <Footer />
-    </>
-  );
-}
-
-
-
-in above file update below section and give me updated files carefully 
-
-
-// … other imports …
-import { Box, Divider } from '@mui/material';
-// … inside your component’s return() …
-
-  {/* Top summary via flexbox */}
-  <Box 
-    display="flex" 
-    alignItems="stretch" 
-    sx={{ mb: 4, px: 2, width: '100%' }}
-  >
-    {/* Today’s Headcount */}
-    <Box sx={{ flex: 1 }}>
-      <SummaryCard
-        title="Today’s Headcount"
-        total={todayTot}
-        stats={[
-          { label: 'Employees',   value: todayEmp },
-          { label: 'Contractors', value: todayCont }
-        ]}
-        sx={{ height: 180, width: '100%' }}
-      />
-    </Box>
-
-    {/* Vertical divider */}
-    <Divider 
-      orientation="vertical" 
-      flexItem 
-      sx={{ mx: 2, borderColor: 'grey.400' }} 
-    />
-
-    {/* Realtime Headcount */}
-    <Box sx={{ flex: 1 }}>
-      <SummaryCard
-        title="Realtime Headcount"
-        total={realtimeTot}
-        stats={[
-          { label: 'Employees',   value: realtimeEmp },
-          { label: 'Contractors', value: realtimeCont }
-        ]}
-        sx={{ height: 180, width: '100%' }}
-      />
-    </Box>
-  </Box>
-
 
 
 
