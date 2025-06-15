@@ -1,3 +1,5 @@
+Read all files caredfully and line by line and give me updated fles caredfully
+
 // src/pages/Dashboard.jsx
 
 import React, { useEffect, useState } from 'react';
@@ -66,8 +68,8 @@ export default function Dashboard() {
             <>
               <Grid item xs={12} sm={6}>
                 <SummaryCard
-                  title="Today’s Total Headcount"
-                  total={todayTot}
+                  title="Today’s Headcount"
+                   total={todayTot}
                   stats={[
                     { label: 'Employees', value: todayEmp },
                     { label: 'Contractors', value: todayCont }
@@ -112,7 +114,7 @@ export default function Dashboard() {
                 return (
                   <Grid item xs={12} sm={6} md={4} lg={3} key={key}>
                     <SummaryCard
-                      title={`${key.split('.').pop()} Partition`}
+                      title={`${key.split('.').pop()}`}
                       total={p.total}
                       stats={[
                         { label: 'Employees',   value: p.Employee },
@@ -173,7 +175,7 @@ export default function Dashboard() {
                 <Button
                   variant="outlined"
                   onClick={() =>
-                    navigate(`/realtime/${encodeURIComponent(partition)}`)
+                    navigate(`/realtime/${encodeURIComponent}`)
                   }
                 >
                   See Swipe Details
@@ -201,390 +203,83 @@ export default function Dashboard() {
 
 
 
-
-
-
-// src/pages/Dashboard.jsx
-
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Grid,
-  Typography,
-  Box,
-  Skeleton
-} from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
-
-export default function Dashboard() {
-  const { data, loading, error } = useLiveOccupancy(1000);
-  const [lastUpdate, setLastUpdate] = useState('');
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (data) setLastUpdate(new Date().toLocaleTimeString());
-  }, [data]);
-
-  if (error) {
-    return (
-      <Container sx={{ mt: 4 }}>
-        <Typography color="error">Error loading live data</Typography>
-      </Container>
-    );
+// src/theme/westernUnionTheme.js
+export default {
+  palette: {
+    primary: {
+      main: '#FFC107',    // WU Yellow
+      contrastText: '#000'
+    },
+    secondary: {
+      main: '#000000',    // WU Black
+      contrastText: '#FFF'
+    },
+    background: {
+      default: '#FFFFFF',
+      paper: '#FFFDE7'
+    }
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h5: { fontWeight: 600 },
+    h6: { fontWeight: 500 }
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none'
+        }
+      }
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderColor: '#FFC107'
+        }
+      }
+    }
   }
+};
 
-  const regions     = data?.realtime || {};
-  const partitions  = Object.keys(regions);
 
-  // Today’s metrics
-  const todayTot    = data?.today?.total    ?? 0;
-  const todayEmp    = data?.today?.Employee ?? 0;
-  const todayCont   = data?.today?.Contractor ?? 0;
 
-  // Realtime sums across all partitions
-  const realtimeTot = partitions.reduce((sum, key) =>
-    sum + (regions[key]?.total || 0), 0);
-  const realtimeEmp = partitions.reduce((sum, key) =>
-    sum + (regions[key]?.Employee || 0), 0);
-  const realtimeCont= partitions.reduce((sum, key) =>
-    sum + (regions[key]?.Contractor || 0), 0);
 
+
+// src/components/SummaryCard.jsx
+
+import React from 'react';
+import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
+
+export default function SummaryCard({ title, total, stats }) {
   return (
-    <>
-      <Header />
+    <Card variant="outlined" sx={{ height: '100%' }}>
+      <CardContent>
+        <Typography variant="subtitle1" gutterBottom>
+          {title}
+        </Typography>
 
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        {/* Title */}
-        <Box mb={2}>
-          <Typography variant="h5">LACA Dashboard</Typography>
-          {!loading && (
-            <Typography variant="body2" color="textSecondary">
-              Last updated: {lastUpdate}
-            </Typography>
-          )}
-        </Box>
+        {total != null && (
+          <Box display="flex" alignItems="baseline" mb={1}>
+            <Typography variant="h4" sx={{ mr: 1 }}>{total}</Typography>
+            <Typography variant="body2" color="textSecondary">Total</Typography>
+          </Box>
+        )}
 
-        {/* 1) Today vs Realtime Headcount */}
-        <Grid container spacing={2}>
-          {loading
-            ? [0,1].map(i => (
-                <Grid item xs={12} sm={6} key={i}>
-                  <Skeleton variant="rectangular" height={150} />
-                </Grid>
-              ))
-            : (
-              <>
-                <Grid item xs={12} sm={6}>
-                  <SummaryCard
-                    title="Today’s Total Headcount"
-                    total={todayTot}
-                    stats={[
-                      { label: 'Employees',   value: todayEmp },
-                      { label: 'Contractors', value: todayCont }
-                    ]}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <SummaryCard
-                    title="Realtime Headcount"
-                    total={realtimeTot}
-                    stats={[
-                      { label: 'Employees',   value: realtimeEmp },
-                      { label: 'Contractors', value: realtimeCont }
-                    ]}
-                  />
-                </Grid>
-              </>
-            )
-          }
-        </Grid>
-
-        {/* 2) Partition Grid */}
-        <Box mt={4}>
-          <Typography variant="h6" gutterBottom>
-            Partitions
-          </Typography>
-          {loading ? (
-            <Skeleton variant="rectangular" height={250} />
-          ) : (
-            <Grid container spacing={2}>
-              {partitions.map(key => {
-                const p = regions[key];
-                return (
-                  <Grid item xs={12} sm={6} md={4} lg={3} key={key}>
-                    <SummaryCard
-                      title={`${key.split('.').pop()} Partition`}
-                      total={p.total}
-                      stats={[
-                        { label: 'Employees',   value: p.Employee },
-                        { label: 'Contractors', value: p.Contractor },
-                        ...(p.TempBadge != null
-                          ? [{ label: 'TempBadge', value: p.TempBadge }]
-                          : [])
-                      ]}
-                    />
-                  </Grid>
-                );
-              })}
-            </Grid>
-          )}
-        </Box>
-
-        {/* 3) Live totals chart */}
-        <Box mt={5}>
-          <Typography variant="h6" gutterBottom>
-            Live Totals by Partition
-          </Typography>
-          {loading ? (
-            <Skeleton variant="rectangular" height={350} />
-          ) : (
-            <ChartCard
-              title="Partition Totals"
-              chartHeight={350}
-              data={partitions.map(key => ({
-                name: key.split('.').pop(),
-                value: regions[key].total
-              }))}
-            />
-          )}
-        </Box>
-
-        {/* 4) Partition Drill‐down */}
-        <Box mt={5}>
-          <SummaryCard
-            title="Partition Drill‐down"
-            total={null}
-            stats={[{ label: 'Select a partition above to see details', value: '' }]}
-          />
-        </Box>
-      </Container>
-
-      <Footer />
-    </>
-  );
-}
-
-
-
-
-
-
-
-
-// src/pages/Dashboard.jsx
-
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Box,
-  Grid,
-  Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
-  Skeleton
-} from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
-
-export default function Dashboard() {
-  const { data, loading, error } = useLiveOccupancy(1000);
-  const [lastUpdate, setLastUpdate] = useState('');
-  const [partition, setPartition]   = useState('');
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (data) setLastUpdate(new Date().toLocaleTimeString());
-  }, [data]);
-
-  if (error) {
-    return (
-      <Container maxWidth="xl" sx={{ mt: 1 }}>
-        <Typography color="error">Error loading live data</Typography>
-      </Container>
-    );
-  }
-
-  const regions = !loading ? data.realtime : {};
-  const names   = Object.keys(regions);
-  // Shortcut for Costa Rica partition
-  const costaKey = names.find(n => n.startsWith('CR.Costa'));
-  const costa    = costaKey ? regions[costaKey] : null;
-
-  return (
-    <>
-      <Header />
-      <Container maxWidth="xl" sx={{ mt: 3, mb: 4 }}>
-
-        {/* 1) Today's Total & Realtime Headcount */}
-        <Grid container spacing={3}>
-          {loading
-            ? [0,1].map(i => (
-                <Grid item xs={12} sm={6} key={i}>
-                  <Skeleton variant="rectangular" height={160} />
-                </Grid>
-              ))
-            : (
-              <>
-                <Grid item xs={12} sm={6}>
-                  <SummaryCard
-                    title="Today’s Total Headcount"
-                    total={data.today.total}
-                    stats={[
-                      { label: 'Employees',   value: data.today.Employee },
-                      { label: 'Contractors', value: data.today.Contractor }
-                    ]}
-                    showIcons={false}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <SummaryCard
-                    title="Realtime Headcount"
-                    total={data.today.total}
-                    stats={[
-                      { label: 'Employees',   value: data.today.Employee },
-                      { label: 'Contractors', value: data.today.Contractor }
-                    ]}
-                    showIcons={false}
-                  />
-                </Grid>
-              </>
-            )
-          }
-        </Grid>
-
-        {/* 2) Costa Rica quick card */}
-        <Box mt={5}>
-          {loading || !costa ? (
-            <Skeleton variant="rectangular" height={160} />
-          ) : (
-            <SummaryCard
-              title="Costa Rica (Live Only)"
-              total={costa.total}
-              stats={[
-                { label: 'Employees',   value: costa.Employee },
-                { label: 'Contractors', value: costa.Contractor },
-                { label: 'TempBadge',   value: costa.TempBadge || 0 }
-              ]}
-              // use icons for each row
-              showIcons={true}
-            />
-          )}
-        </Box>
-
-        {/* 3) Partition summary as icons-only rows */}
-        <Box mt={5}>
-          <Typography variant="h6" gutterBottom>
-            Partitions
-            {!loading && (
-              <Typography variant="body2" color="textSecondary" component="span" sx={{ ml: 2 }}>
-                (Updated: {lastUpdate})
+        <Grid container spacing={1}>
+          {stats.map(({ label, value }) => (
+            <Grid item xs={12} sm={6} key={label}>
+              <Typography variant="caption" color="textSecondary">
+                {label}
               </Typography>
-            )}
-          </Typography>
-
-          {loading ? (
-            <Skeleton variant="rectangular" height={220} />
-          ) : (
-            <Grid container spacing={3}>
-              {names.map(name => {
-                const p = regions[name];
-                return (
-                  <Grid item xs={12} sm={6} md={4} lg={3} key={name}>
-                    <SummaryCard
-                      title={name.split('.').pop()}
-                      total={p.total}
-                      stats={[
-                        { label: 'Employees',   value: p.Employee },
-                        { label: 'Contractors', value: p.Contractor },
-                        // include temp badge only for CR
-                        ...(name === costaKey ? [{ label: 'TempBadge', value: p.TempBadge || 0 }] : [])
-                      ]}
-                      showIcons={true}
-                    />
-                  </Grid>
-                );
-              })}
+              <Typography variant="h6">
+                {value}
+              </Typography>
             </Grid>
-          )}
-        </Box>
-
-  {/* Live totals chart */}
-         <Box mt={5}>
-           <Typography variant="h6" gutterBottom>Live Totals by Partition</Typography>
-           {loading ? (
-            <Skeleton variant="rectangular" height={350} />
-          ) : (
-            <ChartCard
-              title="Partition Totals"
-              chartHeight={350}
-              data={names.map(name => ({
-                name: name.split('.').pop(),
-                value: regions[name].total
-              }))}
-            />
-          )}
-        </Box>
-
-        {/* Partition drill-down */}
-        <Box mt={5}>
-          <FormControl fullWidth>
-            <InputLabel>Select Partition</InputLabel>
-            <Select
-              value={partition}
-              label="Select Partition"
-              onChange={e => setPartition(e.target.value)}
-            >
-              <MenuItem value="">— All —</MenuItem>
-              {names.map(name => (
-                <MenuItem key={name} value={name}>
-                  {name.split('.').pop()}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {partition && !loading && (
-            <Box mt={4}>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h6">
-                  {partition.split('.').pop()} – Floor Breakdown
-                </Typography>
-                <Button
-                  variant="outlined"
-                  onClick={() => navigate(`/realtime/${encodeURIComponent(partition)}`)}
-                >
-                  See Swipe Details
-                </Button>
-              </Box>
-              <ChartCard
-                title="Live Floor Counts"
-                chartHeight={300}
-                data={Object.entries(regions[partition].floors || {}).map(([floor, cnt]) => ({
-                  name: floor,
-                  value: cnt
-                }))}
-              />
-            </Box>
-          )}
-        </Box>
-      </Container>
-
-      <Footer />
-    </>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -594,290 +289,55 @@ export default function Dashboard() {
 
 
 
+// src/components/ChartCard.jsx
 
-
-
-
-
-
-
-
-
-
-
-// src/pages/Dashboard.jsx
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { Card, CardContent, Typography, Box } from '@mui/material';
 import {
-  Container,
-  Grid,
-  Typography,
-  Box,
-  Skeleton
-} from '@mui/material';
-import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
-import SummaryCard from '../components/SummaryCard';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer
+} from 'recharts';
 
-export default function Dashboard() {
-  const { data, loading, error } = useLiveOccupancy(1000);
-  const [lastUpdate, setLastUpdate] = useState('');
-
-  useEffect(() => {
-    if (data) setLastUpdate(new Date().toLocaleTimeString());
-  }, [data]);
-
-  if (error) {
+export default function ChartCard({
+  title,
+  data = [],
+  dataKey = 'value',
+  chartHeight = 250,    // default fixed chart height
+}) {
+  if (!Array.isArray(data) || data.length === 0) {
     return (
-      <Container sx={{ mt: 4 }}>
-        <Typography color="error">Error loading live data</Typography>
-      </Container>
+      <Card variant="outlined" sx={{ mb: 2 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>{title}</Typography>
+          <Typography variant="body2" color="textSecondary">
+            No data to display.
+          </Typography>
+        </CardContent>
+      </Card>
     );
   }
 
-  // Today’s metrics
-  const todayTot  = data?.today?.total    ?? 0;
-  const todayEmp  = data?.today?.Employee ?? 0;
-  const todayCont = data?.today?.Contractor ?? 0;
-
-  // Realtime sums
-  const regions     = data?.realtime || {};
-  const realtimeTot = Object.values(regions).reduce((sum, r) => sum + (r.total || 0), 0);
-  const realtimeEmp = Object.values(regions).reduce((sum, r) => sum + (r.Employee || 0), 0);
-  const realtimeCont= Object.values(regions).reduce((sum, r) => sum + (r.Contractor || 0), 0);
-
-  // Partition list
-  const names = Object.keys(regions);
-
   return (
-    <>
-      <Header />
-
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        {/* Title */}
-        <Box mb={2}>
-          <Typography variant="h5">LACA Dashboard</Typography>
-          {!loading && (
-            <Typography variant="body2" color="textSecondary">
-              Last updated: {lastUpdate}
-            </Typography>
-          )}
+    <Card variant="outlined" sx={{ mb: 2 }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>{title}</Typography>
+        <Box sx={{ width: '100%', height: chartHeight }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data}>
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey={dataKey} fill="#FFC107" />
+            </BarChart>
+          </ResponsiveContainer>
         </Box>
-
-        {/* 1) Today vs Realtime Headcount */}
-        <Grid container spacing={2}>
-          {loading
-            ? [0,1].map(i => (
-                <Grid item xs={12} sm={6} key={i}>
-                  <Skeleton variant="rectangular" height={150} />
-                </Grid>
-              ))
-            : (
-              <>
-                <Grid item xs={12} sm={6}>
-                  <SummaryCard
-                    title="Today’s Total Headcount"
-                    total={todayTot}
-                    stats={[
-                      { label: 'Employees',   value: todayEmp },
-                      { label: 'Contractors', value: todayCont }
-                    ]}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <SummaryCard
-                    title="Realtime Headcount"
-                    total={realtimeTot}
-                    stats={[
-                      { label: 'Employees',   value: realtimeEmp },
-                      { label: 'Contractors', value: realtimeCont }
-                    ]}
-                  />
-                </Grid>
-              </>
-            )
-          }
-        </Grid>
-
-        {/* 2) Partition Grid (including Costa Rica) */}
-        <Box mt={4}>
-          <Typography variant="h6" gutterBottom>
-            Partitions
-          </Typography>
-
-          {loading
-            ? <Skeleton variant="rectangular" height={250} />
-            : (
-              <Grid container spacing={2}>
-                {names.map(name => {
-                  const p = regions[name];
-                  return (
-                    <Grid item xs={12} sm={6} md={4} lg={3} key={name}>
-                      <SummaryCard
-                        title={name.split('.').pop() + ' Partition'}
-                        total={p.total}
-                        stats={[
-                          { label: 'Employees',   value: p.Employee },
-                          { label: 'Contractors', value: p.Contractor },
-                          ...(p.TempBadge != null ? [{ label: 'TempBadge', value: p.TempBadge }] : [])
-                        ]}
-                      />
-                    </Grid>
-                  );
-                })}
-              </Grid>
-            )
-          }
-        </Box>
-      </Container>
-
-      <Footer />
-    </>
+      </CardContent>
+    </Card>
   );
 }
 
 
 
-Read above file and below file and Give me Updated new strickly updated files carefully 
 
-
-this is current you provided 
-
-
-
-
-// src/pages/Dashboard.jsx
-
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Grid,
-  Typography,
-  Box,
-  Skeleton
-} from '@mui/material';
-import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
-import SummaryCard from '../components/SummaryCard';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-
-export default function Dashboard() {
-  const { data, loading, error } = useLiveOccupancy(1000);
-  const [lastUpdate, setLastUpdate] = useState('');
-
-  useEffect(() => {
-    if (data) setLastUpdate(new Date().toLocaleTimeString());
-  }, [data]);
-
-  if (error) {
-    return (
-      <Container sx={{ mt: 4 }}>
-        <Typography color="error">Error loading live data</Typography>
-      </Container>
-    );
-  }
-
-  // Today’s metrics
-  const todayTot  = data?.today?.total    ?? 0;
-  const todayEmp  = data?.today?.Employee ?? 0;
-  const todayCont = data?.today?.Contractor ?? 0;
-
-  // Realtime sums
-  const regions     = data?.realtime || {};
-  const realtimeTot = Object.values(regions).reduce((sum, r) => sum + (r.total || 0), 0);
-  const realtimeEmp = Object.values(regions).reduce((sum, r) => sum + (r.Employee || 0), 0);
-  const realtimeCont= Object.values(regions).reduce((sum, r) => sum + (r.Contractor || 0), 0);
-
-  // Partition list
-  const names = Object.keys(regions);
-
-  return (
-    <>
-      <Header />
-
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        {/* Title */}
-        <Box mb={2}>
-          <Typography variant="h5">LACA Dashboard</Typography>
-          {!loading && (
-            <Typography variant="body2" color="textSecondary">
-              Last updated: {lastUpdate}
-            </Typography>
-          )}
-        </Box>
-
-        {/* 1) Today vs Realtime Headcount */}
-        <Grid container spacing={2}>
-          {loading
-            ? [0,1].map(i => (
-                <Grid item xs={12} sm={6} key={i}>
-                  <Skeleton variant="rectangular" height={150} />
-                </Grid>
-              ))
-            : (
-              <>
-                <Grid item xs={12} sm={6}>
-                  <SummaryCard
-                    title="Today’s Total Headcount"
-                    total={todayTot}
-                    stats={[
-                      { label: 'Employees',   value: todayEmp },
-                      { label: 'Contractors', value: todayCont }
-                    ]}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <SummaryCard
-                    title="Realtime Headcount"
-                    total={realtimeTot}
-                    stats={[
-                      { label: 'Employees',   value: realtimeEmp },
-                      { label: 'Contractors', value: realtimeCont }
-                    ]}
-                  />
-                </Grid>
-              </>
-            )
-          }
-        </Grid>
-
-        {/* 2) Partition Grid (including Costa Rica) */}
-        <Box mt={4}>
-          <Typography variant="h6" gutterBottom>
-            Partitions
-          </Typography>
-
-          {loading
-            ? <Skeleton variant="rectangular" height={250} />
-            : (
-              <Grid container spacing={2}>
-                {names.map(name => {
-                  const p = regions[name];
-                  return (
-                    <Grid item xs={12} sm={6} md={4} lg={3} key={name}>
-                      <SummaryCard
-                        title={name.split('.').pop() + ' Partition'}
-                        total={p.total}
-                        stats={[
-                          { label: 'Employees',   value: p.Employee },
-                          { label: 'Contractors', value: p.Contractor },
-                          ...(p.TempBadge != null ? [{ label: 'TempBadge', value: p.TempBadge }] : [])
-                        ]}
-                      />
-                    </Grid>
-                  );
-                })}
-              </Grid>
-            )
-          }
-        </Box>
-      </Container>
-
-      <Footer />
-    </>
-  );
-}
 
 
 
