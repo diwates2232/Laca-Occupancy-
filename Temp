@@ -1,4 +1,232 @@
-// src/components/ChartCard.jsx
+// src/pages/Dashboard.jsx
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Grid,
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  Skeleton
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+  const [partition, setPartition]   = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (data) {
+      setLastUpdate(new Date().toLocaleTimeString());
+    }
+  }, [data]);
+
+  if (error) {
+    return (
+      <Container sx={{ mt: 4 }}>
+        <Typography color="error">Error loading live data</Typography>
+      </Container>
+    );
+  }
+
+  // Shortcuts when data is ready
+  const regions = !loading ? data.realtime : {};
+  const names   = Object.keys(regions);
+
+  return (
+    <>
+      <Header />
+
+      <Container sx={{ mt: 3 }}>
+        {/* Top row: Today vs Realtime LACA */}
+        <Grid container spacing={2}>
+          {loading ? (
+            [0,1].map(i => (
+              <Grid item xs={12} md={6} key={i}>
+                <Skeleton variant="rectangular" height={120} />
+              </Grid>
+            ))
+          ) : (
+            <>
+              <Grid item xs={12} md={6}>
+                <SummaryCard
+                  title="Todays Total Headcount"
+                  stats={[
+                    { label: 'Employees',   value: data.today.Employee },
+                    { label: 'Contractors', value: data.today.Contractor }
+                  ]}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <SummaryCard
+                  title="Realtime Headcount"
+                  stats={[
+                    { label: 'Employees',   value: data.today.Employee },   // API uses same breakdown
+                    { label: 'Contractors', value: data.today.Contractor }
+                  ]}
+                />
+              </Grid>
+            </>
+          )}
+        </Grid>
+
+        {/* Partition summary */}
+        <Box mt={4}>
+          <Typography variant="h6" gutterBottom>
+            Partitions
+            { !loading && (
+              <Typography variant="body2" color="textSecondary" component="span" sx={{ ml:2 }}>
+                (Updated: {lastUpdate})
+              </Typography>
+            )}
+          </Typography>
+
+          {loading ? (
+            <Skeleton variant="rectangular" height={200} />
+          ) : (
+            <Grid container spacing={2}>
+              {names.map(name => {
+                const p = regions[name];
+                return (
+                  <Grid item xs={12} sm={6} md={3} key={name}>
+                    <SummaryCard
+                      title={name.replace(/^.*\./, '')}
+                      stats={[
+                        { label: 'Today Emp',     value: p.Employee },
+                        { label: 'Today Cont',    value: p.Contractor },
+                        { label: 'Realtime Emp',  value: p.Employee },
+                        { label: 'Realtime Cont', value: p.Contractor }
+                      ]}
+                    />
+                  </Grid>
+                );
+              })}
+            </Grid>
+          )}
+        </Box>
+
+        {/* Region-wide chart */}
+        <Box mt={4}>
+          <Typography variant="h6" gutterBottom>Live Totals by Partition</Typography>
+          {loading ? (
+            <Skeleton variant="rectangular" height={300} />
+          ) : (
+            <ChartCard
+              title="Partition Totals"
+              data={names.map(name => ({
+                name: name.replace(/^.*\./, ''),
+                value: regions[name].total
+              }))}
+            />
+          )}
+        </Box>
+
+        {/* Partition drill-down */}
+        <Box mt={4}>
+          <FormControl fullWidth>
+            <InputLabel>Select Partition</InputLabel>
+            <Select
+              value={partition}
+              label="Select Partition"
+              onChange={e => setPartition(e.target.value)}
+            >
+              <MenuItem value="">— All —</MenuItem>
+              {names.map(name => (
+                <MenuItem key={name} value={name}>
+                  {name.replace(/^.*\./, '')}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {partition && !loading && (
+            <Box mt={3}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                <Typography variant="h6">
+                  {partition.replace(/^.*\./, '')} – Floor Breakdown
+                </Typography>
+                <Button variant="outlined" onClick={() => navigate(`/realtime/${encodeURIComponent(partition)}`)}>
+                  See Swipe Details
+                </Button>
+              </Box>
+              <ChartCard
+                title="Live Floor Counts"
+                data={Object.entries(regions[partition].floors || {}).map(([floor, cnt]) => ({
+                  name: floor,
+                  value: cnt
+                }))}
+              />
+            </Box>
+          )}
+        </Box>
+      </Container>
+
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+// src/theme/westernUnionTheme.js
+
+
+export default {
+  palette: {
+    primary: {
+      main: '#FFC107',    // WU Yellow
+      contrastText: '#000'
+    },
+    secondary: {
+      main: '#000000',    // WU Black
+      contrastText: '#FFF'
+    },
+    background: {
+      default: '#FFFFFF',
+      paper: '#FFFDE7'
+    }
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h5: { fontWeight: 600 },
+    h6: { fontWeight: 500 }
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none'
+        }
+      }
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderColor: '#FFC107'
+        }
+      }
+    }
+  }
+};
+
+
+
+
 
 
 
@@ -49,87 +277,3 @@ export default function ChartCard({
 }
 
 
-
-
-
-
-
-
-
-
-
-import React from 'react';
-import { Card, CardContent, Typography } from '@mui/material';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer
-} from 'recharts';
-
-export default function ChartCard({ title, data, dataKey = 'value' }) {
-  return (
-    <Card variant="outlined" sx={{ mb: 2, height: 300 }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>{title}</Typography>
-        <ResponsiveContainer width="100%" height="90%">
-          <BarChart data={data}>
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey={dataKey} fill="#FFC107" />
-          </BarChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  );
-}
-
-
-
-
-
-
-http://localhost:3001/api/occupancy/live-summary
-
-{
-  "success": true,
-  "today": {
-    "total": 62,
-    "Employee": 18,
-    "Contractor": 44
-  },
-  "realtime": {
-    "CR.Costa Rica Partition": {
-      "total": 8,
-      "Employee": 5,
-      "Contractor": 3,
-      "floors": {
-        "Building F4": 1,
-        " Building B1": 2,
-        "Building E2": 1,
-        "Building B2": 4
-      }
-    },
-    "AR.Cordoba": {
-      "total": 1,
-      "Employee": 0,
-      "Contractor": 1,
-      "floors": {
-        "1st Floor": 1
-      }
-    }
-  },
-  "details": [
-    {
-      "LocaleMessageTime": "2025-06-14T05:39:25.000Z",
-      "Dateonly": "2025-06-14",
-      "Swipe_Time": "05:39:25",
-      "EmployeeID": "W0022873",
-      "PersonGUID": "98DA6E7A-3EE1-47AA-B843-599EB1A6EF21",
-      "ObjectName1": "Hernandez, Sofia",
-      "Door": "LACA CR F4 Main Lobby Door",
-      "PersonnelType": "Contractor",
-      "CardNumber": "612791",
-      "Text5": "Santa Ana - Parque Empresarial",
-      "PartitionName2": "CR.Costa Rica Partition",
-      "AdmitCode": "Admit",
-      "Direction": "InDirection"
-    },
