@@ -1,3 +1,221 @@
+// src/pages/Dashboard.jsx
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Grid,
+  Typography,
+  Skeleton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  Divider            // ← import Divider
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+import { partitionList } from '../services/occupancy.service';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+  const [partition, setPartition]   = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) {
+    return (
+      <Box width="100%" py={4}>
+        <Typography color="error" align="center">
+          Error loading live data
+        </Typography>
+      </Box>
+    );
+  }
+
+  const regions = data?.realtime || {};
+  const partitions = partitionList.map(name => {
+    const key = Object.keys(regions).find(k => k.includes(name));
+    const p = key ? regions[key] : {};
+    return {
+      name,
+      total: p.total || 0,
+      Employee: p.Employee || 0,
+      Contractor: p.Contractor || 0,
+      TempBadge: p.TempBadge || 0,
+      floors: p.floors || {}
+    };
+  });
+
+  const todayTot  = data?.today?.total    ?? 0;
+  const todayEmp  = data?.today?.Employee ?? 0;
+  const todayCont = data?.today?.Contractor ?? 0;
+
+  const realtimeTot  = partitions.reduce((sum,p) => sum + p.total, 0);
+  const realtimeEmp  = partitions.reduce((sum,p) => sum + p.Employee, 0);
+  const realtimeCont = partitions.reduce((sum,p) => sum + p.Contractor, 0);
+
+  return (
+    <>
+      <Header />
+
+      <Container maxWidth="xl" disableGutters sx={{ pt: 2, pb: 4 }}>
+
+        {/* Top summary with vertical divider */}
+        <Grid
+          container
+          alignItems="center"
+          justifyContent="center"
+          spacing={2}
+          sx={{ mb: 4, px: 2 }}
+        >
+          <Grid item xs={12} sm={5} md={4}>
+            <SummaryCard
+              title="Today’s Headcount"
+              total={todayTot}
+              stats={[
+                { label: 'Employees',   value: todayEmp },
+                { label: 'Contractors', value: todayCont }
+              ]}
+            />
+          </Grid>
+
+          <Grid item>
+            <Divider orientation="vertical" flexItem sx={{ borderColor: 'grey.400' }} />
+          </Grid>
+
+          <Grid item xs={12} sm={5} md={4}>
+            <SummaryCard
+              title="Realtime Headcount"
+              total={realtimeTot}
+              stats={[
+                { label: 'Employees',   value: realtimeEmp },
+                { label: 'Contractors', value: realtimeCont }
+              ]}
+            />
+          </Grid>
+        </Grid>
+
+        {/* Partition cards */}
+        <Box mt={4}>
+          <Typography variant="h6" gutterBottom>
+            Partitions
+            {!loading && (
+              <Typography
+                variant="body2"
+                color="textSecondary"
+                component="span"
+                sx={{ ml: 2 }}
+              >
+                Last updated: {lastUpdate}
+              </Typography>
+            )}
+          </Typography>
+
+          {loading
+            ? <Skeleton variant="rectangular" height={240} />
+            : (
+              <Grid container spacing={1}>
+                {partitions.map(p => (
+                  <Grid item xs={6} sm={4} md={2} key={p.name}>
+                    <SummaryCard
+                      title={`${p.name} Partition`}
+                      total={p.total}
+                      stats={[
+                        { label: 'Employees',   value: p.Employee },
+                        { label: 'Contractors', value: p.Contractor },
+                        ...(p.TempBadge
+                          ? [{ label: 'TempBadge', value: p.TempBadge }]
+                          : [])
+                      ]}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+        </Box>
+
+        {/* Live totals chart */}
+        <Box mt={4}>
+          <Typography variant="h6" gutterBottom>
+            Live Totals by Partition
+          </Typography>
+          {loading
+            ? <Skeleton variant="rectangular" height={280} />
+            : <ChartCard
+                title="Partition Totals"
+                chartHeight={280}
+                data={partitions.map(p => ({ name: p.name, value: p.total }))}
+              />
+          }
+        </Box>
+
+        {/* Partition drill-down */}
+        <Box mt={4}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Select Partition</InputLabel>
+            <Select
+              value={partition}
+              label="Select Partition"
+              onChange={e => setPartition(e.target.value)}
+            >
+              <MenuItem value="">— All —</MenuItem>
+              {partitions.map(p => (
+                <MenuItem key={p.name} value={p.name}>
+                  {p.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {partition && !loading && (
+            <Box mt={3}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                <Typography variant="h6">
+                  {partition} – Floor Breakdown
+                </Typography>
+                <Button
+                  variant="contained"
+                  onClick={() =>
+                    navigate(`/realtime/${encodeURIComponent(partition)}`)
+                  }
+                >
+                  See Swipe Details
+                </Button>
+              </Box>
+              <ChartCard
+                title="Live Floor Counts"
+                chartHeight={240}
+                data={Object.entries(
+                  partitions.find(p => p.name === partition)?.floors || {}
+                ).map(([floor, cnt]) => ({ name: floor, value: cnt }))}
+              />
+            </Box>
+          )}
+        </Box>
+
+      </Container>
+
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
 C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\Dashboard.jsx
 
 
