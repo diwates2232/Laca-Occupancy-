@@ -1,3 +1,100 @@
+// src/pages/Dashboard.jsx
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Grid,
+  Typography,
+  Skeleton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  Divider
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+import { partitionList } from '../services/occupancy.service';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+  const [partition, setPartition]   = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  // ... error and data processing omitted for brevity ...
+
+  return (
+    <>
+      <Header />
+
+      <Container maxWidth="xl" disableGutters sx={{ pt: 2, pb: 4 }}>
+
+-       {/* Top summary with vertical divider */}
+-       <Grid
+-         container
+-         alignItems="center"
+-         justifyContent="space-between"
+-         spacing={2}
+-         sx={{ mb: 4, px: 2 }}
+-       >
+-         <Grid item xs={12} sm={5} md={4}>
++       {/* Top summary: two full-width rectangles */}
++       <Grid
++         container
++         alignItems="stretch"
++         justifyContent="space-between"
++         spacing={0}
++         sx={{ mb: 4, px: 2 }}
++       >
++         <Grid item xs={12} md={5}>
+           <SummaryCard
+             title="Today’s Headcount"
+             total={todayTot}
+             stats={[
+               { label: 'Employees',   value: todayEmp },
+               { label: 'Contractors', value: todayCont }
+             ]}
++            // force rectangle: full height
++            sx={{ height: 180, width: '100%' }}
+           />
+         </Grid>
+
+-         <Grid item>
++         {/* vertical divider */}
++         <Grid item>
+           <Divider orientation="vertical" flexItem sx={{ borderColor: 'grey.400', mx: 1 }} />
+         </Grid>
+
+-        <Grid item xs={12} md={6}>
++         <Grid item xs={12} md={5}>
+           <SummaryCard
+             title="Realtime Headcount"
+             total={realtimeTot}
+             stats={[
+               { label: 'Employees',   value: realtimeEmp },
+               { label: 'Contractors', value: realtimeCont }
+             ]}
++            sx={{ height: 180, width: '100%' }}
+           />
+         </Grid>
+       </Grid>
+
+
+
+
+
+
 // … other imports …
 -import {
 +import {
