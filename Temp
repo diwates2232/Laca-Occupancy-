@@ -1,3 +1,70 @@
+-      <Container maxWidth="xl" disableGutters sx={{ pt: 2, pb: 4 }}>
++      <Container
++        maxWidth="xl"
++        disableGutters
++        sx={{
++          pt: 2,
++          pb: 4,
++          width: '100vw',
++          ml: '-50vw',
++          left: '50%',
++          position: 'relative'
++        }}
++      >
+
+         {/* Top summary via flexbox */}
+         <Box
+-          display="flex"
+-          alignItems="stretch"
+-          sx={{ mb: 4, px: 2, width: '100%' }}
++          display="flex"
++          alignItems="stretch"
++          sx={{ mb: 4, width: '100%' }}
+         >
+           {/* Today’s Headcount */}
+           ...
+
+         {/* Partition cards */}
+-        <Box mt={4} sx={{ px: 2 }}>
++        <Box mt={4}>
+           <Typography variant="h6" gutterBottom>
+             Partitions
+             ...
+
+-          {loading ? (
+-            <Skeleton variant="rectangular" height={240} />
+-          ) : (
+-            <Box display="flex" flexWrap="wrap" gap={8}>
++          {loading ? (
++            <Skeleton variant="rectangular" height={240} />
++          ) : (
++            <Box display="flex" flexWrap="wrap" gap={8}>
+               {partitions.map(p => (
+                 <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+                   ...
+
+         {/* Live totals chart */}
+-        <Box mt={4} sx={{ px: 2 }}>
++        <Box mt={4}>
+           <Typography variant="h6" gutterBottom>
+             Live Totals by Partition
+           </Typography>
+           ...
+
+         {/* Partition drill-down */}
+-        <Box mt={4} sx={{ px: 2 }}>
++        <Box mt={4}>
+           <FormControl fullWidth size="small">
+             ...
+
+
+
+
+
+
+
+
+
 - {partitions.map(p => (
 -   <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
 -     <SummaryCard
