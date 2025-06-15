@@ -1,3 +1,153 @@
+// src/components/SummaryCard.jsx
+
+import React from 'react';
+import { Card, CardContent, Typography, Grid } from '@mui/material';
+
+export default function SummaryCard({ title, stats }) {
+  return (
+    <Card variant="outlined" sx={{ height: '100%' }}>
+      <CardContent>
+        <Typography variant="subtitle1" gutterBottom>
+          {title}
+        </Typography>
+        <Grid container spacing={1}>
+          {stats.map(({ label, value }) => (
+            <Grid item xs={12} key={label}>
+              <Typography variant="caption" color="textSecondary">
+                {label}
+              </Typography>
+              <Typography variant="h5">
+                {value}
+              </Typography>
+            </Grid>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+// src/pages/Dashboard.jsx
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Grid,
+  Typography,
+  Skeleton,
+  Box
+} from '@mui/material';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+import SummaryCard from '../components/SummaryCard';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+
+  // Update timestamp on data arrival
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) {
+    return (
+      <Container sx={{ mt: 4 }}>
+        <Typography color="error">Error loading live data</Typography>
+      </Container>
+    );
+  }
+
+  // Compute Today metrics
+  const todayTot = data?.today?.total ?? 0;
+  const todayEmp = data?.today?.Employee ?? 0;
+  const todayCont= data?.today?.Contractor ?? 0;
+
+  // Compute Realtime sums across partitions
+  const regions = data?.realtime || {};
+  const realtimeTot = Object.values(regions).reduce((sum, r) => sum + (r.total||0), 0);
+  const realtimeEmp = Object.values(regions).reduce((sum, r) => sum + (r.Employee||0), 0);
+  const realtimeCont= Object.values(regions).reduce((sum, r) => sum + (r.Contractor||0), 0);
+
+  // Find Costa Rica partition
+  const costaKey = Object.keys(regions).find(k => k.startsWith('CR.Costa'));
+  const costa = costaKey ? regions[costaKey] : null;
+  const costaTemp = costa?.TempBadge ?? 0;
+
+  return (
+    <>
+      <Header />
+
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        {/* Title */}
+        <Box mb={2}>
+          <Typography variant="h5">LACA Dashboard</Typography>
+          {!loading && (
+            <Typography variant="body2" color="textSecondary">
+              Last updated: {lastUpdate}
+            </Typography>
+          )}
+        </Box>
+
+        {/* 1) Six cards: Today & Realtime */}
+        <Grid container spacing={2}>
+          {loading
+            ? Array.from({length:6}).map((_,i) => (
+                <Grid item xs={12} sm={6} md={4} key={i}>
+                  <Skeleton variant="rectangular" height={120} />
+                </Grid>
+              ))
+            : [
+                { title: 'Today Total',         stats:[{label:'Total',value:todayTot}] },
+                { title: 'Today Employees',     stats:[{label:'Employees',value:todayEmp}] },
+                { title: 'Today Contractors',   stats:[{label:'Contractors',value:todayCont}] },
+                { title: 'Realtime Total',      stats:[{label:'Total',value:realtimeTot}] },
+                { title: 'Realtime Employees',  stats:[{label:'Employees',value:realtimeEmp}] },
+                { title: 'Realtime Contractors',stats:[{label:'Contractors',value:realtimeCont}] },
+              ].map((card,i) => (
+                <Grid item xs={12} sm={6} md={4} key={i}>
+                  <SummaryCard title={card.title} stats={card.stats} />
+                </Grid>
+              ))
+          }
+        </Grid>
+
+        {/* 2) Costa Rica cards */}
+        {costa && (
+          <Box mt={4}>
+            <Typography variant="h6" gutterBottom>Costa Rica (Live only)</Typography>
+            <Grid container spacing={2}>
+              {[
+                { title:'CR Total',       stats:[{label:'Total',value:costa.total}] },
+                { title:'CR Employees',   stats:[{label:'Employees',value:costa.Employee}] },
+                { title:'CR Contractors', stats:[{label:'Contractors',value:costa.Contractor}] },
+                { title:'CR TempBadge',   stats:[{label:'TempBadge',value:costaTemp}] },
+              ].map((card,i) => (
+                <Grid item xs={12} sm={6} md={3} key={i}>
+                  <SummaryCard title={card.title} stats={card.stats} />
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        )}
+      </Container>
+
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
 read below file carefully now we are on correct track 
 now improve Ui like below 
 1)
