@@ -1,3 +1,78 @@
+// … other imports …
+-import {
++import {
+  Container,
+  Box,
+  Grid,
+  Typography,
+  Skeleton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  Divider
+} from '@mui/material';
+ 
+ export default function Dashboard() {
+   // … hook logic …
+ 
+   return (
+     <>
+       <Header />
+
+       <Container maxWidth="xl" disableGutters sx={{ pt: 2, pb: 4 }}>
+
+-        {/* Top summary with vertical divider */}
+-        <Grid
+-          container
+-          alignItems="center"
+-          justifyContent="center"
+-          spacing={2}
+-          sx={{ mb: 4, px: 2 }}
+-        >
+-          <Grid item xs={12} sm={5} md={4}>
++        {/* Top summary: two half-width cards */}
++        <Grid
++          container
++          alignItems="center"
++          justifyContent="space-between"
++          sx={{ mb: 4, px: 2 }}
++        >
++          <Grid item xs={12} md={6}>
+             <SummaryCard
+               title="Today’s Headcount"
+               total={todayTot}
+               stats={[
+                 { label: 'Employees',   value: todayEmp },
+                 { label: 'Contractors', value: todayCont }
+               ]}
+             />
+           </Grid>
+
+-          <Grid item>
++          {/* vertical divider */}
++          <Grid item>
+             <Divider orientation="vertical" flexItem sx={{ borderColor: 'grey.400' }} />
+           </Grid>
+
+-          <Grid item xs={12} sm={5} md={4}>
++          <Grid item xs={12} md={6}>
+             <SummaryCard
+               title="Realtime Headcount"
+               total={realtimeTot}
+               stats={[
+                 { label: 'Employees',   value: realtimeEmp },
+                 { label: 'Contractors', value: realtimeCont }
+               ]}
+             />
+           </Grid>
+         </Grid>
+
+
+
+
+
 // src/pages/Dashboard.jsx
 
 import React, { useEffect, useState } from 'react';
