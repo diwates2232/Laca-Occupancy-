@@ -1,4 +1,246 @@
-    // src/services/occupancy.service.js
+import React, { useEffect, useState } from 'react';
+import {
+  Box,
+  Grid,
+  Typography,
+  Skeleton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+import { partitionList } from '../services/occupancy.service';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+  const [partition, setPartition]   = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) {
+    return (
+      <Box width="100%" px={0} py={4}>
+        <Typography color="error" align="center">
+          Error loading live data
+        </Typography>
+      </Box>
+    );
+  }
+
+  const regions = data?.realtime || {};
+  // build fixed list of partitions with default zeros
+  const partitions = partitionList.map(name => {
+    const key = Object.keys(regions).find(k => k.includes(name));
+    const p = key ? regions[key] : {};
+    return {
+      name,
+      total: p.total || 0,
+      Employee: p.Employee || 0,
+      Contractor: p.Contractor || 0,
+      TempBadge: p.TempBadge || 0,
+      floors: p.floors || {}
+    };
+  });
+
+  // Today
+  const todayTot  = data?.today?.total    ?? 0;
+  const todayEmp  = data?.today?.Employee ?? 0;
+  const todayCont = data?.today?.Contractor ?? 0;
+
+  // Realtime sums
+  const realtimeTot = partitions.reduce((sum,p) => sum + p.total, 0);
+  const realtimeEmp = partitions.reduce((sum,p) => sum + p.Employee, 0);
+  const realtimeCont= partitions.reduce((sum,p) => sum + p.Contractor, 0);
+
+  return (
+    <>
+      <Header />
+
+      {/* full-width, no side padding */}
+      <Box width="100vw" px={0} py={4}>
+        {/* Top cards */}
+        <Grid
+          container
+          spacing={2}
+          justifyContent="space-between"
+          sx={{ px: 2 }}
+        >
+          {loading
+            ? [0,1].map(i => (
+                <Grid item xs={12} sm={6} key={i}>
+                  <Skeleton variant="rectangular" height={160} />
+                </Grid>
+              ))
+            : (
+              <>
+                <Grid item xs={12} sm={6}>
+                  <SummaryCard
+                    title="Today’s Headcount"
+                    total={todayTot}
+                    stats={[
+                      { label: 'Employees', value: todayEmp },
+                      { label: 'Contractors', value: todayCont }
+                    ]}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <SummaryCard
+                    title="Realtime Headcount"
+                    total={realtimeTot}
+                    stats={[
+                      { label: 'Employees', value: realtimeEmp },
+                      { label: 'Contractors', value: realtimeCont }
+                    ]}
+                  />
+                </Grid>
+              </>
+            )}
+        </Grid>
+
+        {/* Partition cards */}
+        <Box mt={4} sx={{ px: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            Partitions
+            {!loading && (
+              <Typography
+                variant="body2"
+                color="textSecondary"
+                component="span"
+                sx={{ ml: 2 }}
+              >
+                Last updated: {lastUpdate}
+              </Typography>
+            )}
+          </Typography>
+
+          {loading ? (
+            <Skeleton variant="rectangular" height={260} />
+          ) : (
+            <Grid
+              container
+              spacing={2}
+              justifyContent="space-between"
+            >
+              {partitions.map(p => (
+                <Grid item xs={12} sm={6} md={4} lg={2} key={p.name}>
+                  <SummaryCard
+                    title={`${p.name} Partition`}
+                    total={p.total}
+                    stats={[
+                      { label: 'Employees',   value: p.Employee },
+                      { label: 'Contractors', value: p.Contractor },
+                      ...(p.TempBadge
+                        ? [{ label: 'TempBadge', value: p.TempBadge }]
+                        : [])
+                    ]}
+                  />
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </Box>
+
+        {/* Live totals chart */}
+        <Box mt={5} sx={{ px: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            Live Totals by Partition
+          </Typography>
+          {loading ? (
+            <Skeleton variant="rectangular" height={360} />
+          ) : (
+            <ChartCard
+              title="Partition Totals"
+              chartHeight={360}
+              data={partitions.map(p => ({
+                name: p.name,
+                value: p.total
+              }))}
+            />
+          )}
+        </Box>
+
+        {/* Partition drill-down */}
+        <Box mt={5} sx={{ px: 2 }}>
+          <FormControl fullWidth>
+            <InputLabel>Select Partition</InputLabel>
+            <Select
+              value={partition}
+              label="Select Partition"
+              onChange={e => setPartition(e.target.value)}
+            >
+              <MenuItem value="">— All —</MenuItem>
+              {partitions.map(p => (
+                <MenuItem key={p.name} value={p.name}>
+                  {p.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {partition && !loading && (
+            <Box mt={4}>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
+              >
+                <Typography variant="h6">
+                  {partition} – Floor Breakdown
+                </Typography>
+                <Button
+                  variant="outlined"
+                  onClick={() =>
+                    navigate(`/realtime/${encodeURIComponent(partition)}`)
+                  }
+                >
+                  See Swipe Details
+                </Button>
+              </Box>
+              <ChartCard
+                title="Live Floor Counts"
+                chartHeight={320}
+                data={(
+                  partitions.find(p => p.name === partition)
+                    ?.floors || {}
+                ).entries?.map(([floor, cnt]) => ({
+                  name: floor,
+                  value: cnt
+                })) || Object.entries(
+                  partitions.find(p => p.name === partition)?.floors || {}
+                ).map(([floor,cnt])=>({name:floor,value:cnt}))}
+              />
+            </Box>
+          )}
+        </Box>
+      </Box>
+
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
+// src/services/occupancy.service.js
 
     export const partitionList = [
     'Costa Rica',
