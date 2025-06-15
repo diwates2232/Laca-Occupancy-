@@ -1,17 +1,67 @@
-// package.json
-{
-  // … your existing config …
-  "proxy": "http://localhost:3001",
-  // …
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\api\occupancy.service.js
+
+// src/api/occupancy.service.js
+
+const BASE = process.env.REACT_APP_API_BASE || '';
+// const BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001/api/occupancy/live-summary';
+
+export async function fetchLiveSummary() {
+  const res = await fetch(`${BASE}/api/occupancy/live-summary`);
+  if (!res.ok) throw new Error(`Live summary fetch failed: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchHistory(location) {
+  const url = location
+    ? `${BASE}/api/occupancy/history/${encodeURIComponent(location)}`
+    : `${BASE}/api/occupancy/history`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`History fetch failed: ${res.status}`);
+  return res.json();
 }
 
 
 
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\hooks\useLiveOccupancy.js
 
-REACT_APP_API_BASE=http://localhost:3001
+// src/hooks/useLiveOccupancy.js
 
+import { useState, useEffect, useRef } from 'react';
+import { fetchLiveSummary } from '../api/occupancy.service';
 
+export function useLiveOccupancy(interval = 1000) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const timer = useRef(null);
 
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      try {
+        const json = await fetchLiveSummary();
+        if (!active) return;
+        setData(json);
+        setLoading(false);
+      } catch (e) {
+        if (!active) return;
+        setError(e);
+        setLoading(false);
+      }
+    }
+
+    load();
+    timer.current = setInterval(load, interval);
+
+    return () => {
+      active = false;
+      clearInterval(timer.current);
+    };
+  }, [interval]);
+
+  return { data, loading, error };
+}
 
 
 
@@ -165,6 +215,165 @@ export default function Dashboard() {
 
 
 
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Grid,
+  Button,
+  Typography,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
+  Breadcrumbs,
+  Link
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SummaryCard from '../components/SummaryCard';
+import { fetchHistory } from '../api/occupancy.service';
+
+export default function History() {
+  const [location, setLocation]         = useState('');
+  const [dateList, setDateList]         = useState([]);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [data, setData]                 = useState(null);
+  const [loading, setLoading]           = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setLoading(true);
+    fetchHistory(location || null).then(json => {
+      setData(json);
+      setLoading(false);
+      if (!location) {
+        setDateList(json.summaryByDate.map(d => d.date));
+      }
+    });
+  }, [location]);
+
+  if (loading) return <LoadingSpinner />;
+  if (!data)    return null;
+
+  // 1) Pick a date
+  if (!location && !selectedDate) {
+    return (
+      <>
+        <Header />
+        <Container sx={{ mt: 2 }}>
+          <Typography variant="h6">Select a date:</Typography>
+          <FormControl fullWidth sx={{ mt: 1 }}>
+            <InputLabel>Date</InputLabel>
+            <Select
+              value={selectedDate}
+              label="Date"
+              onChange={e => setSelectedDate(e.target.value)}
+            >
+              {dateList.map(d => (
+                <MenuItem key={d} value={d}>{d}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Container>
+        <Footer />
+      </>
+    );
+  }
+
+  // 2) Show partition summaries for that date
+  if (!location) {
+    const daySummary = data.summaryByDate.find(d => d.date === selectedDate);
+    const partitionCards = Object.entries(daySummary.partitions).map(([name, stats]) => ({
+      title: name,
+      stats: [
+        { label: 'Total',       value: stats.total },
+        { label: 'Employees',   value: stats.Employee },
+        { label: 'Contractors', value: stats.Contractor }
+      ],
+    }));
+
+    return (
+      <>
+        <Header />
+        <Container sx={{ mt: 2, mb: 4 }}>
+          <Breadcrumbs separator="›" aria-label="breadcrumb">
+            <Link component="button" onClick={() => setSelectedDate('')}>
+              Dates
+            </Link>
+            <Typography color="text.primary">{selectedDate}</Typography>
+          </Breadcrumbs>
+
+          <Typography variant="h5" sx={{ my: 2 }}>
+            Partitions on {selectedDate}
+          </Typography>
+
+          <Grid container spacing={2}>
+            {partitionCards.map(card => (
+              <Grid item xs={12} sm={6} md={4} key={card.title}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => setLocation(card.title)}
+                >
+                  <SummaryCard title={card.title} stats={card.stats} />
+                </Button>
+              </Grid>
+            ))}
+          </Grid>
+        </Container>
+        <Footer />
+      </>
+    );
+  }
+
+  // 3) Drilled into a partition: show its daily totals
+  const partitionSummary = data.summaryByDate.map(d => ({
+    title: d.date,
+    stats: [
+      { label: 'Total',       value: d.region.total },
+      { label: 'Employees',   value: d.region.Employee },
+      { label: 'Contractors', value: d.region.Contractor }
+    ]
+  }));
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2, mb: 4 }}>
+        <Breadcrumbs separator="›" aria-label="breadcrumb">
+          <Link component="button" onClick={() => setLocation('')}>
+            {selectedDate}
+          </Link>
+          <Typography color="text.primary">{location}</Typography>
+        </Breadcrumbs>
+
+        <Typography variant="h5" sx={{ my: 2 }}>
+          History for {location}
+        </Typography>
+
+        <Grid container spacing={2}>
+          {partitionSummary.map(card => (
+            <Grid item xs={12} sm={6} md={4} key={card.title}>
+              <SummaryCard title={card.title} stats={card.stats} />
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
 // src/pages/RealtimeDetails.jsx
 
 import React, { useEffect, useState } from 'react';
@@ -243,6 +452,45 @@ export default function RealtimeDetails() {
 
 
 
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\routes\AppRoutes.jsx
+
+
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Dashboard from '../pages/Dashboard';
+import RealtimeDetails from '../pages/RealtimeDetails';
+import History from '../pages/History';
+
+export default function AppRoutes() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+     <Route path="/realtime/:partition" element={<RealtimeDetails />} />
+        <Route path="/history" element={<History />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+
+
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\services\occupancy.service.js
+
+
+    // src/services/occupancy.service.js
+
+    export const partitionList = [
+    'Costa Rica',
+    'Mexico',
+    'Argentina',
+    'Panama',
+    'Peru',
+    'Brazil'
+    ];
 
 
 
@@ -251,192 +499,72 @@ export default function RealtimeDetails() {
 
 
 
-C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\RealtimeDetails.jsx
 
-import React, { useEffect, useState } from 'react';
-import { Container, Typography, Button, Box } from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
 
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import LoadingSpinner from '../components/LoadingSpinner';
-import DataTable from '../components/DataTable';
-import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\App.jsx
 
-const columns = [
-  { field: 'ObjectName1',  headerName: 'Name' },
-  { field: 'Door',         headerName: 'Door' },
-  { field: 'Swipe_Time',   headerName: 'Time' },
-  { field: 'PersonnelType',headerName: 'Type' },
-];
+import React from 'react';
+import AppRoutes from './routes/AppRoutes';
 
-export default function RealtimeDetails() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-  const { data, loading, error } = useLiveOccupancy(1000);
-  const [lastUpdate, setLastUpdate] = useState(null);
+export default function App() {
+  return <AppRoutes />;
+}
 
-  useEffect(() => {
-    if (data) {
-      setLastUpdate(new Date().toLocaleTimeString());
-    }
-  }, [data]);
 
-  if (loading) return <LoadingSpinner />;
-  if (error) {
-    return (
-      <Container>
-        <Typography color="error">Error loading data</Typography>
-      </Container>
-    );
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\index.js
+
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import App from './App';
+import reportWebVitals from './reportWebVitals';
+import westernUnionTheme from './theme/westernUnionTheme';
+
+const theme = createTheme(westernUnionTheme);
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <ThemeProvider theme={theme}>
+      <App />
+    </ThemeProvider>
+  </React.StrictMode>
+);
+
+reportWebVitals();
+
+
+
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\reportWebVitals.js
+
+// src/reportWebVitals.js
+
+const reportWebVitals = onPerfEntry => {
+  if (onPerfEntry && onPerfEntry instanceof Function) {
+    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+      getCLS(onPerfEntry);
+      getFID(onPerfEntry);
+      getFCP(onPerfEntry);
+      getLCP(onPerfEntry);
+      getTTFB(onPerfEntry);
+    });
   }
+};
 
-  const rows = data.details.filter(r => r.PartitionName2 === partition);
-
-  return (
-    <>
-      <Header />
-      <Container sx={{ mt: 2, mb: 4 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Button onClick={() => navigate(-1)} variant="outlined">
-            ← Back
-          </Button>
-          <Typography variant="h5">
-            {partition}
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            Updated: {lastUpdate}
-          </Typography>
-        </Box>
-
-        <DataTable columns={columns} rows={rows} />
-      </Container>
-      <Footer />
-    </>
-  );
-}
+export default reportWebVitals;
 
 
 
 
 
 
-// src/pages/Dashboard.jsx
 
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Grid,
-  CardActionArea,
-} from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useNavigate } from 'react-router-dom';
 
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import LoadingSpinner from '../components/LoadingSpinner';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
 
-import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
 
-export default function Dashboard() {
-  const { data, loading, error } = useLiveOccupancy(1000);
-  const [lastUpdate, setLastUpdate] = useState(null);
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (data) setLastUpdate(new Date().toLocaleTimeString());
-  }, [data]);
 
-  if (loading) return <LoadingSpinner />;
-  if (error)   return <Container>Error loading live data</Container>;
-
-  const { today, realtime } = data;
-
-  // chart data
-  const partitionData = Object.entries(realtime).map(([name, stats]) => ({
-    name,
-    value: stats.total
-  }));
-
-  return (
-    <>
-      <Header />
-      <Container sx={{ mt: 2, mb: 4 }}>
-
-        {/* Header */}
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h5">LACA Headcount</Typography>
-          <Typography variant="body2" color="textSecondary">
-            Last updated: {lastUpdate}
-          </Typography>
-        </Box>
-
-        {/* Today's Totals */}
-        <SummaryCard
-          title="Today's Totals"
-          stats={[
-            { label: 'Total',       value: today.total },
-            { label: 'Employees',   value: today.Employee },
-            { label: 'Contractors', value: today.Contractor }
-          ]}
-        />
-
-        {/* Bar Chart */}
-        <Box mt={4}>
-          <Typography variant="h6" gutterBottom>Realtime by Partition</Typography>
-          <ChartCard title="" data={partitionData} />
-        </Box>
-
-        {/* Floor-wise Accordions */}
-        <Box mt={4}>
-          <Typography variant="h6" gutterBottom>Partition Detail (Floor-wise)</Typography>
-          {Object.entries(realtime).map(([partName, stats]) => (
-            <Accordion key={partName} sx={{ mb: 1 }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Box flexGrow={1}>
-                  <Typography variant="subtitle1">{partName}</Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    Total: {stats.total} — Emp: {stats.Employee}, Cont: {stats.Contractor}
-                  </Typography>
-                </Box>
-                {/* replaced nested Button with Typography */}
-                <Typography
-                  variant="button"
-                  sx={{ cursor: 'pointer', ml: 2 }}
-                  onClick={e => {
-                    e.stopPropagation();
-                    navigate(`/realtime/${encodeURIComponent(partName)}`);
-                  }}
-                >
-                  View All Swipes
-                </Typography>
-              </AccordionSummary>
-
-              <AccordionDetails>
-                <Grid container spacing={1}>
-                  {stats.floors && Object.entries(stats.floors).map(([floor, count]) => (
-                    <Grid item key={floor} xs={6} sm={4} md={3}>
-                      <SummaryCard
-                        title={floor}
-                        stats={[{ label: 'Count', value: count }]}
-                      />
-                    </Grid>
-                  ))}
-                </Grid>
-              </AccordionDetails>
-            </Accordion>
-          ))}
-        </Box>
-      </Container>
-      <Footer />
-    </>
-  );
-}
 
