@@ -1,3 +1,42 @@
+
+const express = require('express');
+- const cors = require('cors');
++ const cors = require('cors');
+const occupancyRoutes = require('./routes/occupancy.routes');
+
+const app = express();
+
+// --- SIMPLIFIED CORS ---
+- const corsOptions = {
+-   origin: 'http://localhost:3000',
+-   methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+-   allowedHeaders: ['Content-Type','Authorization'],
+-   credentials: true
+- };
+- app.use(cors(corsOptions));
+- app.options('*', cors(corsOptions));
++ app.use(cors());           // allow all origins in dev
++ app.options('*', cors());  // preflight support for all routes
+
+app.use(express.json());
+
+// Health check
+app.get('/', (req, res) => res.send('🌎 LACA Occupancy API Running'));
+
+// Routes
+app.use('/api/occupancy', occupancyRoutes);
+
+module.exports = app;
+
+
+
+
+
+
+
+
+
+
 // src/app.js
 
 const express = require('express');
