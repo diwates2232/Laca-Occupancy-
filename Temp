@@ -4,6 +4,212 @@ import React, { useEffect, useState } from 'react';
 import {
   Container,
   Grid,
+  Box,
+  Typography,
+  Skeleton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+  const [partition, setPartition] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) {
+    return (
+      <Container sx={{ mt: 4 }}>
+        <Typography color="error">Error loading live data</Typography>
+      </Container>
+    );
+  }
+
+  const regions = data?.realtime || {};
+  const names = Object.keys(regions);
+
+  // Today
+  const todayTot  = data?.today?.total    ?? 0;
+  const todayEmp  = data?.today?.Employee ?? 0;
+  const todayCont = data?.today?.Contractor ?? 0;
+
+  // Computed realtime
+  const realtimeTot = names.reduce((sum, k) => sum + (regions[k].total || 0), 0);
+  const realtimeEmp = names.reduce((sum, k) => sum + (regions[k].Employee || 0), 0);
+  const realtimeCont= names.reduce((sum, k) => sum + (regions[k].Contractor || 0), 0);
+
+  return (
+    <>
+      <Header />
+
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        {/* Top headcount cards */}
+        <Grid container spacing={2}>
+          {loading ? [0,1].map(i => (
+            <Grid item xs={12} sm={6} key={i}>
+              <Skeleton variant="rectangular" height={140} />
+            </Grid>
+          )) : (
+            <>
+              <Grid item xs={12} sm={6}>
+                <SummaryCard
+                  title="Today’s Total Headcount"
+                  total={todayTot}
+                  stats={[
+                    { label: 'Employees', value: todayEmp },
+                    { label: 'Contractors', value: todayCont }
+                  ]}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <SummaryCard
+                  title="Realtime Headcount"
+                  total={realtimeTot}
+                  stats={[
+                    { label: 'Employees', value: realtimeEmp },
+                    { label: 'Contractors', value: realtimeCont }
+                  ]}
+                />
+              </Grid>
+            </>
+          )}
+        </Grid>
+
+        {/* Partition grid */}
+        <Box mt={5}>
+          <Typography variant="h6" gutterBottom>
+            Partitions
+            {!loading && (
+              <Typography
+                variant="body2"
+                color="textSecondary"
+                component="span"
+                sx={{ ml: 2 }}
+              >
+                Last updated: {lastUpdate}
+              </Typography>
+            )}
+          </Typography>
+          {loading ? (
+            <Skeleton variant="rectangular" height={260} />
+          ) : (
+            <Grid container spacing={2}>
+              {names.map(key => {
+                const p = regions[key];
+                return (
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={key}>
+                    <SummaryCard
+                      title={`${key.split('.').pop()} Partition`}
+                      total={p.total}
+                      stats={[
+                        { label: 'Employees',   value: p.Employee },
+                        { label: 'Contractors', value: p.Contractor },
+                        ...(p.TempBadge != null
+                          ? [{ label: 'TempBadge', value: p.TempBadge }]
+                          : [])
+                      ]}
+                    />
+                  </Grid>
+                );
+              })}
+            </Grid>
+          )}
+        </Box>
+
+        {/* Live totals chart */}
+        <Box mt={5}>
+          <Typography variant="h6" gutterBottom>Live Totals by Partition</Typography>
+          {loading ? (
+            <Skeleton variant="rectangular" height={340} />
+          ) : (
+            <ChartCard
+              title="Partition Totals"
+              chartHeight={340}
+              data={names.map(key => ({
+                name: key.split('.').pop(),
+                value: regions[key].total
+              }))}
+            />
+          )}
+        </Box>
+
+        {/* Partition drill-down */}
+        <Box mt={5}>
+          <FormControl fullWidth>
+            <InputLabel>Select Partition</InputLabel>
+            <Select
+              value={partition}
+              label="Select Partition"
+              onChange={e => setPartition(e.target.value)}
+            >
+              <MenuItem value="">— All —</MenuItem>
+              {names.map(key => (
+                <MenuItem key={key} value={key}>
+                  {key.split('.').pop()}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {partition && !loading && (
+            <Box mt={4}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6">
+                  {partition.split('.').pop()} – Floor Breakdown
+                </Typography>
+                <Button
+                  variant="outlined"
+                  onClick={() =>
+                    navigate(`/realtime/${encodeURIComponent(partition)}`)
+                  }
+                >
+                  See Swipe Details
+                </Button>
+              </Box>
+              <ChartCard
+                title="Live Floor Counts"
+                chartHeight={300}
+                data={Object.entries(regions[partition].floors || {}).map(
+                  ([floor, cnt]) => ({ name: floor, value: cnt })
+                )}
+              />
+            </Box>
+          )}
+        </Box>
+      </Container>
+
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
+// src/pages/Dashboard.jsx
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Grid,
   Typography,
   Box,
   Skeleton
