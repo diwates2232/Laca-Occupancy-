@@ -1,192 +1,25 @@
-// src/components/SummaryCard.jsx
+Read this dashboard first and 
+yor are displying 2 cards for Costa Rica display only only one cards in partation 
 
-import React from 'react';
-import { Card, CardContent, Typography, Grid } from '@mui/material';
+Costa Rica (Live Only)  Remove this strickly 
 
-export default function SummaryCard({ title, stats }) {
-  return (
-    <Card variant="outlined" sx={{ height: '100%' }}>
-      <CardContent>
-        <Typography variant="subtitle1" gutterBottom>
-          {title}
-        </Typography>
-        <Grid container spacing={1}>
-          {stats.map(({ label, value }) => (
-            <Grid item xs={12} key={label}>
-              <Typography variant="caption" color="textSecondary">
-                {label}
-              </Typography>
-              <Typography variant="h5">
-                {value}
-              </Typography>
-            </Grid>
-          ))}
-        </Grid>
-      </CardContent>
-    </Card>
-  );
-}
+Costa Rica Partition -- this is necessary 
 
 
-
-
-// src/pages/Dashboard.jsx
-
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Grid,
-  Typography,
-  Skeleton,
-  Box
-} from '@mui/material';
-import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
-import SummaryCard from '../components/SummaryCard';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-
-export default function Dashboard() {
-  const { data, loading, error } = useLiveOccupancy(1000);
-  const [lastUpdate, setLastUpdate] = useState('');
-
-  // Update timestamp on data arrival
-  useEffect(() => {
-    if (data) setLastUpdate(new Date().toLocaleTimeString());
-  }, [data]);
-
-  if (error) {
-    return (
-      <Container sx={{ mt: 4 }}>
-        <Typography color="error">Error loading live data</Typography>
-      </Container>
-    );
-  }
-
-  // Compute Today metrics
-  const todayTot = data?.today?.total ?? 0;
-  const todayEmp = data?.today?.Employee ?? 0;
-  const todayCont= data?.today?.Contractor ?? 0;
-
-  // Compute Realtime sums across partitions
-  const regions = data?.realtime || {};
-  const realtimeTot = Object.values(regions).reduce((sum, r) => sum + (r.total||0), 0);
-  const realtimeEmp = Object.values(regions).reduce((sum, r) => sum + (r.Employee||0), 0);
-  const realtimeCont= Object.values(regions).reduce((sum, r) => sum + (r.Contractor||0), 0);
-
-  // Find Costa Rica partition
-  const costaKey = Object.keys(regions).find(k => k.startsWith('CR.Costa'));
-  const costa = costaKey ? regions[costaKey] : null;
-  const costaTemp = costa?.TempBadge ?? 0;
-
-  return (
-    <>
-      <Header />
-
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        {/* Title */}
-        <Box mb={2}>
-          <Typography variant="h5">LACA Dashboard</Typography>
-          {!loading && (
-            <Typography variant="body2" color="textSecondary">
-              Last updated: {lastUpdate}
-            </Typography>
-          )}
-        </Box>
-
-        {/* 1) Six cards: Today & Realtime */}
-        <Grid container spacing={2}>
-          {loading
-            ? Array.from({length:6}).map((_,i) => (
-                <Grid item xs={12} sm={6} md={4} key={i}>
-                  <Skeleton variant="rectangular" height={120} />
-                </Grid>
-              ))
-            : [
-                { title: 'Today Total',         stats:[{label:'Total',value:todayTot}] },
-                { title: 'Today Employees',     stats:[{label:'Employees',value:todayEmp}] },
-                { title: 'Today Contractors',   stats:[{label:'Contractors',value:todayCont}] },
-                { title: 'Realtime Total',      stats:[{label:'Total',value:realtimeTot}] },
-                { title: 'Realtime Employees',  stats:[{label:'Employees',value:realtimeEmp}] },
-                { title: 'Realtime Contractors',stats:[{label:'Contractors',value:realtimeCont}] },
-              ].map((card,i) => (
-                <Grid item xs={12} sm={6} md={4} key={i}>
-                  <SummaryCard title={card.title} stats={card.stats} />
-                </Grid>
-              ))
-          }
-        </Grid>
-
-        {/* 2) Costa Rica cards */}
-        {costa && (
-          <Box mt={4}>
-            <Typography variant="h6" gutterBottom>Costa Rica (Live only)</Typography>
-            <Grid container spacing={2}>
-              {[
-                { title:'CR Total',       stats:[{label:'Total',value:costa.total}] },
-                { title:'CR Employees',   stats:[{label:'Employees',value:costa.Employee}] },
-                { title:'CR Contractors', stats:[{label:'Contractors',value:costa.Contractor}] },
-                { title:'CR TempBadge',   stats:[{label:'TempBadge',value:costaTemp}] },
-              ].map((card,i) => (
-                <Grid item xs={12} sm={6} md={3} key={i}>
-                  <SummaryCard title={card.title} stats={card.stats} />
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-        )}
-      </Container>
-
-      <Footer />
-    </>
-  );
-}
-
-
-
-
-
-
-
-
-read below file carefully now we are on correct track 
-now improve Ui like below 
-1)
-Make a seprate cards 
-on top parts 6 cards 
-1)Total -Employee + Contractor  | Employee  |  Contractor   2) Realtime -Employee + contractor  | Employee | Contractor 
-counts 
-
-
-for Costa Rica (Only for Costa rica display temp badge count only for coosta rica )
-Total -Employee + Contractor | Employee | Contractor | temp badge
-below Counts 
-
-
-note 
-This below is our today Headcount 
-{
-  "success": true,
+2) for a Today headcount and Realtime Headcount you are using samr result 
+this is our laca today headcount 
+ "success": true,
   "today": {
     "total": 64,
     "Employee": 19,
     "Contractor": 45
-  },
 
+and for realtime 
+you need to check all partation realtime headcount AND ADDING ALL THEN calculate realtime headcount strickly 
 
-for a realtime Headcount you need to check and  partation realtime count and Calculate like this 
-"CR.Costa Rica Partition": {
-      "total": 5,
-      "Employee": 1,
-      "Contractor": 4,
-AR.Cordoba": {
-      "total": 1,
-      "Employee": 0,
-      "Contractor": 1,
-Laca realtime headCount is =Costa Riaca + AR.Cordoba =6 like this 
+and cards strickly use are display only Employee and Contractors , i need first total Employee  Contractor like this strikly
+first make this changes and give me updated files carefully 
 
-Initially update this then We Will Move another Improvment
-
-so give me fully Updated files carefully
 
 
 // src/pages/Dashboard.jsx
@@ -232,19 +65,21 @@ export default function Dashboard() {
 
   const regions = !loading ? data.realtime : {};
   const names   = Object.keys(regions);
+  // Shortcut for Costa Rica partition
+  const costaKey = names.find(n => n.startsWith('CR.Costa'));
+  const costa    = costaKey ? regions[costaKey] : null;
 
   return (
     <>
       <Header />
-
-      {/* Use maxWidth="xl" to expand on desktop */}
       <Container maxWidth="xl" sx={{ mt: 3, mb: 4 }}>
-        {/* Top row */}
+
+        {/* 1) Today's Total & Realtime Headcount */}
         <Grid container spacing={3}>
           {loading
             ? [0,1].map(i => (
                 <Grid item xs={12} sm={6} key={i}>
-                  <Skeleton variant="rectangular" height={130} />
+                  <Skeleton variant="rectangular" height={160} />
                 </Grid>
               ))
             : (
@@ -252,19 +87,23 @@ export default function Dashboard() {
                 <Grid item xs={12} sm={6}>
                   <SummaryCard
                     title="Today’s Total Headcount"
+                    total={data.today.total}
                     stats={[
                       { label: 'Employees',   value: data.today.Employee },
                       { label: 'Contractors', value: data.today.Contractor }
                     ]}
+                    showIcons={false}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <SummaryCard
                     title="Realtime Headcount"
+                    total={data.today.total}
                     stats={[
                       { label: 'Employees',   value: data.today.Employee },
                       { label: 'Contractors', value: data.today.Contractor }
                     ]}
+                    showIcons={false}
                   />
                 </Grid>
               </>
@@ -272,7 +111,26 @@ export default function Dashboard() {
           }
         </Grid>
 
-        {/* Partition summary */}
+        {/* 2) Costa Rica quick card */}
+        <Box mt={5}>
+          {loading || !costa ? (
+            <Skeleton variant="rectangular" height={160} />
+          ) : (
+            <SummaryCard
+              title="Costa Rica (Live Only)"
+              total={costa.total}
+              stats={[
+                { label: 'Employees',   value: costa.Employee },
+                { label: 'Contractors', value: costa.Contractor },
+                { label: 'TempBadge',   value: costa.TempBadge || 0 }
+              ]}
+              // use icons for each row
+              showIcons={true}
+            />
+          )}
+        </Box>
+
+        {/* 3) Partition summary as icons-only rows */}
         <Box mt={5}>
           <Typography variant="h6" gutterBottom>
             Partitions
@@ -282,6 +140,7 @@ export default function Dashboard() {
               </Typography>
             )}
           </Typography>
+
           {loading ? (
             <Skeleton variant="rectangular" height={220} />
           ) : (
@@ -292,12 +151,14 @@ export default function Dashboard() {
                   <Grid item xs={12} sm={6} md={4} lg={3} key={name}>
                     <SummaryCard
                       title={name.split('.').pop()}
+                      total={p.total}
                       stats={[
-                        { label: 'Today Emp',     value: p.Employee },
-                        { label: 'Today Cont',    value: p.Contractor },
-                        { label: 'Realtime Emp',  value: p.Employee },
-                        { label: 'Realtime Cont', value: p.Contractor }
+                        { label: 'Employees',   value: p.Employee },
+                        { label: 'Contractors', value: p.Contractor },
+                        // include temp badge only for CR
+                        ...(name === costaKey ? [{ label: 'TempBadge', value: p.TempBadge || 0 }] : [])
                       ]}
+                      showIcons={true}
                     />
                   </Grid>
                 );
@@ -306,10 +167,10 @@ export default function Dashboard() {
           )}
         </Box>
 
-        {/* Live totals chart */}
-        <Box mt={5}>
-          <Typography variant="h6" gutterBottom>Live Totals by Partition</Typography>
-          {loading ? (
+  {/* Live totals chart */}
+         <Box mt={5}>
+           <Typography variant="h6" gutterBottom>Live Totals by Partition</Typography>
+           {loading ? (
             <Skeleton variant="rectangular" height={350} />
           ) : (
             <ChartCard
@@ -371,33 +232,4 @@ export default function Dashboard() {
     </>
   );
 }
-
-
-
-
-
-// src/components/SummaryCard.jsx
-
-import React from 'react';
-import { Card, CardContent, Typography, Grid } from '@mui/material';
-
-export default function SummaryCard({ title, stats }) {
-  return (
-    <Card variant="outlined" sx={{ mb: 2 }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>{title}</Typography>
-        <Grid container spacing={2}>
-          {stats.map(({ label, value }) => (
-            <Grid item key={label}>
-              <Typography variant="subtitle1">{label}</Typography>
-              <Typography variant="h5">{value}</Typography>
-            </Grid>
-          ))}
-        </Grid>
-      </CardContent>
-    </Card>
-  );
-}
-
-
 
