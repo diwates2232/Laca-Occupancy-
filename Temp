@@ -1,3 +1,5 @@
+//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\Dashboard.jsx
+
 import React, { useEffect, useState } from 'react';
 import {
   Box,
@@ -69,7 +71,7 @@ export default function Dashboard() {
       <Header />
 
       {/* full-width, no side padding */}
-      <Box width="100vw" px={0} py={4}>
+      <Box width="100vw" height="100vw" px={0} py={1}>
         {/* Top cards */}
         <Grid
           container
@@ -79,7 +81,7 @@ export default function Dashboard() {
         >
           {loading
             ? [0,1].map(i => (
-                <Grid item xs={12} sm={6} key={i}>
+                <Grid item xs={12} sm={2}  key={i}>
                   <Skeleton variant="rectangular" height={160} />
                 </Grid>
               ))
@@ -236,17 +238,171 @@ export default function Dashboard() {
 
 
 
+// src/components/ChartCard.jsx
+
+
+import React from 'react';
+import { Card, CardContent, Typography, Box } from '@mui/material';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer
+} from 'recharts';
+
+export default function ChartCard({
+  title,
+  data = [],
+  dataKey = 'value',
+  chartHeight = 250,
+}) {
+  if (!Array.isArray(data) || data.length === 0) {
+    return (
+      <Card variant="outlined" sx={{ mb: 2 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom fontWeight="bold">
+            {title}
+          </Typography>
+          <Typography variant="body2" color="textSecondary">
+            No data to display.
+          </Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card variant="outlined" sx={{ mb: 2 }}>
+      <CardContent sx={{ textAlign: 'center' }}>
+        <Typography variant="h6" gutterBottom fontWeight="bold">
+          {title}
+        </Typography>
+        <Box sx={{ width: '100%', height: chartHeight }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data}>
+              <XAxis
+                dataKey="name"
+                tick={{ fontWeight: 'bold', fontSize: 12 }}
+              />
+              <YAxis
+                tick={{ fontWeight: 'bold', fontSize: 12 }}
+              />
+              <Tooltip />
+              <Bar dataKey={dataKey} fill="#FFC107" />
+            </BarChart>
+          </ResponsiveContainer>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
 
 
 
 
-// src/services/occupancy.service.js
 
-    export const partitionList = [
-    'Costa Rica',
-    'Mexico',
-    'Argentina',
-    'Panama',
-    'Peru',
-    'Brazil'
-    ];
+
+
+
+// src/components/SummaryCard.jsx
+
+import React from 'react';
+import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
+
+export default function SummaryCard({ title, total, stats }) {
+  return (
+    <Card
+      variant="outlined"
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        textAlign: 'center',
+        px: 2,
+        py: 3
+      }}
+    >
+      <CardContent>
+        <Typography variant="subtitle1" gutterBottom fontWeight="bold">
+          {title}
+        </Typography>
+
+        {total != null && (
+          <Box display="flex" justifyContent="center" alignItems="baseline" mb={2}>
+            <Typography variant="h3" fontWeight="bold" sx={{ mr: 1 }}>
+              {total}
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              Total
+            </Typography>
+          </Box>
+        )}
+
+        <Grid container spacing={1} justifyContent="center">
+          {stats.map(({ label, value }) => (
+            <Grid item xs={6} key={label}>
+              <Typography variant="caption" color="textSecondary" fontWeight="bold">
+                {label}
+              </Typography>
+              <Typography variant="h5" fontWeight="bold">
+                {value}
+              </Typography>
+            </Grid>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
+
+// src/theme/westernUnionTheme.js
+export default {
+  palette: {
+    primary: {
+      main: '#FFC107',    // WU Yellow
+      contrastText: '#000'
+    },
+    secondary: {
+      main: '#000000',    // WU Black
+      contrastText: '#FFF'
+    },
+    background: {
+      default: '#FFFFFF',
+      paper: '#FFFDE7'
+    }
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h5: { fontWeight: 600 },
+    h6: { fontWeight: 500 }
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none'
+        }
+      }
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderColor: '#FFC107'
+        }
+      }
+    }
+  }
+};
+
+
+
+
+
+
+
+
+
