@@ -1,121 +1,377 @@
+// src/pages/Dashboard.jsx
 
-const express = require('express');
-- const cors = require('cors');
-+ const cors = require('cors');
-const occupancyRoutes = require('./routes/occupancy.routes');
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Typography,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Grid,
+  CardActionArea,
+  Skeleton,
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { useNavigate } from 'react-router-dom';
 
-const app = express();
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
 
-// --- SIMPLIFIED CORS ---
-- const corsOptions = {
--   origin: 'http://localhost:3000',
--   methods: ['GET','POST','PUT','DELETE','OPTIONS'],
--   allowedHeaders: ['Content-Type','Authorization'],
--   credentials: true
-- };
-- app.use(cors(corsOptions));
-- app.options('*', cors(corsOptions));
-+ app.use(cors());           // allow all origins in dev
-+ app.options('*', cors());  // preflight support for all routes
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const navigate = useNavigate();
 
-app.use(express.json());
+  // update timestamp on each data change
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
 
-// Health check
-app.get('/', (req, res) => res.send('🌎 LACA Occupancy API Running'));
+  if (error) {
+    return (
+      <Container sx={{ mt: 4 }}>
+        <Typography color="error">Error loading live data</Typography>
+      </Container>
+    );
+  }
 
-// Routes
-app.use('/api/occupancy', occupancyRoutes);
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2, mb: 4 }}>
+        {/* Header */}
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="h5">LACA Headcount</Typography>
+          {loading ? (
+            <Skeleton variant="text" width={100} />
+          ) : (
+            <Typography variant="body2" color="textSecondary">
+              Last updated: {lastUpdate}
+            </Typography>
+          )}
+        </Box>
 
-module.exports = app;
+        {/* Today's Totals */}
+        {loading ? (
+          <Skeleton variant="rectangular" height={100} />
+        ) : (
+          <SummaryCard
+            title="Today's Totals"
+            stats={[
+              { label: 'Total',       value: data.today.total },
+              { label: 'Employees',   value: data.today.Employee },
+              { label: 'Contractors', value: data.today.Contractor }
+            ]}
+          />
+        )}
 
-
-
-
-
-
-
-
-
-
-// src/app.js
-
-const express = require('express');
-const cors = require('cors');                   // <-- import cors
-const occupancyRoutes = require('./routes/occupancy.routes');
-
-const app = express();
-
-// --- CORS SETUP ---
-const corsOptions = {
-  origin: 'http://localhost:3000',              // your React app
-  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization'],
-  credentials: true                             // if you need to send cookies
-};
-app.use(cors(corsOptions));                     // apply to all routes
-app.options('*', cors(corsOptions));            // preflight for all routes
-
-// parse JSON bodies
-app.use(express.json());
-
-// Health check
-app.get('/', (req, res) => res.send('🌎 LACA Occupancy API Running'));
-
-// Routes
-app.use('/api/occupancy', occupancyRoutes);
-
-module.exports = app;
-
-
-
-
-
-// src/server.js
-
-require('dotenv').config();
-const app = require('./app');
-
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
-
-
-
-
-
-
+        {/* Bar Chart */}
+        <Box mt={4}>
+          <Typography variant="h6" gutterBottom>Realtime by Partition</Typography>
+      
+ {loading
+   ? <Skeleton variant="rectangular" height={300} />
+   : <ChartCard
+       title="Partitions"
+       data={Object.entries(data.realtime).map(([name, stats]) => ({
+         name,
+         value: stats.total
+       }))}
+     />
+ }
 
 
+        </Box>
+
+        {/* Floor-wise Accordions */}
+        <Box mt={4}>
+          <Typography variant="h6" gutterBottom>Partition Detail (Floor-wise)</Typography>
+          {loading
+            ? Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} variant="rectangular" height={80} sx={{ mb: 1 }} />
+              ))
+            : Object.entries(data.realtime).map(([partName, stats]) => (
+                <Accordion key={partName} sx={{ mb: 1 }}>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Box flexGrow={1}>
+                      <Typography variant="subtitle1">{partName}</Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        Total: {stats.total} — Emp: {stats.Employee}, Cont: {stats.Contractor}
+                      </Typography>
+                    </Box>
+                    <Typography
+                      variant="button"
+                      sx={{ cursor: 'pointer', ml: 2 }}
+                      onClick={e => {
+                        e.stopPropagation();
+                        navigate(`/realtime/${encodeURIComponent(partName)}`);
+                      }}
+                    >
+                      View All Swipes
+                    </Typography>
+                  </AccordionSummary>
+
+                  <AccordionDetails>
+                    {stats.floors && Object.entries(stats.floors).length > 0 ? (
+                      <Grid container spacing={1}>
+                        {Object.entries(stats.floors).map(([floor, count]) => (
+                          <Grid item key={floor} xs={6} sm={4} md={3}>
+                            <SummaryCard
+                              title={floor}
+                              stats={[{ label: 'Count', value: count }]}
+                            />
+                          </Grid>
+                        ))}
+                      </Grid>
+                    ) : (
+                      <Typography variant="body2" color="textSecondary">
+                        No floor data.
+                      </Typography>
+                    )}
+                  </AccordionDetails>
+                </Accordion>
+              ))
+          }
+        </Box>
+      </Container>
+      <Footer />
+    </>
+  );
+}
 
 
 
-C:\Users\W0024618\Desktop\laca-occupancy-backend\src\server.js
-
-require('dotenv').config();
-const app = require('./app');
-
-const PORT = process.env.PORT || 3001;
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
 
 
-C:\Users\W0024618\Desktop\laca-occupancy-backend\src\app.js
 
-const express = require('express');
-const occupancyRoutes = require('./routes/occupancy.routes');
+// src/pages/RealtimeDetails.jsx
 
-const app = express();
-app.use(express.json());
+import React, { useEffect, useState } from 'react';
+import { Container, Typography, Box, Skeleton } from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
 
-// Health check
-app.get('/', (req, res) => res.send('🌎 LACA Occupancy API Running'));
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import DataTable from '../components/DataTable';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
 
-// Routes
-app.use('/api/occupancy', occupancyRoutes);
+const columns = [
+  { field: 'ObjectName1',  headerName: 'Name' },
+  { field: 'Door',         headerName: 'Door' },
+  { field: 'Swipe_Time',   headerName: 'Time' },
+  { field: 'PersonnelType',headerName: 'Type' },
+];
 
-module.exports = app;
+export default function RealtimeDetails() {
+  const { partition } = useParams();
+  const navigate = useNavigate();
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState(null);
+
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) {
+    return (
+      <Container sx={{ mt: 4 }}>
+        <Typography color="error">Error loading data</Typography>
+      </Container>
+    );
+  }
+
+  const rows = data?.details.filter(r => r.PartitionName2 === partition) || [];
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2, mb: 4 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography
+            variant="button"
+            onClick={() => navigate(-1)}
+            sx={{ cursor: 'pointer' }}
+          >
+            ← Back
+          </Typography>
+          <Typography variant="h5">{partition}</Typography>
+          {loading ? (
+            <Skeleton width={100} />
+          ) : (
+            <Typography variant="body2" color="textSecondary">
+              Updated: {lastUpdate}
+            </Typography>
+          )}
+        </Box>
+
+        {loading ? (
+          <LoadingSpinner />
+        ) : rows.length > 0 ? (
+          <DataTable columns={columns} rows={rows} />
+        ) : (
+          <Typography>No swipes recorded yet for this partition.</Typography>
+        )}
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+// src/components/ChartCard.jsx
+
+import React from 'react';
+import { Card, CardContent, Typography } from '@mui/material';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer
+} from 'recharts';
+
+export default function ChartCard({ title, data, dataKey = 'value' }) {
+  return (
+    <Card variant="outlined" sx={{ mb: 2, height: 300 }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>{title}</Typography>
+        <ResponsiveContainer width="100%" height="90%">
+          <BarChart data={data}>
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey={dataKey} fill="#FFC107" />
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+// src/components/DataTable.jsx
+
+import React from 'react';
+import {
+  Table, TableHead, TableBody, TableRow, TableCell, Paper, TableContainer
+} from '@mui/material';
+
+export default function DataTable({ columns, rows }) {
+  return (
+    <TableContainer component={Paper} sx={{ mt: 2 }}>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            {columns.map(c => <TableCell key={c.field}>{c.headerName}</TableCell>)}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows.map((row, i) => (
+            <TableRow key={i}>
+              {columns.map(c => (
+                <TableCell key={c.field}>{row[c.field]}</TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+}
+
+
+
+// src/components/Footer.jsx
+
+import React from 'react';
+import { Box, Typography } from '@mui/material';
+
+export default function Footer() {
+  return (
+    <Box component="footer" p={2} textAlign="center">
+      <Typography variant="body2" color="textSecondary">
+        © {new Date().getFullYear()} Western Union. All rights reserved.
+      </Typography>
+    </Box>
+  );
+}
+
+
+
+
+// src/components/Header.jsx
+
+import React from 'react';
+import { AppBar, Toolbar, Typography } from '@mui/material';
+
+export default function Header() {
+  return (
+    <AppBar position="static" color="primary">
+      <Toolbar>
+        <Typography variant="h6" component="div">
+          Western Union • LACA Occupancy
+        </Typography>
+      </Toolbar>
+    </AppBar>
+  );
+}
+
+
+
+// src/components/LoadingSpinner.jsx
+
+import React from 'react';
+import { CircularProgress, Box } from '@mui/material';
+
+export default function LoadingSpinner() {
+  return (
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      height="100%"
+    >
+      <CircularProgress />
+    </Box>
+  );
+}
+
+
+
+
+
+// src/components/SummaryCard.jsx
+
+import React from 'react';
+import { Card, CardContent, Typography, Grid } from '@mui/material';
+
+export default function SummaryCard({ title, stats }) {
+  return (
+    <Card variant="outlined" sx={{ mb: 2 }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>{title}</Typography>
+        <Grid container spacing={2}>
+          {stats.map(({ label, value }) => (
+            <Grid item key={label}>
+              <Typography variant="subtitle1">{label}</Typography>
+              <Typography variant="h5">{value}</Typography>
+            </Grid>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
 
 
