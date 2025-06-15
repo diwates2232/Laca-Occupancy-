@@ -1,3 +1,22 @@
+// package.json
+{
+  // … your existing config …
+  "proxy": "http://localhost:3001",
+  // …
+}
+
+
+
+
+REACT_APP_API_BASE=http://localhost:3001
+
+
+
+
+
+
+
+
 // src/pages/Dashboard.jsx
 
 import React, { useEffect, useState } from 'react';
