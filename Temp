@@ -1,3 +1,189 @@
+import React from 'react';
+import { AppBar, Toolbar, Box, Typography } from '@mui/material';
+import WuLogo from '../assets/wu-logo.png';      // ← put your WU logo here
+import LacaFlag from '../assets/laca-flag.png';  // ← put your LACA flag here
+
+export default function Header() {
+  return (
+    <AppBar position="static" color="primary" sx={{ mb: 2 }}>
+      <Toolbar sx={{ justifyContent: 'space-between' }}>
+        {/* Left: logos */}
+        <Box display="flex" alignItems="center">
+          <Box component="img" src={WuLogo} alt="WU Logo"
+            sx={{ height: 36, mr: 2 }} />
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Western Union – LACA Region Headcount
+          </Typography>
+        </Box>
+        {/* Right: flag */}
+        <Box component="img" src={LacaFlag} alt="LACA Flag"
+          sx={{ height: 30 }} />
+      </Toolbar>
+    </AppBar>
+  );
+}
+
+
+
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Typography,
+  Grid,
+  Button,
+  Skeleton
+} from '@mui/material';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+  const [selectedPartition, setSelectedPartition] = useState(null);
+
+  // Update timestamp when data arrives
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) {
+    return (
+      <Container sx={{ mt: 4 }}>
+        <Typography color="error">Error loading live data</Typography>
+      </Container>
+    );
+  }
+
+  // TODAY totals or skeleton
+  const todayTotals = loading
+    ? null
+    : [
+        { label: 'Total',       value: data.today.total },
+        { label: 'Employees',   value: data.today.Employee },
+        { label: 'Contractors', value: data.today.Contractor }
+      ];
+
+  // Partition list for buttons
+  const partitions = loading
+    ? []
+    : Object.keys(data.realtime);
+
+  // If one partition is selected, get its floor data
+  const floorStats = selectedPartition && !loading
+    ? data.realtime[selectedPartition].floors
+    : null;
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2, mb: 4 }}>
+
+        {/* 1. Title Row with timestamp */}
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="h5">LACA Headcount</Typography>
+          {loading
+            ? <Skeleton width={100} />
+            : <Typography variant="body2" color="textSecondary">
+                Updated: {lastUpdate}
+              </Typography>
+          }
+        </Box>
+
+        {/* 2. Today’s headcount */}
+        {loading
+          ? <Skeleton variant="rectangular" height={100} />
+          : <SummaryCard title="Today's Headcount" stats={todayTotals} />
+        }
+
+        {/* 3. Partition selector */}
+        <Box mt={4} mb={2}>
+          <Typography variant="h6" gutterBottom>Partitions</Typography>
+          {loading
+            ? <Skeleton variant="rectangular" height={40} />
+            : (
+              <Grid container spacing={1}>
+                {partitions.map(name => (
+                  <Grid item key={name}>
+                    <Button
+                      variant={name === selectedPartition ? 'contained' : 'outlined'}
+                      onClick={() => setSelectedPartition(name)}
+                    >
+                      {name.replace(/^.*\./, '') /* show just “Costa Rica”, etc. */}
+                    </Button>
+                  </Grid>
+                ))}
+              </Grid>
+            )
+          }
+        </Box>
+
+        {/* 4. If no partition selected yet → show totals bar chart */}
+        {!selectedPartition && (
+          <Box mt={4}>
+            <Typography variant="h6" gutterBottom>Realtime by Partition</Typography>
+            {loading
+              ? <Skeleton variant="rectangular" height={300} />
+              : (
+                <ChartCard
+                  title="Partition Totals"
+                  data={Object.entries(data.realtime).map(([name, stats]) => ({
+                    name: name.replace(/^.*\./, ''),
+                    value: stats.total
+                  }))}
+                />
+              )
+            }
+          </Box>
+        )}
+
+        {/* 5. If a partition is selected → show its floors chart */}
+        {selectedPartition && (
+          <Box mt={4}>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Typography variant="h6">
+                {selectedPartition.replace(/^.*\./, '')} – Floor Breakdown
+              </Typography>
+              <Button onClick={() => setSelectedPartition(null)}>
+                Back to All
+              </Button>
+            </Box>
+
+            {loading
+              ? <Skeleton variant="rectangular" height={300} />
+              : floorStats && (
+                <ChartCard
+                  title="Floor Counts"
+                  data={Object.entries(floorStats).map(([floor, count]) => ({
+                    name: floor,
+                    value: count
+                  }))}
+                />
+              )
+            }
+          </Box>
+        )}
+
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
 // src/pages/Dashboard.jsx
 
 import React, { useEffect, useState } from 'react';
