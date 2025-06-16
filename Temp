@@ -1,3 +1,72 @@
+// src/controllers/occupancy.controller.js
+
+exports.getLiveSummary = async (req, res) => {
+  try {
+    const swipes = await service.fetchLiveOccupancy();
+
+    // … your existing "todayRecs" and "todayCounts" logic …
+
+    // 2. REAL-TIME: dedupe last swipe, keep InDirection only
+    const lastByPerson = {};
+    swipes.forEach(r => {
+      const prev = lastByPerson[r.PersonGUID];
+      const t = new Date(r.LocaleMessageTime).getTime();
+      if (!prev || t > new Date(prev.LocaleMessageTime).getTime()) {
+        lastByPerson[r.PersonGUID] = r;
+      }
+    });
+
+    const realtime = {};
+    const unmappedDoors = new Set();
+
+    Object.values(lastByPerson).forEach(r => {
+      if (r.Direction !== 'InDirection') return;
+
+      const p = r.PartitionName2;
+-     realtime[p] = realtime[p] || { total: 0, Employee: 0, Contractor: 0, floors: {} };
++     // initialize, adding TempBadge for CR
++     realtime[p] = realtime[p] || {
++       total: 0,
++       Employee: 0,
++       Contractor: 0,
++       // only CR needs this extra counter
++       ...(p === 'CR.Costa Rica Partition' ? { TempBadge: 0 } : {}),
++       floors: {}
++     };
+
+      realtime[p].total++;
+
+-     if (isEmployeeType(r.PersonnelType)) realtime[p].Employee++;
+-     else realtime[p].Contractor++;
++     // for Costa Rica: prioritize TempBadge, then Employee, else Contractor
++     if (p === 'CR.Costa Rica Partition') {
++       if (isTempBadgeType(r.PersonnelType)) {
++         realtime[p].TempBadge++;
++       } else if (isEmployeeType(r.PersonnelType)) {
++         realtime[p].Employee++;
++       } else {
++         realtime[p].Contractor++;
++       }
++     } else {
++       // other partitions unchanged
++       if (isEmployeeType(r.PersonnelType)) realtime[p].Employee++;
++       else realtime[p].Contractor++;
++     }
+
+      // … your existing floor‐lookup code …
+    });
+
+    // … return response as before …
+
+
+
+
+
+
+
+
+
+
 Now as per this file for Costa Rica Summary is need to generate 
 Employee , Contractor , Temp badge    like but Sumary is not generated as per code 
 summary is generated only for Employee And Contractoe
