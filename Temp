@@ -1,3 +1,20 @@
+// src/data/seatCapacities.js
+const seatCapacities = {
+  "Costa Rica": 1500,
+  "Mexico": 500,
+  "Argentina": 700,
+  "Panama": 400,
+  "Peru": 600,
+  "Brazil": 800
+};
+
+export default seatCapacities;
+
+
+
+
+
+
 
 // src/theme/westernUnionTheme.js
 
