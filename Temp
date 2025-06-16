@@ -1,3 +1,5 @@
+Refer dashboard page layout dearails ans give me updated history page .make same structure of this pag end to end layout same padding like 
+
 // src/pages/Dashboard.jsx
 
 import React, { useEffect, useState } from 'react';
