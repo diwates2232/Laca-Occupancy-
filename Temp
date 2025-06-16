@@ -1,3 +1,184 @@
+@@ “Live totals chart” section:
+-        {/* Live totals chart */}
++        {/* Live totals chart */}
+         <Box mt={4} sx={{ width: '100vw%' }}>
+-          <Typography variant="h6" gutterBottom>
+-            Live Totals by Partition
+-          </Typography>
++          <Box display="flex" justifyContent="space-between" alignItems="center">
++            <Typography variant="h6" gutterBottom>
++              Live Totals by Partition
++            </Typography>
++            <Typography variant="body2" color="textSecondary">
++              Last updated: {lastUpdate}
++            </Typography>
++          </Box>
+           {loading ? (
+             <Skeleton variant="rectangular" width="100%" height={280} />
+           ) : (
+             <ChartCard
+               title="Partition Totals"
+               chartHeight={280}
+               data={partitions.map(p => ({ name: p.name, value: p.total }))}
+             />
+           )}
+         </Box>
+
+
+
+
+
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Typography,
+  Button,
+  Grid,
+  Link
+} from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import { fetchLiveSummary, fetchLiveDetails } from '../api/occupancy.service';
+
+export default function PartitionDetail() {
+  const { partition } = useParams();
+  const navigate = useNavigate();
+  const [summary, setSummary] = useState(null);
+  const [details, setDetails] = useState([]);
+  const [lastUpdate, setLastUpdate] = useState('');
+
+  useEffect(() => {
+    let timer;
+    const load = async () => {
+      const json = await fetchLiveSummary();
+      setSummary(json);
+      setDetails(json.details.filter(r =>
+        r.PartitionName2 === partition && r.Direction === 'InDirection'
+      ));
+      setLastUpdate(new Date().toLocaleTimeString());
+    };
+    load();
+    // refresh every second
+    timer = setInterval(load, 1000);
+    return () => clearInterval(timer);
+  }, [partition]);
+
+  if (!summary) {
+    return <Box sx={{ p: 4 }}><Typography>Loading…</Typography></Box>;
+  }
+
+  const todayCount = summary.today;
+  const live = summary.realtime[partition] || { total:0, Employee:0, Contractor:0, TempBadge:0, floors:{} };
+
+  return (
+    <>
+      <Header />
+      <Container maxWidth={false} disableGutters sx={{ px:'20px', pt:2, pb:4 }}>
+        {/* Back + Page Title */}
+        <Box display="flex" alignItems="center" mb={3}>
+          <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
+          <Typography variant="h6" sx={{ ml:2, fontWeight:600 }}>
+            Western Union – {partition.replace('CR.Costa Rica Partition','Costa Rica')}
+          </Typography>
+        </Box>
+
+        {/* Two summary cards */}
+        <Box display="flex" alignItems="stretch" gap={2} sx={{ mb:4 }}>
+          <SummaryCard
+            title={`Today’s ${partition} Headcount`}
+            total={todayCount.total}
+            stats={[
+              { label:'Employees', value: todayCount.Employee },
+              { label:'Contractors', value: todayCount.Contractor },
+              ...(todayCount.TempBadge!=null ? [{ label:'Temp Badge', value:todayCount.TempBadge }] : [])
+            ]}
+            sx={{ flex:1, height:180 }}
+          />
+          <SummaryCard
+            title={`Live ${partition} Headcount`}
+            total={live.total}
+            stats={[
+              { label:'Employees', value: live.Employee },
+              { label:'Contractors', value: live.Contractor },
+              ...(live.TempBadge!=null ? [{ label:'Temp Badge', value:live.TempBadge }] : [])
+            ]}
+            sx={{ flex:1, height:180 }}
+          />
+        </Box>
+
+        {/* Floor‐wise chart + last updated */}
+        <Box mb={2}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+            <Typography variant="h6">Live Floor Counts</Typography>
+            <Typography variant="body2" color="textSecondary">
+              Last updated: {lastUpdate}
+            </Typography>
+          </Box>
+          <ChartCard
+            title=""
+            data={Object.entries(live.floors).map(([floor, cnt])=>({ name:floor, value:cnt }))}
+            dataKey="value"
+            chartHeight={260}
+          />
+        </Box>
+
+        {/* Per‐floor detail boxes */}
+        <Typography variant="h6" gutterBottom>Floor Details</Typography>
+        <Grid container spacing={2}>
+          {Object.entries(live.floors).map(([floor, cnt])=>(
+            <Grid key={floor} item xs={12} md={6}>
+              <Box sx={{ border:'1px solid #FFC107', borderRadius:2, p:2, height:'100%' }}>
+                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                  {floor} (Total {cnt})
+                </Typography>
+                {details
+                  .filter(r => {
+                    /* match floor by lookup you already use; assuming r.floor was injected */
+                    return r.floor === floor;
+                  })
+                  .slice(0,25)
+                  .map(r => (
+                    <Box key={r.PersonGUID} display="flex" justifyContent="space-between" sx={{ mb:1, fontSize:'0.875rem' }}>
+                      <span>{r.ObjectName1}</span>
+                      <span>{r.PersonGUID.slice(-4)}</span>
+                      <span>{new Date(r.LocaleMessageTime).toLocaleTimeString()}</span>
+                      <span>{r.PersonnelType}</span>
+                      <span>{r.CardNumber}</span>
+                      <span>{r.Door}</span>
+                    </Box>
+                  ))
+                }
+                {cnt > 25 && (
+                  <Button size="small" onClick={()=>navigate(`/partition/${encodeURIComponent(partition)}/floor/${encodeURIComponent(floor)}`)}>
+                    See more…
+                  </Button>
+                )}
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
 1)for a Dashboard page add last upadted time and contonous timer in white coloue side of the Live Totals by Partition ( display like last updated : time )
 // src/pages/Dashboard.jsx
 
