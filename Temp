@@ -1,3 +1,85 @@
+// src/pages/PartitionDetail.jsx
+
+  useEffect(() => {
+    let timer;
+    const load = async () => {
+      const json = await fetchLiveSummary();
+      setSummary(json);
+      setDetails(json.details.filter(r =>
+        r.PartitionName2 === partition && r.Direction === 'InDirection'
+      ));
+      setLastUpdate(new Date().toLocaleTimeString());
+    };
+    load();
+    timer = setInterval(load, 1000);
+    return () => clearInterval(timer);
+  }, [partition]);
+
+  if (!summary) {
+    return <Box sx={{ p: 4 }}><Typography>Loading…</Typography></Box>;
+  }
+
+- const todayCount = summary.today;
++ // Use the partition's realtime total as its "today" headcount
++ const partToday = summary.realtime[partition] || { total:0, Employee:0, Contractor:0, TempBadge:0 };
+  const live = summary.realtime[partition] || { total:0, Employee:0, Contractor:0, TempBadge:0, floors:{} };
+
+  return (
+    <>
+      <Header />
+      <Container maxWidth={false} disableGutters sx={{ px:'20px', pt:2, pb:4 }}>
+        {/* Back + Page Title */}
+        ...
+
+        {/* Two summary cards */}
+        <Box display="flex" alignItems="stretch" gap={2} sx={{ mb:4 }}>
+-         <SummaryCard
+-           title={`Today’s ${partition} Headcount`}
+-           total={todayCount.total}
+-           stats={[
+-             { label:'Employees', value: todayCount.Employee },
+-             { label:'Contractors', value: todayCount.Contractor },
+-             ...(todayCount.TempBadge!=null ? [{ label:'Temp Badge', value:todayCount.TempBadge }] : [])
+-           ]}
+-           sx={{ flex:1, height:180 }}
+-         />
++         <SummaryCard
++           title={`Today’s ${partition} Headcount`}
++           total={partToday.total}
++           stats={[
++             { label:'Employees',   value: partToday.Employee },
++             { label:'Contractors', value: partToday.Contractor },
++             ...(partToday.TempBadge!=null
++               ? [{ label:'Temp Badge', value: partToday.TempBadge }]
++               : [])
++           ]}
++           sx={{ flex:1, height:180 }}
++         />
+
+         <SummaryCard
+           title={`Live ${partition} Headcount`}
+           total={live.total}
+           stats={[
+             { label:'Employees',   value: live.Employee },
+             { label:'Contractors', value: live.Contractor },
+             ...(live.TempBadge!=null
+               ? [{ label:'Temp Badge', value: live.TempBadge }]
+               : [])
+           ]}
+           sx={{ flex:1, height:180 }}
+         />
+        </Box>
+
+
+
+
+
+
+
+
+
+
+
 @@ “Live totals chart” section:
 -        {/* Live totals chart */}
 +        {/* Live totals chart */}
