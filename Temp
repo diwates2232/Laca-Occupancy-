@@ -1,3 +1,57 @@
+
+// src/components/SummaryCard.jsx
+
+import React from 'react';
+import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
+
+export default function SummaryCard({ title, total, stats, sx = {} }) {
+  return (
+    <Card variant="outlined" sx={{ px: 2, py: 3, background: '#fffde7', borderLeft: '5px solid #000000', borderRadius: 2, transition: 'transform 0.3s ease',
+      '&:hover': { transform: 'scale(1.02)', boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.2)' },
+      ...sx
+    }}>
+      <CardContent sx={{ textAlign: 'center', p: 1 }}>
+        <Typography variant="subtitle1" gutterBottom fontWeight="bold" color="primary">
+          {title}
+        </Typography>
+
+        {total != null && (
+          <Box display="flex" justifyContent="center" alignItems="baseline" mb={1}>
+-           <Typography variant="h4" fontWeight="bold" sx={{ mr: 1, color: '#000' }}>
++           <Typography variant="h4" fontWeight="bold" sx={{ color: '#000' }}>
+              {total}
+            </Typography>
+-           {/* Removed the "Total" caption here */}
+-           <Typography variant="caption" color="textSecondary">
+-             Total
+-           </Typography>
+          </Box>
+        )}
+
+        <Grid container spacing={0.5} justifyContent="center">
+          {stats.map(({ label, value }) => (
+            <Grid item xs={6} key={label}>
+              <Typography variant="caption" color="textSecondary" fontWeight="bold">
+                {label}
+              </Typography>
+              <Typography variant="h6" fontWeight="bold" sx={{ color: '#000' }}>
+                {value}
+              </Typography>
+            </Grid>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
+
+
 Read below Files carefully 
 now 
 Currently All  cards display result like 
