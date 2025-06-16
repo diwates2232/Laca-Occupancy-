@@ -1,3 +1,188 @@
+// src/pages/Dashboard.jsx
+…
+  {partition && !loading && (
+    <Box mt={3} sx={{ width: '100%' }}>
+      {/* existing header + chart */}
+      <Box display="flex" justifyContent="flex-end" sx={{ mt: 2 }}>
+-       <Button
+-         variant="contained"
+-         onClick={() =>
+-           navigate(`/realtime/${encodeURIComponent(partition)}`)
+-         }
+-       >
+-         See Swipe Details
+-       </Button>
++       <Button
++         size="small"
++         variant="outlined"
++         onClick={() =>
++           navigate(`/partition/${encodeURIComponent(partition)}`)
++         }
++       >
++         View Details
++       </Button>
+      </Box>
+    </Box>
+  )}
+…
+
+
+
+// src/pages/PartitionDetail.jsx
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Grid,
+  Typography,
+  Skeleton,
+  Button
+} from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import DataTable from '../components/DataTable';
+import { fetchLiveSummary, fetchLiveDetails } from '../api/occupancy.service';
+
+export default function PartitionDetail() {
+  const { partition } = useParams();
+  const navigate = useNavigate();
+  const [summary, setSummary] = useState(null);
+  const [details, setDetails] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    // 1) get live-summary for partition
+    fetchLiveSummary().then(json => {
+      setSummary(json);
+      // 2) filter details to this partition & InDirection
+      setDetails(
+        json.details.filter(r => r.PartitionName2 === partition && r.Direction === 'InDirection')
+      );
+      setLoading(false);
+    });
+  }, [partition]);
+
+  if (loading || !summary) {
+    return <Skeleton variant="rectangular" width="100%" height={300} />;
+  }
+
+  const todayCount = summary.today;  
+  const partRealtime = summary.realtime[partition] || { total: 0, Employee: 0, Contractor: 0, floors: {} };
+
+  return (
+    <>
+      <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ px: 2, pt: 2 }}>
+        <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
+        <Typography variant="h6">{partition.replace('CR.Costa Rica Partition','Costa Rica')}</Typography>
+      </Box>
+
+      <Container maxWidth={false} disableGutters sx={{ px: '20px', pb: 4 }}>
+        {/* Two cards */}
+        <Box display="flex" alignItems="stretch" sx={{ mb: 3 }}>
+          <Box flex={1}>
+            <SummaryCard
+              title={`Today’s ${partition} Headcount`}
+              total={todayCount.total}
+              stats={[
+                { label: 'Employees', value: todayCount.Employee },
+                { label: 'Contractors', value: todayCount.Contractor },
+              ]}
+              sx={{ height: 140 }}
+            />
+          </Box>
+          <Box sx={{ mx: 2 }} />
+          <Box flex={1}>
+            <SummaryCard
+              title={`Live ${partition} Headcount`}
+              total={partRealtime.total}
+              stats={[
+                { label: 'Employees', value: partRealtime.Employee },
+                { label: 'Contractors', value: partRealtime.Contractor },
+                ...(partRealtime.TempBadge != null
+                  ? [{ label: 'Temp Badge', value: partRealtime.TempBadge }]
+                  : []),
+              ]}
+              sx={{ height: 140 }}
+            />
+          </Box>
+        </Box>
+
+        {/* Floor chart */}
+        <Box mb={4}>
+          <ChartCard
+            title="Live Floor Counts"
+            chartHeight={260}
+            data={Object.entries(partRealtime.floors).map(([floor, cnt]) => ({ name: floor.trim(), value: cnt }))}
+          />
+        </Box>
+
+        {/* Details table */}
+        <Typography variant="h6" gutterBottom>Swipe Details</Typography>
+        <DataTable
+          columns={[
+            { field: 'ObjectName1', headerName: 'Name' },
+            { field: 'Swipe_Time', headerName: 'Time' },
+            { field: 'PersonnelType', headerName: 'Type' },
+            { field: 'Door', headerName: 'Door' },
+          ]}
+          rows={details}
+        />
+      </Container>
+    </>
+  );
+}
+
+
+
+
+
+// src/routes/AppRoutes.jsx
+import { Routes, Route } from 'react-router-dom';
+import Dashboard from '../pages/Dashboard';
+import RealtimeDetails from '../pages/RealtimeDetails';
++ import PartitionDetail from '../pages/PartitionDetail';
+import History from '../pages/History';
+
+export default function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<Dashboard />} />
++     <Route path="/partition/:partition" element={<PartitionDetail />} />
+      <Route path="/realtime/:partition" element={<RealtimeDetails />} />
+      <Route path="/history" element={<History />} />
+      <Route path="/history/:partition" element={<History />} />
+    </Routes>
+  );
+}
+
+
+
+
+// src/api/occupancy.service.js
+export async function fetchLiveSummary() {
+  const res = await fetch('/api/occupancy/live-summary');
+  return res.json();
+}
+export async function fetchLiveDetails() {
+  const res = await fetch('/api/occupancy/live-summary');
+  return res.json().then(json => json.details);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // src/pages/History.jsx
 
 import React, { useEffect, useState } from 'react';
