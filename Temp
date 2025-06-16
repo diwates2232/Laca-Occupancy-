@@ -1,4 +1,106 @@
 // src/theme/westernUnionTheme.js
+import { createTheme } from '@mui/material/styles';
+
+const westernUnionTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    background: {
+      default: '#000000',   // page background fallback
+      paper:   '#000000'    // let cards use their own background
+    },
+    primary: {
+      main: '#FFC107',
+      contrastText: '#000000'
+    },
+    secondary: {
+      main: '#FFFFFF',
+      contrastText: '#000000'
+    },
+    text: {
+      primary:   '#FFFFFF',
+      secondary: 'rgba(255,255,255,0.7)'
+    },
+    divider: 'rgba(255,255,255,0.2)'
+  },
+
+  typography: {
+    fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
+    h6:        { fontWeight: 600, color: '#FFC107' },
+    subtitle1: { fontWeight: 500, color: '#FFC107' },
+    body1:     { color: '#FFFFFF' },
+    body2:     { color: 'rgba(255,255,255,0.7)' },
+    caption:   { color: 'rgba(255,255,255,0.7)' }
+  },
+
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        html: {
+          height: '100%',
+        },
+        body: {
+          margin: 0,
+          padding: 0,
+          height: '100%',
+          background: 'linear-gradient(135deg, #000000 30%, #8B0000 60%, #000000 100%)',
+          backgroundAttachment: 'fixed',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: 'cover',
+          animation: 'gradientSpin 20s ease infinite'
+        },
+        '@keyframes gradientSpin': {
+          '0%':   { backgroundPosition: '0% 50%' },
+          '50%':  { backgroundPosition: '100% 50%' },
+          '100%': { backgroundPosition: '0% 50%' }
+        }
+      }
+    },
+
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          borderRadius: 4
+        },
+        contained: {
+          backgroundColor: '#FFC107',
+          color: '#000000',
+          '&:hover': {
+            backgroundColor: '#e6ac00'
+          }
+        }
+      }
+    },
+
+    MuiDivider: {
+      styleOverrides: {
+        root: {
+          backgroundColor: 'rgba(255,255,255,0.2)'
+        }
+      }
+    },
+
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: {
+          backgroundColor: '#333',
+          color: '#FFF'
+        }
+      }
+    }
+  }
+});
+
+export default westernUnionTheme;
+
+
+
+
+
+
+
+
+// src/theme/westernUnionTheme.js
 
 import { createTheme } from '@mui/material/styles';
 
