@@ -1,70 +1,5 @@
-- stats={[
--   { label: 'Employees',   value: p.Employee },
--   { label: 'Contractors', value: p.Contractor }
-- ]}
-+ stats={[
-+   { label: 'Employees',   value: p.Employee },
-+   { label: 'Contractors', value: p.Contractor },
-+   // only show TempBadge on Costa Rica
-+   ...(p.name === 'CR.Costa Rica Partition'
-+     ? [{ label: 'TempBadge', value: p.TempBadge }]
-+     : [])
-+ ]}
 
 
-
-
-
--   stats: [
--     { label: 'Total',       value: stats.total },
--     { label: 'Employees',   value: stats.Employee },
--     { label: 'Contractors', value: stats.Contractor }
--   ],
-+   stats: [
-+     { label: 'Employees',   value: stats.Employee },
-+     { label: 'Contractors', value: stats.Contractor },
-+     // only show TempBadge on Costa Rica
-+     ...(name === 'CR.Costa Rica Partition'
-+       ? [{ label: 'TempBadge', value: stats.TempBadge }]
-+       : [])
-+   ],
-
-
-
-
-
-- const partitionSummary = data.summaryByDate.map(d => ({
--   title: d.date,
--   stats: [
--     { label: 'Total',       value: d.region.total },
--     { label: 'Employees',   value: d.region.Employee },
--     { label: 'Contractors', value: d.region.Contractor }
--   ]
-- }));
-+ const partitionSummary = data.summaryByDate.map(d => ({
-+   title: d.date,
-+   stats: [
-+     { label: 'Employees',   value: d.region.Employee },
-+     { label: 'Contractors', value: d.region.Contractor },
-+     // only show TempBadge on Costa Rica
-+     ...(location === 'CR.Costa Rica Partition'
-+       ? [{ label: 'TempBadge', value: d.region.TempBadge }]
-+       : [])
-+   ]
-+ }));
-
-
-
-
-
-
-
-
-
-Check all below three cards and give me updated files carefully .
-check each file line by line
-
-C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\Dashboard.jsx
 
 // src/pages/Dashboard.jsx
 
@@ -194,16 +129,18 @@ export default function Dashboard() {
               <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
                 <SummaryCard
                   title={p.name}
+                 
                   total={p.total}
-                  stats={[
-                    { label: 'Employees',   value: p.Employee },
-                    { label: 'Contractors', value: p.Contractor },
-                    // ...(p.TempBadge ? [{ label: 'TempBadge', value: p.TempBadge }] : [])
+  
 
-          // only show TempBadge on Costa Rica
-         ...(p.name === 'CR.Costa Rica Partition' && p.TempBadge
-          ? [{ label: 'TempBadge', value: p.TempBadge }]
-          : [])
+ stats={[
+   { label: 'Employees',   value: p.Employee },
+   { label: 'Contractors', value: p.Contractor },
+   // only show TempBadge on Costa Rica
+   ...(p.name === 'CR.Costa Rica Partition'
+     ? [{ label: 'Temp Badge', value: p.TempBadge }]
+     : [])
+
 
                   ]}
                   sx={{ width: '100vw%' }}
@@ -294,10 +231,9 @@ export default function Dashboard() {
   );
 }
 
-
-
-
-
+Refer above page structure and update history page structure 
+card size padding end to end page footer 
+make same to same page and give me updated history page carefully
 
 
 //C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\History.jsx
@@ -374,11 +310,21 @@ export default function History() {
     const daySummary = data.summaryByDate.find(d => d.date === selectedDate);
     const partitionCards = Object.entries(daySummary.partitions).map(([name, stats]) => ({
       title: name,
-      stats: [
-        { label: 'Total',       value: stats.total },
-        { label: 'Employees',   value: stats.Employee },
-        { label: 'Contractors', value: stats.Contractor }
-      ],
+      // stats: [
+      //   { label: 'Total',       value: stats.total },
+      //   { label: 'Employees',   value: stats.Employee },
+      //   { label: 'Contractors', value: stats.Contractor }
+      // ],
+
+   stats: [
+     { label: 'Employees',   value: stats.Employee },
+     { label: 'Contractors', value: stats.Contractor },
+     // only show TempBadge on Costa Rica
+     ...(name === 'CR.Costa Rica Partition'
+       ? [{ label: 'TempBadge', value: stats.TempBadge }]
+       : [])
+   ],
+
     }));
 
     return (
@@ -415,15 +361,21 @@ export default function History() {
     );
   }
 
-  // 3) Drilled into a partition: show its daily totals
-  const partitionSummary = data.summaryByDate.map(d => ({
-    title: d.date,
-    stats: [
-      { label: 'Total',       value: d.region.total },
-      { label: 'Employees',   value: d.region.Employee },
-      { label: 'Contractors', value: d.region.Contractor }
-    ]
-  }));
+
+
+ const partitionSummary = data.summaryByDate.map(d => ({
+   title: d.date,
+   stats: [
+     { label: 'Employees',   value: d.region.Employee },
+     { label: 'Contractors', value: d.region.Contractor },
+     // only show TempBadge on Costa Rica
+     ...(location === 'CR.Costa Rica Partition'
+       ? [{ label: 'TempBadge', value: d.region.TempBadge }]
+       : [])
+   ]
+ }));
+
+
 
   return (
     <>
@@ -453,40 +405,4 @@ export default function History() {
   );
 }
 
-
-
-
-//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\SummaryCard.jsx
-
-import React from 'react';
-import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
-
-export default function SummaryCard({ title, total, stats, sx = {} }) {
-  return (
-    <Card variant="outlined" sx={{ px: 2, py: 1, ...sx }}>
-      <CardContent sx={{ textAlign: 'center' }}>
-        <Typography variant="subtitle1" gutterBottom>
-          {title}
-        </Typography>
-        {total != null && (
-          <Box display="flex" justifyContent="center" alignItems="baseline" mb={1}>
-            <Typography variant="h4" sx={{ mr: 1 }}>
-              {total}
-            </Typography>
-            {/* <Typography variant="caption">Total</Typography> */}
-          
-          </Box>
-        )}
-        <Grid container spacing={1} justifyContent="center">
-          {stats.map(({ label, value }) => (
-            <Grid key={label} item xs={6}>
-              <Typography variant="caption">{label}</Typography>
-              <Typography variant="h6">{value}</Typography>
-            </Grid>
-          ))}
-        </Grid>
-      </CardContent>
-    </Card>
-  );
-}
 
