@@ -1,3 +1,24 @@
+SwipeData/
+├── backend/
+│   ├── controllers/
+│   │   └── lacaLiveOccupancyController.js   ← LACA live occupancy logic here
+│   ├── routes/
+│   │   └── lacaOccupancyRoutes.js           ← Express routes for LACA
+│   ├── services/
+│   │   └── lacaOccupancyService.js          ← Business/data logic
+│   ├── config/
+│   │   └── siteConfig.js                    ← DB connections, site info
+│   ├── app.js                               ← Express app setup
+│   └── server.js                            ← Main entry point
+
+
+
+
+
+
+
+
+
 // src/pages/Dashboard.jsx
 
 import React, { useEffect, useState } from 'react';
