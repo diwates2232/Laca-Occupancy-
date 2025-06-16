@@ -1,3 +1,20 @@
+ stats={[
+   { label: 'Employees',   value: p.Employee },
+   { label: 'Contractors', value: p.Contractor },
+-  ...(p.TempBadge ? [{ label: 'TempBadge', value: p.TempBadge }] : [])
++  // only show TempBadge on Costa Rica
++  ...(p.name === 'CR.Costa Rica Partition' && p.TempBadge
++     ? [{ label: 'TempBadge', value: p.TempBadge }]
++     : [])
+ ]}
+
+
+
+
+
+
+
+
 // src/pages/Dashboard.jsx
 
 import React, { useEffect, useState } from 'react';
