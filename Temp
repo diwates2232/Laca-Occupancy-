@@ -1,110 +1,49 @@
-// src/pages/PartitionDetail.jsx
+// C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\PartitionDetail.jsx
 
-  useEffect(() => {
-    let timer;
-    const load = async () => {
-      const json = await fetchLiveSummary();
-      setSummary(json);
-      setDetails(json.details.filter(r =>
-        r.PartitionName2 === partition && r.Direction === 'InDirection'
-      ));
-      setLastUpdate(new Date().toLocaleTimeString());
-    };
-    load();
-    timer = setInterval(load, 1000);
-    return () => clearInterval(timer);
-  }, [partition]);
-
-  if (!summary) {
-    return <Box sx={{ p: 4 }}><Typography>Loading…</Typography></Box>;
-  }
-
-- const todayCount = summary.today;
-+ // Use the partition's realtime total as its "today" headcount
-+ const partToday = summary.realtime[partition] || { total:0, Employee:0, Contractor:0, TempBadge:0 };
-  const live = summary.realtime[partition] || { total:0, Employee:0, Contractor:0, TempBadge:0, floors:{} };
-
-  return (
-    <>
-      <Header />
-      <Container maxWidth={false} disableGutters sx={{ px:'20px', pt:2, pb:4 }}>
-        {/* Back + Page Title */}
-        ...
-
-        {/* Two summary cards */}
-        <Box display="flex" alignItems="stretch" gap={2} sx={{ mb:4 }}>
--         <SummaryCard
--           title={`Today’s ${partition} Headcount`}
--           total={todayCount.total}
--           stats={[
--             { label:'Employees', value: todayCount.Employee },
--             { label:'Contractors', value: todayCount.Contractor },
--             ...(todayCount.TempBadge!=null ? [{ label:'Temp Badge', value:todayCount.TempBadge }] : [])
--           ]}
--           sx={{ flex:1, height:180 }}
--         />
-+         <SummaryCard
-+           title={`Today’s ${partition} Headcount`}
-+           total={partToday.total}
-+           stats={[
-+             { label:'Employees',   value: partToday.Employee },
-+             { label:'Contractors', value: partToday.Contractor },
-+             ...(partToday.TempBadge!=null
-+               ? [{ label:'Temp Badge', value: partToday.TempBadge }]
-+               : [])
-+           ]}
-+           sx={{ flex:1, height:180 }}
-+         />
-
-         <SummaryCard
-           title={`Live ${partition} Headcount`}
-           total={live.total}
-           stats={[
-             { label:'Employees',   value: live.Employee },
-             { label:'Contractors', value: live.Contractor },
-             ...(live.TempBadge!=null
-               ? [{ label:'Temp Badge', value: live.TempBadge }]
-               : [])
-           ]}
-           sx={{ flex:1, height:180 }}
-         />
-        </Box>
+todayCount is not defined
+ReferenceError: todayCount is not defined
+    at PartitionDetail (http://localhost:3000/main.9b8df731806c9cc23f30.hot-update.js:244:18)
+    at react-stack-bottom-frame (http://localhost:3000/static/js/bundle.js:63572:18)
+    at renderWithHooks (http://localhost:3000/static/js/bundle.js:53782:20)
+    at updateFunctionComponent (http://localhost:3000/static/js/bundle.js:55475:17)
+    at beginWork (http://localhost:3000/static/js/bundle.js:56061:16)
+    at runWithFiberInDEV (http://localhost:3000/static/js/bundle.js:51553:68)
+    at performUnitOfWork (http://localhost:3000/static/js/bundle.js:58134:93)
+    at workLoopSync (http://localhost:3000/static/js/bundle.js:58027:38)
+    at renderRootSync (http://localhost:3000/static/js/bundle.js:58011:7)
+    at performWorkOnRoot (http://localhost:3000/static/js/bundle.js:57775:42)
 
 
 
+to fetch Today headcount 
+http://localhost:3001/api/occupancy/history/CR.Costa%20Rica%20Partition
+We can simply change partation anme 
 
+ {
+      "date": "2025-06-15",
+      "day": "Sunday",
+      "region": {
+        "name": "CR.Costa Rica Partition",
+        "total": 38,
+        "Employee": 23,
+        "Contractor": 15,
+        "TempBadge": 0
+      }
+    },
+    {
+      "date": "2025-06-16",
+      "day": "Monday",
+      "region": {
+        "name": "CR.Costa Rica Partition",
+        "total": 423,
+        "Employee": 386,
+        "Contractor": 37,
+        "TempBadge": 0
+      }
+    }
+  ],
 
-
-
-
-
-
-
-@@ “Live totals chart” section:
--        {/* Live totals chart */}
-+        {/* Live totals chart */}
-         <Box mt={4} sx={{ width: '100vw%' }}>
--          <Typography variant="h6" gutterBottom>
--            Live Totals by Partition
--          </Typography>
-+          <Box display="flex" justifyContent="space-between" alignItems="center">
-+            <Typography variant="h6" gutterBottom>
-+              Live Totals by Partition
-+            </Typography>
-+            <Typography variant="body2" color="textSecondary">
-+              Last updated: {lastUpdate}
-+            </Typography>
-+          </Box>
-           {loading ? (
-             <Skeleton variant="rectangular" width="100%" height={280} />
-           ) : (
-             <ChartCard
-               title="Partition Totals"
-               chartHeight={280}
-               data={partitions.map(p => ({ name: p.name, value: p.total }))}
-             />
-           )}
-         </Box>
+using this API for today we can render this count as per date
 
 
 
@@ -154,23 +93,22 @@ export default function PartitionDetail() {
     return <Box sx={{ p: 4 }}><Typography>Loading…</Typography></Box>;
   }
 
-  const todayCount = summary.today;
+//   const todayCount = summary.today;
+ // Use the partition's realtime total as its "today" headcount
+ const partToday = summary.realtime[partition] || { total:0, Employee:0, Contractor:0, TempBadge:0 };
   const live = summary.realtime[partition] || { total:0, Employee:0, Contractor:0, TempBadge:0, floors:{} };
 
   return (
     <>
       <Header />
-      <Container maxWidth={false} disableGutters sx={{ px:'20px', pt:2, pb:4 }}>
+      <Container maxWidth={false} disableGutters sx={{ px:'10px', pt:1, pb:2 }}>
         {/* Back + Page Title */}
-        <Box display="flex" alignItems="center" mb={3}>
+        <Box display="flex" alignItems="center" mb={0}>
           <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
-          <Typography variant="h6" sx={{ ml:2, fontWeight:600 }}>
-            Western Union – {partition.replace('CR.Costa Rica Partition','Costa Rica')}
-          </Typography>
         </Box>
 
         {/* Two summary cards */}
-        <Box display="flex" alignItems="stretch" gap={2} sx={{ mb:4 }}>
+        <Box display="flex" alignItems="stretch" gap={2} sx={{ mb:2 }}>
           <SummaryCard
             title={`Today’s ${partition} Headcount`}
             total={todayCount.total}
@@ -181,7 +119,7 @@ export default function PartitionDetail() {
             ]}
             sx={{ flex:1, height:180 }}
           />
-          <SummaryCard
+          {/* <SummaryCard
             title={`Live ${partition} Headcount`}
             total={live.total}
             stats={[
@@ -190,7 +128,22 @@ export default function PartitionDetail() {
               ...(live.TempBadge!=null ? [{ label:'Temp Badge', value:live.TempBadge }] : [])
             ]}
             sx={{ flex:1, height:180 }}
-          />
+          /> */}
+
+         <SummaryCard
+           title={`Today’s ${partition} Headcount`}
+           total={partToday.total}
+           stats={[
+             { label:'Employees',   value: partToday.Employee },
+             { label:'Contractors', value: partToday.Contractor },
+             ...(partToday.TempBadge!=null
+               ? [{ label:'Temp Badge', value: partToday.TempBadge }]
+               : [])
+          ]}
+           sx={{ flex:1, height:180 }}
+         />
+
+
         </Box>
 
         {/* Floor‐wise chart + last updated */}
@@ -249,364 +202,4 @@ export default function PartitionDetail() {
     </>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-1)for a Dashboard page add last upadted time and contonous timer in white coloue side of the Live Totals by Partition ( display like last updated : time )
-// src/pages/Dashboard.jsx
-
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  Skeleton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
-  Divider
-} from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
-import { partitionList } from '../services/occupancy.service';
-
-export default function Dashboard() {
-  const { data, loading, error } = useLiveOccupancy(1000);
-  const [lastUpdate, setLastUpdate] = useState('');
-  const [partition, setPartition] = useState('');
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (data) setLastUpdate(new Date().toLocaleTimeString());
-  }, [data]);
-
-  if (error) {
-    return (
-      <Box width="100vw%" py={4}>
-        <Typography color="error" align="center">
-          Error loading live data
-        </Typography>
-      </Box>
-    );
-  }
-
-  // Build and sort partitions
-  const regions = data?.realtime || {};
-  const partitions = partitionList
-    .map(name => {
-      const key = Object.keys(regions).find(k => k.includes(name));
-      const p = key ? regions[key] : {};
-      return {
-        name,
-        total: p.total || 0,
-        Employee: p.Employee || 0,
-        Contractor: p.Contractor || 0,
-        TempBadge: p.TempBadge || 0,
-        floors: p.floors || {}
-      };
-    })
-    .sort((a, b) => b.total - a.total);
-
-  // Totals
-  const todayTot   = data?.today?.total    ?? 0;
-  const todayEmp   = data?.today?.Employee ?? 0;
-  const todayCont  = data?.today?.Contractor ?? 0;
-  const realtimeTot  = partitions.reduce((sum, p) => sum + p.total, 0);
-  const realtimeEmp  = partitions.reduce((sum, p) => sum + p.Employee, 0);
-  const realtimeCont = partitions.reduce((sum, p) => sum + p.Contractor, 0);
-
-  return (
-    <>
-      <Header />
-
-      <Container
-        maxWidth={false}
-        disableGutters
-        sx={{
-          pt: 2,
-          pb: 4,
-          px: '20px',        // ← exactly 20px padding both sides
-        }}
-      >
-        {/* Top summary cards */}
-        <Box
-          display="flex"
-          alignItems="stretch"
-          sx={{ mb: 2, width: '100vw%' }}
-        >
-          <Box sx={{ flex: 1 }}>
-            <SummaryCard
-              title="Today’s Headcount"
-              total={todayTot}
-              stats={[
-                { label: 'Employees',   value: todayEmp },
-                { label: 'Contractors', value: todayCont }
-              ]}
-              sx={{ height: 190 }}
-            />
-          </Box>
-
-          <Divider
-            // orientation="vertical"
-            flexItem
-            sx={{ mx: 2 }}
-          />
-
-          <Box sx={{ flex: 1 }}>
-            <SummaryCard
-              title="Realtime Headcount"
-              total={realtimeTot}
-              stats={[
-                { label: 'Employees',   value: realtimeEmp },
-                { label: 'Contractors', value: realtimeCont }
-              ]}
-              sx={{ height: 190 }}
-            />
-          </Box>
-        </Box>
-
-        {/* Partition cards */}
-        <Box mt={4} sx={{ width: '100vw%', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-          {loading ? (
-            <Skeleton variant="rectangular" width="100vw%" height={240} />
-          ) : (
-            partitions.map(p => (
-              <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
-                <SummaryCard
-                  title={p.name}
-                 
-                  total={p.total}
-  
-
- stats={[
-   { label: 'Employees',   value: p.Employee },
-   { label: 'Contractors', value: p.Contractor },
-   // only show TempBadge on Costa Rica
-   ...(p.name === 'CR.Costa Rica Partition'
-     ? [{ label: 'Temp Badge', value: p.TempBadge }]
-     : [])
-
-
-                  ]}
-                  sx={{ width: '100vw%' }}
-                />
-              </Box>
-            ))
-          )}
-        </Box>
-
-        {/* Live totals chart */}
-        <Box mt={4} sx={{ width: '100vw%' }}>
-          <Typography variant="h6" gutterBottom>
-            Live Totals by Partition
-          </Typography>
-          {loading ? (
-            <Skeleton variant="rectangular" width="100%" height={280} />
-          ) : (
-            <ChartCard
-              title="Partition Totals"
-              chartHeight={280}
-              data={partitions.map(p => ({ name: p.name, value: p.total }))}
-            />
-          )}
-        </Box>
-
-
-      </Container>
-
-      <footer style={{
-        backgroundColor: '#000000',
-        color: '#FFC107',
-        padding: '1.5rem 0',
-        textAlign: 'center',
-        marginTop: 0,
-        borderTop: '2px solid #FFC107',
-        fontSize: '0.95rem',
-        lineHeight: '1.6'
-      }}>
-        <div><strong>Global Security Operations Center</strong><br/>
-          Live HeadCount against Occupancy dashboard for Western Union — Real-time occupancy, floor activity, and personnel insights.
-        </div>
-        <div style={{ marginTop: '0.75rem' }}>
-          Contact us:&nbsp;
-          <a href="mailto:GSOC-GlobalSecurityOperationCenter.SharedMailbox@westernunion.com"
-             style={{ color: '#FFC107', textDecoration: 'underline' }}>
-            GSOC Mail
-          </a>&nbsp;|&nbsp;
-          Landline:&nbsp;<span style={{ color: '#FFC107' }}>+91-020-67632394</span>
-        </div>
-      </footer>
-    </>
-  );
-}
-
-
-
-
-
-
-
-2) for this display like on Top 
-Today’s HeadCount currently you are displaying todays Laca HeadCount kidly upadte this 
-and Live HeadCoumnt
-
-Below 
-Live Floor Counts / building wise Count 
-side of the chart header display timers last upadted and continous tiem
-
-below chart floor wise 
-
-then below header Floor Details / Building details as per 
-then make Box for Details section and display 
-details data only there like 
-EMployee name , Employee Id, Swipe time , Personnel type , card Number , Door name like 
-make seprate box
-ex- Building F4  (Total 30 )
-then 30 employee details data  , initially dispplay 25 people deatails and add more details option like 
-
-in one row adjust 2 Box as per variable size 
-sort details box as per count 
-
-Display like 
-
- Building F4  (Total 30 )            Building F2  (Total 20 )
-
-like this 
-
-
-
-
-
-// src/pages/PartitionDetail.jsx
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Box,
-  Grid,
-  Typography,
-  Skeleton,
-  Button
-} from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import DataTable from '../components/DataTable';
-import Header from '../components/Header';
-import { fetchLiveSummary, fetchLiveDetails } from '../api/occupancy.service';
-
-export default function PartitionDetail() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-  const [summary, setSummary] = useState(null);
-  const [details, setDetails] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    // 1) get live-summary for partition
-    fetchLiveSummary().then(json => {
-      setSummary(json);
-      // 2) filter details to this partition & InDirection
-      setDetails(
-        json.details.filter(r => r.PartitionName2 === partition && r.Direction === 'InDirection')
-      );
-      setLoading(false);
-    });
-  }, [partition]);
-
-  if (loading || !summary) {
-    return <Skeleton variant="rectangular" width="100%" height={300} />;
-  }
-
-  const todayCount = summary.today;  
-  const partRealtime = summary.realtime[partition] || { total: 0, Employee: 0, Contractor: 0, floors: {} };
-
-  return (
-    <>
-      <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ px: 2, pt: 2 }}>
-        <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
-        {/* <Typography variant="h6">{partition.replace('CR.Costa Rica Partition','Costa Rica')}</Typography> */}
-      </Box>
-
-      <Container maxWidth={false} disableGutters sx={{ px: '20px', pb: 4 }}>
-        {/* Two cards */}
-        <Box display="flex" alignItems="stretch" sx={{ mb: 3 }}>
-          <Box flex={1}>
-            <SummaryCard
-              title={`Today’s ${partition} Headcount`}
-              total={todayCount.total}
-              stats={[
-                { label: 'Employees', value: todayCount.Employee },
-                { label: 'Contractors', value: todayCount.Contractor },
-              ]}
-              sx={{ height: 180 }}
-            />
-          </Box>
-          <Box sx={{ mx: 2 }} />
-          <Box flex={1}>
-            <SummaryCard
-              title={`Live ${partition} Headcount`}
-              total={partRealtime.total}
-              stats={[
-                { label: 'Employees', value: partRealtime.Employee },
-                { label: 'Contractors', value: partRealtime.Contractor },
-                ...(partRealtime.TempBadge != null
-                  ? [{ label: 'Temp Badge', value: partRealtime.TempBadge }]
-                  : []),
-              ]}
-              sx={{ height: 180 }}
-            />
-          </Box>
-        </Box>
-
-        {/* Floor chart */}
-        <Box mb={4}>
-          <ChartCard
-            title="Live Floor Counts"
-            chartHeight={260}
-            data={Object.entries(partRealtime.floors).map(([floor, cnt]) => ({ name: floor.trim(), value: cnt }))}
-          />
-        </Box>
-
-        {/* Details table */}
-        <Typography variant="h6" gutterBottom>Swipe Details</Typography>
-        <DataTable
-          columns={[
-            { field: 'ObjectName1', headerName: 'Name' },
-            { field: 'Swipe_Time', headerName: 'Time' },
-            { field: 'PersonnelType', headerName: 'Type' },
-            { field: 'Door', headerName: 'Door' },
-          ]}
-          rows={details}
-        />
-      </Container>
-    </>
-  );
-}
-
-
-
-
-
-
-
-
-
-as per my request kindly update all the section carefully anD GIVE ME UPDATED FILES CAREFULLY
 
