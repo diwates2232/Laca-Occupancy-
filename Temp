@@ -1,69 +1,5 @@
-
 // src/theme/westernUnionTheme.js
-import { createTheme } from '@mui/material/styles';
 
-const westernUnionTheme = createTheme({
-  palette: {
-    mode: 'dark',
-    background: {
-      default: '#000000',
-      paper: '#000000'       // keep paper black so cards’ own background shows through
-    },
-    primary: {
-      main: '#FFC107',
-      contrastText: '#000'
-    },
-    secondary: {
-      main: '#8B0000',
-      contrastText: '#fff'
-    },
-    text: {
-      primary: '#fff',
-      secondary: 'rgba(255,255,255,0.7)'
-    }
-  },
-  typography: {
-    fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-    h6: { fontWeight: 600 },
-    subtitle1: { fontWeight: 500 }
-  },
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        html: {
-          height: '100%',
-        },
-        body: {
-          margin: 0,
-          padding: 0,
-          height: '100%',
-          background: 'linear-gradient(-45deg, #000000, #2c0000, #FFC107, #000000)',
-          backgroundSize: '400% 400%',
-          animation: 'gradientSpin 15s ease infinite',
-          overflowX: 'hidden',
-        },
-        '@keyframes gradientSpin': {
-          '0%':   { backgroundPosition: '0% 50%' },
-          '50%':  { backgroundPosition: '100% 50%' },
-          '100%': { backgroundPosition: '0% 50%' },
-        }
-      }
-    },
-    // Remove any MuiCard or MuiTypography overrides so your components’ own styles remain intact.
-  }
-});
-
-export default westernUnionTheme;
-
-
-
-
-
-
-
-
-
-// src/theme/westernUnionTheme.js
 import { createTheme } from '@mui/material/styles';
 
 const westernUnionTheme = createTheme({
@@ -73,19 +9,25 @@ const westernUnionTheme = createTheme({
       default: '#000000',
       paper: '#1c1c1c'
     },
+
+  
     primary: {
       main: '#FFC107',
-      contrastText: '#000'
+      contrastText: '#000000'
     },
+
     secondary: {
-      main: '#8B0000',
-      contrastText: '#fff'
+      main: '#FFFFFF',
+      contrastText: '#000000'
     },
     text: {
-      primary: '#fff',
+      primary: '#FFFFFF',
       secondary: 'rgba(255,255,255,0.7)'
     }
   },
+
+
+
   typography: {
     fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
     h6: { fontWeight: 600 },
@@ -101,7 +43,7 @@ const westernUnionTheme = createTheme({
           margin: 0,
           padding: 0,
           height: '100%',
-          background: 'linear-gradient(-45deg, #000000, #2c0000, #FFC107, #000000)',
+          background: 'linear-gradient(-45deg, #000000, #2c0000, #353935	, #343434)',
           backgroundSize: '400% 400%',
           animation: 'gradientSpin 15s ease infinite',
           overflowX: 'hidden',
@@ -122,119 +64,8 @@ const westernUnionTheme = createTheme({
         }
       }
     },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-          borderRadius: 4
-        },
-        contained: {
-          backgroundColor: '#FFC107',
-          color: '#000000',
-          '&:hover': {
-            backgroundColor: '#e6ac00'
-          }
-        }
-      }
-    }
-  }
-});
 
-export default westernUnionTheme;
-
-
-
-// src/index.js
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import westernUnionTheme from './theme/westernUnionTheme';
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <ThemeProvider theme={westernUnionTheme}>
-    <CssBaseline />
-    <App />
-  </ThemeProvider>
-);
-
-
-
-
-
-
-
-
-
-// src/theme/westernUnionTheme.js
-import { createTheme } from '@mui/material/styles';
-
-const westernUnionTheme = createTheme({
-  palette: {
-    mode: 'dark',
-    background: {
-      default: '#000000',
-      paper: '#1c1c1c' // Card background
-    },
-    primary: {
-      main: '#FFC107', // Western Union Yellow
-      contrastText: '#000000'
-    },
-    secondary: {
-      main: '#8B0000', // Deep Red
-      contrastText: '#FFFFFF'
-    },
-    text: {
-      primary: '#FFFFFF',
-      secondary: 'rgba(255,255,255,0.7)'
-    },
-    divider: 'rgba(255,255,255,0.12)'
-  },
-  typography: {
-    fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-    h6: { fontWeight: 600, color: '#FFC107' },
-    subtitle1: { fontWeight: 500, color: '#FFC107' },
-    body1: { color: '#FFFFFF' },
-    body2: { color: 'rgba(255,255,255,0.7)' },
-    caption: { color: 'rgba(255,255,255,0.7)' }
-  },
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        '@global': {
-          body: {
-            margin: 0,
-            padding: 0,
-            height: '100vh',
-            width: '100%',
-            background: 'linear-gradient(-45deg, #000000, #3a0000, #FFC107, #000000)',
-            backgroundSize: '400% 400%',
-            animation: 'gradientSpin 12s ease infinite'
-          },
-          '@keyframes gradientSpin': {
-            '0%': {
-              backgroundPosition: '0% 50%'
-            },
-            '50%': {
-              backgroundPosition: '100% 50%'
-            },
-            '100%': {
-              backgroundPosition: '0% 50%'
-            }
-          }
-        }
-      }
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          backgroundColor: '#1c1c1c',
-          border: '1px solid #FFC107',
-          borderRadius: 8
-        }
-      }
-    },
+    
     MuiButton: {
       styleOverrides: {
         root: {
@@ -275,6 +106,10 @@ export default westernUnionTheme;
 
 
 
+
+read below file carefully and revoke Crads colour as  i need above file anmatede file 
+as per above file you are using cards coloue all white 
+for display Today’s Headcount text realtime text and their count as per below file revoke all cards colour as per and give me updated files carefully
 
 
 
@@ -303,6 +138,8 @@ const westernUnionTheme = createTheme({
     },
     divider: 'rgba(255,255,255,0.12)'
   },
+
+
   typography: {
     fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
     h6: { fontWeight: 600, color: '#FFC107' },
@@ -315,7 +152,7 @@ const westernUnionTheme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          background: 'linear-gradient(135deg, #000000 30%, #8B0000 60%, #ffffff 100%)',
+          background: 'linear-gradient(135deg, #000000 30%, #8B0000 60%, #000000 100%)',
           backgroundAttachment: 'fixed',
           backgroundRepeat: 'no-repeat',
           backgroundSize: 'cover'
@@ -331,6 +168,7 @@ const westernUnionTheme = createTheme({
         }
       }
     },
+
     MuiButton: {
       styleOverrides: {
         root: {
@@ -365,295 +203,3 @@ const westernUnionTheme = createTheme({
 });
 
 export default westernUnionTheme;
-
-
-
-
-
-
-
-
-
-// src/theme/westernUnionTheme.js
-import { createTheme } from '@mui/material/styles';
-
-const westernUnionTheme = createTheme({
-  palette: {
-    mode: 'dark',
-    background: {
-      default: '#000000',        // Full black background
-      paper: 'linear-gradient(135deg, #1c1c1c 0%, #2a0000 100%)' // Black to dark red gradient
-    },
-    primary: {
-      main: '#FFC107',           // WU Yellow
-      contrastText: '#000'
-    },
-    secondary: {
-      main: '#FF3D00',           // Live red for urgent/active
-      contrastText: '#fff'
-    },
-    error: {
-      main: '#FF1744'            // Bright red error
-    },
-    warning: {
-      main: '#FF9100'
-    },
-    success: {
-      main: '#00E676'
-    },
-    text: {
-      primary: '#ffffff',
-      secondary: 'rgba(255,255,255,0.7)'
-    },
-    divider: 'rgba(255,255,255,0.2)'
-  },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h6: { fontWeight: 700, color: '#FFC107' },
-    subtitle1: { fontWeight: 600, color: '#FF3D00' }, // Red subtitle
-    body1: { color: '#fff' },
-    body2: { color: 'rgba(255,255,255,0.7)' },
-    caption: { color: 'rgba(255,255,255,0.5)' }
-  },
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        body: {
-          backgroundColor: '#000000'
-        }
-      }
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          background: 'linear-gradient(135deg, #1c1c1c, #2a0000)',
-          border: '1px solid #FF3D00',
-          borderRadius: 10,
-          color: '#fff'
-        }
-      }
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-          borderRadius: 4
-        },
-        containedPrimary: {
-          backgroundColor: '#FFC107',
-          color: '#000',
-          '&:hover': {
-            backgroundColor: '#e0a800'
-          }
-        },
-        containedSecondary: {
-          backgroundColor: '#FF3D00',
-          color: '#fff',
-          '&:hover': {
-            backgroundColor: '#e53935'
-          }
-        }
-      }
-    },
-    MuiTooltip: {
-      styleOverrides: {
-        tooltip: {
-          backgroundColor: '#FF3D00',
-          color: '#fff'
-        }
-      }
-    },
-    MuiDivider: {
-      styleOverrides: {
-        root: {
-          backgroundColor: 'rgba(255, 255, 255, 0.2)'
-        }
-      }
-    }
-  }
-});
-
-export default westernUnionTheme;
-
-
-
-
-
-
-
-
-// src/index.js
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
-import westernUnionTheme from './theme/westernUnionTheme';
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <ThemeProvider theme={westernUnionTheme}>
-    <CssBaseline />
-    <App />
-  </ThemeProvider>
-);
-
-reportWebVitals();
-
-
-
-
-
-
-// src/theme/westernUnionTheme.js
-import { createTheme } from '@mui/material/styles';
-
-const westernUnionTheme = createTheme({
-  palette: {
-    mode: 'dark',
-    background: {
-      default: '#000000', // Page background: pure black
-      paper:   '#1c1c1c'  // Card background: dark gray
-    },
-    primary: {
-      main:       '#FFC107',  // WU Yellow
-      contrastText: '#000000'
-    },
-    secondary: {
-      main:        '#FFFFFF', // White accents
-      contrastText: '#000000'
-    },
-    text: {
-      primary:   '#FFFFFF',
-      secondary: 'rgba(255,255,255,0.7)'
-    },
-    divider: 'rgba(255,255,255,0.12)'
-  },
-  typography: {
-    fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-    h6: { fontWeight: 600, color: '#FFC107' },
-    subtitle1: { fontWeight: 500, color: '#FFC107' },
-    body1: { color: '#FFFFFF' },
-    body2: { color: 'rgba(255,255,255,0.7)' },
-    caption: { color: 'rgba(255,255,255,0.7)' }
-  },
-  components: {
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          backgroundColor: '#1c1c1c',
-          border:          '1px solid #FFC107',
-          borderRadius:     8
-        }
-      }
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-          borderRadius:  4
-        },
-        contained: {
-          backgroundColor: '#FFC107',
-          color:           '#000000',
-          '&:hover': {
-            backgroundColor: '#e6ac00'
-          }
-        }
-      }
-    },
-    MuiDivider: {
-      styleOverrides: {
-        root: {
-          backgroundColor: 'rgba(255,255,255,0.2)'
-        }
-      }
-    },
-    MuiTooltip: {
-      styleOverrides: {
-        tooltip: {
-          backgroundColor: '#333',
-          color:           '#FFF'
-        }
-      }
-    }
-  }
-});
-
-export default westernUnionTheme;
-
-
-
-
-
-
-
-// src/index.js
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
-import westernUnionTheme from './theme/westernUnionTheme';
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <ThemeProvider theme={westernUnionTheme}>
-    <CssBaseline />
-    <App />
-  </ThemeProvider>
-);
-
-reportWebVitals();
-
-
-
-
-
-
-
-previous
-
-C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\index.js
-
-import React from 'react';
-import ReactDOM from 'react-dom/client';
- import { ThemeProvider, createTheme } from '@mui/material/styles';
-//  import { ThemeProvider, CssBaseline } from '@mui/material';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
-import westernUnionTheme from './theme/westernUnionTheme';
-
-const theme = createTheme(westernUnionTheme);
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <App />
-    </ThemeProvider>
-  </React.StrictMode>
-);
-
-reportWebVitals();
-
-
-
-So read both files carefully and give me updated Files carefully
-Updated index.js
-
-
-
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import westernUnionTheme from './theme/westernUnionTheme';
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <ThemeProvider theme={westernUnionTheme}>
-    <CssBaseline />
-    <App />
-  </ThemeProvider>
-);
