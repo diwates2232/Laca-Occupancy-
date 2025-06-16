@@ -1,3 +1,208 @@
+import { createTheme } from '@mui/material/styles';
+
+const westernUnionTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    background: {
+      default: '#000000', // Page background: deep black
+      paper: '#1c1c1c'    // Card background: very dark gray
+    },
+    primary: {
+      main: '#FFC107',    // WU Yellow
+      contrastText: '#000000'
+    },
+    secondary: {
+      main: '#FFFFFF',    // White accents
+      contrastText: '#000000'
+    },
+    text: {
+      primary: '#FFFFFF',
+      secondary: 'rgba(255,255,255,0.7)'
+    },
+    divider: 'rgba(255,255,255,0.12)'
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h6: { fontWeight: 600, color: '#FFC107' },
+    subtitle1: { fontWeight: 500, color: '#FFC107' },
+    body1: { color: '#FFFFFF' },
+    body2: { color: 'rgba(255,255,255,0.7)' },
+    caption: { color: 'rgba(255,255,255,0.7)' }
+  },
+  components: {
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#1c1c1c',
+          border: '1px solid #FFC107',
+          borderRadius: 8
+        }
+      }
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          borderRadius: 4
+        },
+        contained: {
+          backgroundColor: '#FFC107',
+          color: '#000000',
+          '&:hover': {
+            backgroundColor: '#e6ac00'
+          }
+        }
+      }
+    },
+    MuiDivider: {
+      styleOverrides: {
+        root: {
+          backgroundColor: 'rgba(255,255,255,0.2)'
+        }
+      }
+    },
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: {
+          backgroundColor: '#333',
+          color: '#FFF'
+        }
+      }
+    }
+  }
+});
+
+export default westernUnionTheme;
+
+
+
+
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import westernUnionTheme from './theme/westernUnionTheme';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <ThemeProvider theme={westernUnionTheme}>
+    <CssBaseline />
+    <App />
+  </ThemeProvider>
+);
+
+
+
+
+
+
+import React from 'react';
+import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
+
+export default function SummaryCard({ title, total, stats, sx = {} }) {
+  return (
+    <Card variant="outlined" sx={{ px: 2, py: 3, ...sx }}>
+      <CardContent sx={{ textAlign: 'center' }}>
+        <Typography variant="subtitle1" gutterBottom>
+          {title}
+        </Typography>
+        {total != null && (
+          <Box display="flex" justifyContent="center" alignItems="baseline" mb={1}>
+            <Typography variant="h4" sx={{ mr: 1 }}>
+              {total}
+            </Typography>
+            <Typography variant="caption">Total</Typography>
+          </Box>
+        )}
+        <Grid container spacing={1} justifyContent="center">
+          {stats.map(({ label, value }) => (
+            <Grid key={label} item xs={6}>
+              <Typography variant="caption">{label}</Typography>
+              <Typography variant="h6">{value}</Typography>
+            </Grid>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
+
+
+import React from 'react';
+import { Card, CardContent, Typography, Box } from '@mui/material';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, LabelList
+} from 'recharts';
+
+export default function ChartCard({
+  title, data = [], dataKey = 'value', chartHeight = 250
+}) {
+  if (!Array.isArray(data) || !data.length) {
+    return (
+      <Card sx={{ mb: 2 }}>
+        <CardContent sx={{ textAlign: 'center' }}>
+          <Typography variant="h6">{title}</Typography>
+          <Typography variant="body2">No data to display.</Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const hasCapacity = data[0].Capacity != null;
+
+  return (
+    <Card sx={{ mb: 2 }}>
+      <CardContent sx={{ textAlign: 'center' }}>
+        <Typography variant="h6" gutterBottom>{title}</Typography>
+        <Box sx={{ width: '100%', height: chartHeight }}>
+          <ResponsiveContainer>
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="name" tick={{ fill: '#FFF', fontWeight: 600 }} />
+              <YAxis tick={{ fill: '#FFF', fontWeight: 600 }} />
+              <Tooltip contentStyle={{ backgroundColor: '#333' }} />
+              <Legend wrapperStyle={{ color: '#FFF' }} />
+              {hasCapacity && (
+                <Bar dataKey="Capacity" name="Capacity" fill="#B0BEC5">
+                  <LabelList dataKey="Capacity" position="top" fill="#FFF" />
+                </Bar>
+              )}
+              <Bar
+                dataKey={hasCapacity ? 'Headcount' : dataKey}
+                name={hasCapacity ? 'Headcount' : dataKey}
+                fill="#FFC107"
+              >
+                <LabelList 
+                  dataKey={hasCapacity ? 'Headcount' : dataKey}
+                  position="top" 
+                  fill="#000"
+                  style={{ fontWeight: 600 }}
+                />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
 // src/theme/westernUnionTheme.js
 
 export default {
