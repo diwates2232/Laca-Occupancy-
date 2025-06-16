@@ -1,19 +1,7 @@
- stats={[
-   { label: 'Employees',   value: p.Employee },
-   { label: 'Contractors', value: p.Contractor },
--  ...(p.TempBadge ? [{ label: 'TempBadge', value: p.TempBadge }] : [])
-+  // only show TempBadge on Costa Rica
-+  ...(p.name === 'CR.Costa Rica Partition' && p.TempBadge
-+     ? [{ label: 'TempBadge', value: p.TempBadge }]
-+     : [])
- ]}
+Update all above changes and make Ui More Interactive and Brand , dont make unnecessary changes for ligic so 
+Give me all updated files varefully and smothly
 
-
-
-
-
-
-
+also i suggest use infographic theme to display chart and cards .
 
 // src/pages/Dashboard.jsx
 
@@ -51,7 +39,7 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <Box width="100%" py={4}>
+      <Box width="100vw%" py={4}>
         <Typography color="error" align="center">
           Error loading live data
         </Typography>
@@ -101,7 +89,7 @@ export default function Dashboard() {
         <Box
           display="flex"
           alignItems="stretch"
-          sx={{ mb: 4, width: '100%' }}
+          sx={{ mb: 4, width: '100vw%' }}
         >
           <Box sx={{ flex: 1 }}>
             <SummaryCard
@@ -135,9 +123,9 @@ export default function Dashboard() {
         </Box>
 
         {/* Partition cards */}
-        <Box mt={4} sx={{ width: '100%', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+        <Box mt={4} sx={{ width: '100vw%', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
           {loading ? (
-            <Skeleton variant="rectangular" width="100%" height={240} />
+            <Skeleton variant="rectangular" width="100vw%" height={240} />
           ) : (
             partitions.map(p => (
               <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
@@ -147,9 +135,15 @@ export default function Dashboard() {
                   stats={[
                     { label: 'Employees',   value: p.Employee },
                     { label: 'Contractors', value: p.Contractor },
-                    ...(p.TempBadge ? [{ label: 'TempBadge', value: p.TempBadge }] : [])
+                    // ...(p.TempBadge ? [{ label: 'TempBadge', value: p.TempBadge }] : [])
+
+  // only show TempBadge on Costa Rica
+  ...(p.name === 'CR.Costa Rica Partition' && p.TempBadge
+     ? [{ label: 'TempBadge', value: p.TempBadge }]
+     : [])
+
                   ]}
-                  sx={{ width: '100%' }}
+                  sx={{ width: '100vw%' }}
                 />
               </Box>
             ))
@@ -157,7 +151,7 @@ export default function Dashboard() {
         </Box>
 
         {/* Live totals chart */}
-        <Box mt={4} sx={{ width: '100%' }}>
+        <Box mt={4} sx={{ width: '100vw%' }}>
           <Typography variant="h6" gutterBottom>
             Live Totals by Partition
           </Typography>
@@ -173,7 +167,7 @@ export default function Dashboard() {
         </Box>
 
         {/* Partition drill-down */}
-        <Box mt={4} sx={{ width: '100%' }}>
+        <Box mt={4} sx={{ width: '100vw%' }}>
           <FormControl fullWidth size="small">
             <InputLabel>Select Partition</InputLabel>
             <Select
@@ -189,7 +183,7 @@ export default function Dashboard() {
           </FormControl>
 
           {partition && !loading && (
-            <Box mt={3} sx={{ width: '100%' }}>
+            <Box mt={3} sx={{ width: '100vw%' }}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                 <Typography variant="h6">{partition} – Floor Breakdown</Typography>
                 <Button
@@ -239,254 +233,7 @@ export default function Dashboard() {
 
 
 
-
-
-
-
-
-Read all below files carefully , now for a dashboard page ,
-add separate padding 20px vw for both left and right side strickly and give me update files carefully
-
-//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\Dashboard.jsx
-
-
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  Skeleton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
-  Divider
-} from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
-import { partitionList } from '../services/occupancy.service';
-
-export default function Dashboard() {
-  const { data, loading, error } = useLiveOccupancy(1000);
-  const [lastUpdate, setLastUpdate] = useState('');
-  const [partition, setPartition] = useState('');
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (data) setLastUpdate(new Date().toLocaleTimeString());
-  }, [data]);
-
-  if (error) {
-    return (
-      <Box width="100vw" py={4}>
-        <Typography color="error" align="center">
-          Error loading live data
-        </Typography>
-      </Box>
-    );
-  }
-
-
-  // Build partitions from realtime data, then sort descending
-  const regions = data?.realtime || {};
-  const partitions = partitionList
-    .map(name => {
-      const key = Object.keys(regions).find(k => k.includes(name));
-      const p = key ? regions[key] : {};
-      return {
-        name,
-        total: p.total || 0,
-        Employee: p.Employee || 0,
-        Contractor: p.Contractor || 0,
-        TempBadge: p.TempBadge || 0,
-        floors: p.floors || {}
-      };
-    })
-    .sort((a, b) => b.total - a.total);
-
-  // Today vs realtime totals
-  const todayTot  = data?.today?.total    ?? 0;
-  const todayEmp  = data?.today?.Employee ?? 0;
-  const todayCont = data?.today?.Contractor ?? 0;
-  const realtimeTot  = partitions.reduce((sum,p) => sum + p.total, 0);
-  const realtimeEmp  = partitions.reduce((sum,p) => sum + p.Employee, 0);
-  const realtimeCont = partitions.reduce((sum,p) => sum + p.Contractor, 0);
-
-
-  return (
-    <>
-      <Header />
-
-      {/* <Container maxWidth="xl" disableGutters sx={{ pt: 2, pb: 4 }}> */}
-
-      <Container
-        maxWidth="xl"
-        disableGutters
-        sx={{ width: '100vw', ml: '-50vw', left: '50%', position: 'relative', pt: 2, pb: 4,  px: '20px'}}
-     >
-
-
-      
-        {/* Top summary via flexbox */}
-        <Box display="flex" alignItems="stretch" sx={{ mb: 4, width: '100vw' }}>
-          <Box sx={{ flex: 1 }}>
-            <SummaryCard
-              title="Today’s Headcount"
-              total={todayTot}
-              stats={[
-                { label: 'Employees',   value: todayEmp },
-                { label: 'Contractors', value: todayCont }
-              ]}
-              sx={{ height: 150, width: '100%' }}
-            />
-          </Box>
-
-
-
-          {/* Vertical divider */}
-          <Divider
-            orientation="vertical"
-            flexItem
-            sx={{ mx: 2 }}
-          />
-
-          {/* Realtime Headcount */}
-          <Box sx={{ flex: 1 }}>
-            <SummaryCard
-              title="Realtime Headcount"
-              total={realtimeTot}
-              stats={[
-                { label: 'Employees',   value: realtimeEmp },
-                { label: 'Contractors', value: realtimeCont }
-              ]}
-              sx={{ height: 150, width: '100vw%' }}
-            />
-          </Box>
-        </Box>
-
-
-         {/* Partition cards */}
-        <Box mt={4} sx={{ width: '100vw', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-          {loading ? (
-            <Skeleton variant="rectangular" width="100%" height={240} />
-          ) : (
-            partitions.map(p => (
-              <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
-                <SummaryCard
-                  title={p.name}
-                  total={p.total}
-                  stats={[
-                    { label: 'Employees',   value: p.Employee },
-                    { label: 'Contractors', value: p.Contractor },
-                    ...(p.TempBadge ? [{ label: 'TempBadge', value: p.TempBadge }] : [])
-                  ]}
-                  sx={{ width: '100%' }}
-                />
-              </Box>
-            ))
-          )}
-        </Box>
-
-
-
-
-
-
-        {/* Live totals chart */}
-        <Box mt={4} sx={{ width: '100vw' }}>
-          <Typography variant="h6" gutterBottom>
-            Live Totals by Partition
-          </Typography>
-          {loading ? (
-            <Skeleton variant="rectangular" width="100%" height={280} />
-          ) : (
-            <ChartCard
-              title="Partition Totals"
-              chartHeight={280}
-              data={partitions.map(p => ({ name: p.name, value: p.total }))}
-            />
-          )}
-        </Box>
-
-
-
-        {/* Partition drill-down */}
-        <Box mt={4} sx={{ width: '100vw' }}>
-          <FormControl fullWidth size="small">
-            <InputLabel>Select Partition</InputLabel>
-            <Select
-              value={partition}
-              label="Select Partition"
-              onChange={e => setPartition(e.target.value)}
-            >
-              <MenuItem value="">— All —</MenuItem>
-              {partitions.map(p => (
-                <MenuItem key={p.name} value={p.name}>{p.name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-
-
-        {partition && !loading && (
-            <Box mt={3} sx={{ width: '100vw' }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                <Typography variant="h6">{partition} – Floor Breakdown</Typography>
-                <Button
-                  variant="contained"
-                  onClick={() => navigate(`/realtime/${encodeURIComponent(partition)}`)}
-                >
-                  See Swipe Details
-                </Button>
-              </Box>
-              <ChartCard
-                title="Live Floor Counts"
-                chartHeight={240}
-                data={Object.entries(
-                  partitions.find(p => p.name === partition)?.floors || {}
-                ).map(([floor, cnt]) => ({ name: floor, value: cnt }))}
-              />
-            
-             
-            </Box>
-          )}
-        </Box>
-
-      </Container>
-
-        <footer style={{
-        backgroundColor: '#000000',
-        color: '#FFC107',
-        padding: '1.5rem 0',
-        textAlign: 'center',
-        marginTop: '0rem',
-        borderTop: '2px solid #FFC107',
-        fontSize: '0.95rem',
-        lineHeight: '1.6'
-      }}>
-        <div><strong>Global Security Operations Center</strong><br/>
-          Live HeadCount against Occupancy dashboard for Western Union — Real-time occupancy, floor activity, and personnel insights.
-        </div>
-        <div style={{ marginTop: '0.75rem' }}>
-          Contact us:&nbsp;
-          <a href="mailto:GSOC-GlobalSecurityOperationCenter.SharedMailbox@westernunion.com"
-             style={{ color: '#FFC107', textDecoration: 'underline' }}>
-            GSOC Mail
-          </a>&nbsp;|&nbsp;
-          Landline:&nbsp;<span style={{ color: '#FFC107' }}>+91-020-67632394</span>
-        </div>
-      </footer>
-
-    </>
-  );
-}
-
+File 2
 
 
 //C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\ChartCard.jsx
@@ -540,10 +287,11 @@ export default function ChartCard({
 }
 
 
+file 3
 
 
-C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\SummaryCard.jsx
 
+//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\SummaryCard.jsx
 import React from 'react';
 import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
 
@@ -584,17 +332,49 @@ export default function SummaryCard({ title, total, stats, sx = {} }) {
 }
 
 
+File 4
+Specially make changes here chane background theme make dark theme brand Western union theme and update all files carefully
 
+// src/theme/westernUnionTheme.js
 
+export default {
+  palette: {
+    primary: {
+      main: '#000000',    // WU Black
+      contrastText: '#ffe600'
+    },
+    secondary: {
+      main:  '#FFC107',  // WU yellow
+      contrastText: '#FFF'
+    },
+    background: {
+      default: '#FFC72C',
+      paper: '#FFFDE7'
 
-
-
-
-
-
-
-
-
+    }
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h5: { fontWeight: 600 },
+    h6: { fontWeight: 500 }
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none'
+        }
+      }
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderColor: '#FFC107'
+        }
+      }
+    }
+  }
+};
 
 
 
