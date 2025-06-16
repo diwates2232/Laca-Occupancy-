@@ -1,3 +1,38 @@
+        {/* Two summary cards */}
+        <Box display="flex" alignItems="stretch" gap={2} sx={{ mb:2 }}>
+          <SummaryCard
+            title={`Today’s ${partition} Headcount`}
+            total={partToday.total}
+            stats={[
+              { label: 'Employees',   value: partToday.Employee },
+              { label: 'Contractors', value: partToday.Contractor },
+              ...(partToday.TempBadge != null
+                ? [{ label: 'Temp Badge', value: partToday.TempBadge }]
+                : [])
+            ]}
+            sx={{ flex:1, height:180 }}
+          />
+
+          <SummaryCard
+            title={`Live ${partition} Headcount`}
+            total={live.total}
+            stats={[
+              { label: 'Employees',   value: live.Employee },
+              { label: 'Contractors', value: live.Contractor },
+              ...(live.TempBadge != null
+                ? [{ label: 'Temp Badge', value: live.TempBadge }]
+                : [])
+            ]}
+            sx={{ flex:1, height:180 }}
+          />
+        </Box>
+
+
+
+
+
+
+
 // C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\PartitionDetail.jsx
 
 todayCount is not defined
