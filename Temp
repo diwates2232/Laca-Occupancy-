@@ -1,3 +1,66 @@
+- stats={[
+-   { label: 'Employees',   value: p.Employee },
+-   { label: 'Contractors', value: p.Contractor }
+- ]}
++ stats={[
++   { label: 'Employees',   value: p.Employee },
++   { label: 'Contractors', value: p.Contractor },
++   // only show TempBadge on Costa Rica
++   ...(p.name === 'CR.Costa Rica Partition'
++     ? [{ label: 'TempBadge', value: p.TempBadge }]
++     : [])
++ ]}
+
+
+
+
+
+-   stats: [
+-     { label: 'Total',       value: stats.total },
+-     { label: 'Employees',   value: stats.Employee },
+-     { label: 'Contractors', value: stats.Contractor }
+-   ],
++   stats: [
++     { label: 'Employees',   value: stats.Employee },
++     { label: 'Contractors', value: stats.Contractor },
++     // only show TempBadge on Costa Rica
++     ...(name === 'CR.Costa Rica Partition'
++       ? [{ label: 'TempBadge', value: stats.TempBadge }]
++       : [])
++   ],
+
+
+
+
+
+- const partitionSummary = data.summaryByDate.map(d => ({
+-   title: d.date,
+-   stats: [
+-     { label: 'Total',       value: d.region.total },
+-     { label: 'Employees',   value: d.region.Employee },
+-     { label: 'Contractors', value: d.region.Contractor }
+-   ]
+- }));
++ const partitionSummary = data.summaryByDate.map(d => ({
++   title: d.date,
++   stats: [
++     { label: 'Employees',   value: d.region.Employee },
++     { label: 'Contractors', value: d.region.Contractor },
++     // only show TempBadge on Costa Rica
++     ...(location === 'CR.Costa Rica Partition'
++       ? [{ label: 'TempBadge', value: d.region.TempBadge }]
++       : [])
++   ]
++ }));
+
+
+
+
+
+
+
+
+
 Check all below three cards and give me updated files carefully .
 check each file line by line
 
