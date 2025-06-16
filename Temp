@@ -1,3 +1,179 @@
+// src/components/Header.jsx
+import React from 'react';
+import { AppBar, Toolbar, Box, Typography, Select, MenuItem } from '@mui/material';
+import { useNavigate, useLocation } from 'react-router-dom';
+import WuLogo from '../assets/wu-logo.png';
+import LacaFlag from '../assets/laca-flag.png';
+import { partitionList } from '../services/occupancy.service';
+
+export default function Header() {
+  const navigate = useNavigate();
+  const loc = useLocation();
+  const currentPartition = loc.pathname.startsWith('/partition/')
+    ? decodeURIComponent(loc.pathname.replace('/partition/',''))
+    : '';
+
+  return (
+    <AppBar position="static" color="primary" sx={{ mb: 2 }}>
+      <Toolbar sx={{ justifyContent: 'space-between' }}>
+        <Box display="flex" alignItems="center">
+          <Box component="img" src={WuLogo} alt="WU Logo" sx={{ height: 36, mr: 2 }} />
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Western Union – LACA
+            {currentPartition && <> • {currentPartition.replace('CR.Costa Rica Partition','Costa Rica')}</>}
+          </Typography>
+        </Box>
+        <Box display="flex" alignItems="center">
+          <Select
+            size="small"
+            value={currentPartition}
+            displayEmpty
+            onChange={e => {
+              const p = e.target.value;
+              if (p) navigate(`/partition/${encodeURIComponent(p)}`);
+              else navigate('/');
+            }}
+            sx={{ bgcolor: 'background.paper', mr: 2 }}
+          >
+            <MenuItem value="">— Select Partition —</MenuItem>
+            {partitionList.map(p => (
+              <MenuItem key={p} value={p}>{p.replace('Partition','')}</MenuItem>
+            ))}
+          </Select>
+          <Box component="img" src={LacaFlag} alt="LACA Flag" sx={{ height: 30 }} />
+        </Box>
+      </Toolbar>
+    </AppBar>
+  );
+}
+
+
+
+
+
+
+// src/pages/PartitionDetail.jsx
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Grid,
+  Typography,
+  Button,
+  Skeleton
+} from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
+import SummaryCard from '../components/SummaryCard';
+import { fetchLiveSummary } from '../api/occupancy.service';
+
+export default function PartitionDetail() {
+  const { partition } = useParams();
+  const navigate = useNavigate();
+  const [load, setLoad] = useState(true);
+  const [summary, setSummary] = useState(null);
+
+  useEffect(() => {
+    setLoad(true);
+    fetchLiveSummary().then(json => {
+      setSummary(json);
+      setLoad(false);
+    });
+    // refresh every 5s
+    const iv = setInterval(() => fetchLiveSummary().then(json => setSummary(json)), 5000);
+    return () => clearInterval(iv);
+  }, [partition]);
+
+  if (load || !summary) {
+    return <Skeleton variant="rectangular" width="100%" height={300} />;
+  }
+
+  const today = summary.today;
+  const part = summary.realtime[partition] || { total:0, Employee:0, Contractor:0, TempBadge:0, floors:{} };
+
+  // Flatten floors
+  const floors = Object.entries(part.floors).slice(0,20);
+
+  return (
+    <>
+      <Container disableGutters sx={{ px:'20px', pt:2, pb:4 }}>
+        <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
+        {/* Two summary cards */}
+        <Box display="flex" gap={2} sx={{ mb:4 }}>
+          <SummaryCard
+            title={`Today’s ${partition}`}
+            total={today.total}
+            stats={[
+              { label:'Employees', value:today.Employee },
+              { label:'Contractors',value:today.Contractor }
+            ]}
+            sx={{ flex:1, height:140 }}
+          />
+          <SummaryCard
+            title={`Live ${partition}`}
+            total={part.total}
+            stats={[
+              { label:'Employees', value:part.Employee },
+              { label:'Contractors',value:part.Contractor },
+              ...(part.TempBadge? [{ label:'TempBadge', value:part.TempBadge }]:[])
+            ]}
+            sx={{ flex:1, height:140 }}
+          />
+        </Box>
+
+        {/* Floor boxes (3 per row) */}
+        <Grid container spacing={2}>
+          {floors.map(([floorName, count]) => (
+            <Grid item xs={12} sm={6} md={4} key={floorName}>
+              <Box sx={{
+                border:'1px solid', borderColor:'divider',
+                borderRadius:2, p:2, height:'100%'
+              }}>
+                <Typography variant="subtitle1" fontWeight="bold">
+                  {floorName}
+                </Typography>
+                <Typography variant="h4" sx={{ mb:1 }}>{count}</Typography>
+
+                {/* Fake sub-rows; replace with real slice from summary.details */}
+                {[0,1,2].map(i => (
+                  <Box key={i} display="flex" justifyContent="space-between" sx={{ mb:i<2?1:0 }}>
+                    <Typography variant="caption">Name {i+1}</Typography>
+                    <Typography variant="caption">ID {i+1}</Typography>
+                    <Typography variant="caption">Time {i+1}</Typography>
+                  </Box>
+                ))}
+
+                <Box textAlign="right" mt={1}>
+                  <Button size="small" onClick={() => navigate(`/realtime/${encodeURIComponent(partition)}`)}>
+                    See more…
+                  </Button>
+                </Box>
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+    </>
+  );
+}
+
+
+
+
+
+
+
+// src/App.jsx or wherever you define routes
+import PartitionDetail from './pages/PartitionDetail';
+…
+<Routes>
+  <Route path="/" element={<Dashboard/>}/>
++ <Route path="/partition/:partition" element={<PartitionDetail/>}/>
+  …  
+</Routes>
+
+
+
+
 Now Read all files carefully and update one by one carefully ,
 Dashboard.jsx from this page remove Select partation lable and Floor Wisw chart 
 and add Select partation dropdown in header section side of flag very small dropdown 
