@@ -1,81 +1,100 @@
-// src/controllers/occupancy.controller.js
-
-exports.getLiveSummary = async (req, res) => {
-  try {
-    const swipes = await service.fetchLiveOccupancy();
-
-    // … your existing "todayRecs" and "todayCounts" logic …
-
-    // 2. REAL-TIME: dedupe last swipe, keep InDirection only
-    const lastByPerson = {};
-    swipes.forEach(r => {
-      const prev = lastByPerson[r.PersonGUID];
-      const t = new Date(r.LocaleMessageTime).getTime();
-      if (!prev || t > new Date(prev.LocaleMessageTime).getTime()) {
-        lastByPerson[r.PersonGUID] = r;
+Now Real all files carefully i need Responce only for costa rica like 
+http://localhost:3001/api/occupancy/live-summary
+{
+  "success": true,
+  "today": {
+    "total": 254,
+    "Employee": 225,
+    "Contractor": 29
+  },
+  "realtime": {
+    "CR.Costa Rica Partition": {
+      "total": 195,
+      "Employee": 186,
+      "Contractor": 9,
+       "Temp Badge":01,  ...........if present display here temp badge count /else display 0
+      "floors": {
+        "Building F4": 9,
+        "Building E4": 60,
+        "Building B3": 26,
+        "Building A3": 18,
+        "Building E3": 33,
+        " Building B1": 7,
+        "Building A1": 7,
+        "Building A2": 8,
+        "Building E2": 13,
+        "Building B2": 14
       }
-    });
-
-    const realtime = {};
-    const unmappedDoors = new Set();
-
-    Object.values(lastByPerson).forEach(r => {
-      if (r.Direction !== 'InDirection') return;
-
-      const p = r.PartitionName2;
--     realtime[p] = realtime[p] || { total: 0, Employee: 0, Contractor: 0, floors: {} };
-+     // initialize, adding TempBadge for CR
-+     realtime[p] = realtime[p] || {
-+       total: 0,
-+       Employee: 0,
-+       Contractor: 0,
-+       // only CR needs this extra counter
-+       ...(p === 'CR.Costa Rica Partition' ? { TempBadge: 0 } : {}),
-+       floors: {}
-+     };
-
-      realtime[p].total++;
-
--     if (isEmployeeType(r.PersonnelType)) realtime[p].Employee++;
--     else realtime[p].Contractor++;
-+     // for Costa Rica: prioritize TempBadge, then Employee, else Contractor
-+     if (p === 'CR.Costa Rica Partition') {
-+       if (isTempBadgeType(r.PersonnelType)) {
-+         realtime[p].TempBadge++;
-+       } else if (isEmployeeType(r.PersonnelType)) {
-+         realtime[p].Employee++;
-+       } else {
-+         realtime[p].Contractor++;
-+       }
-+     } else {
-+       // other partitions unchanged
-+       if (isEmployeeType(r.PersonnelType)) realtime[p].Employee++;
-+       else realtime[p].Contractor++;
-+     }
-
-      // … your existing floor‐lookup code …
-    });
-
-    // … return response as before …
+    },
+    "BR.Sao Paulo": {
+      "total": 39,
+      "Employee": 35,
+      "Contractor": 4,
+      "floors": {
+        "6th Floor": 39
+      }
+    },
+    "AR.Cordoba": {
+      "total": 5,
+      "Employee": 0,
+      "Contractor": 5,
+      "floors": {
+        "1st Floor": 4,
+        "2nd Floor": 1
+      }
 
 
+same for historical data
+
+http://localhost:3001/api/occupancy/history/CR.Costa%20Rica%20Partition
+
+{
+  "success": true,
+  "summaryByDate": [
+    {
+      "date": "2025-05-17",
+      "day": "Saturday",
+      "region": {
+        "name": "CR.Costa Rica Partition",
+        "total": 48,
+        "Employee": 18,
+        "Contractor": 30
+        "Temp Badge ':01 .............like this , i neede this type result only for Costa rica .
+      }
+    },
+    {
+      "date": "2025-05-18",
+      "day": "Sunday",
+      "region": {
+        "name": "CR.Costa Rica Partition",
+        "total": 33,
+        "Employee": 18,
+        "Contractor": 15
+        "Temp Badge ":0  ..................if not Present display 0
+      }
+    },
+    {
+      "date": "2025-05-19",
+      "day": "Monday",
+      "region": {
+        "name": "CR.Costa Rica Partition",
+        "total": 571,
+        "Employee": 505,
+        "Contractor": 66
+      }
+    },
+
+as per above requirnment update below files carefully also help to render this count in frontend
 
 
 
 
-
-
-
-
-Now as per this file for Costa Rica Summary is need to generate 
-Employee , Contractor , Temp badge    like but Sumary is not generated as per code 
-summary is generated only for Employee And Contractoe
 
 //C:\Users\W0024618\Desktop\laca-occupancy-backend\src\controllers\occupancy.controller.js
 
 
 const service = require('../services/occupancy.service');
-const doorMap = require('../utils/doorMap');  // your generated mapping
+const doorMap = require('../utils/doorMap'); 
 
 exports.getLiveOccupancy = async (req, res) => {
   try {
@@ -268,3 +287,397 @@ exports.getHistoricalOccupancy = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Historical fetch failed' });
   }
 };
+
+
+
+
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\Dashboard.jsx
+
+// src/pages/Dashboard.jsx
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Typography,
+  Skeleton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  Divider
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+import { partitionList } from '../services/occupancy.service';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+  const [partition, setPartition] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) {
+    return (
+      <Box width="100vw%" py={4}>
+        <Typography color="error" align="center">
+          Error loading live data
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Build and sort partitions
+  const regions = data?.realtime || {};
+  const partitions = partitionList
+    .map(name => {
+      const key = Object.keys(regions).find(k => k.includes(name));
+      const p = key ? regions[key] : {};
+      return {
+        name,
+        total: p.total || 0,
+        Employee: p.Employee || 0,
+        Contractor: p.Contractor || 0,
+        TempBadge: p.TempBadge || 0,
+        floors: p.floors || {}
+      };
+    })
+    .sort((a, b) => b.total - a.total);
+
+  // Totals
+  const todayTot   = data?.today?.total    ?? 0;
+  const todayEmp   = data?.today?.Employee ?? 0;
+  const todayCont  = data?.today?.Contractor ?? 0;
+  const realtimeTot  = partitions.reduce((sum, p) => sum + p.total, 0);
+  const realtimeEmp  = partitions.reduce((sum, p) => sum + p.Employee, 0);
+  const realtimeCont = partitions.reduce((sum, p) => sum + p.Contractor, 0);
+
+  return (
+    <>
+      <Header />
+
+      <Container
+        maxWidth={false}
+        disableGutters
+        sx={{
+          pt: 2,
+          pb: 4,
+          px: '20px',        // ← exactly 20px padding both sides
+        }}
+      >
+        {/* Top summary cards */}
+        <Box
+          display="flex"
+          alignItems="stretch"
+          sx={{ mb: 2, width: '100vw%' }}
+        >
+          <Box sx={{ flex: 1 }}>
+            <SummaryCard
+              title="Today’s Headcount"
+              total={todayTot}
+              stats={[
+                { label: 'Employees',   value: todayEmp },
+                { label: 'Contractors', value: todayCont }
+              ]}
+              sx={{ height: 190 }}
+            />
+          </Box>
+
+          <Divider
+            // orientation="vertical"
+            flexItem
+            sx={{ mx: 2 }}
+          />
+
+          <Box sx={{ flex: 1 }}>
+            <SummaryCard
+              title="Realtime Headcount"
+              total={realtimeTot}
+              stats={[
+                { label: 'Employees',   value: realtimeEmp },
+                { label: 'Contractors', value: realtimeCont }
+              ]}
+              sx={{ height: 190 }}
+            />
+          </Box>
+        </Box>
+
+        {/* Partition cards */}
+        <Box mt={4} sx={{ width: '100vw%', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          {loading ? (
+            <Skeleton variant="rectangular" width="100vw%" height={240} />
+          ) : (
+            partitions.map(p => (
+              <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+                <SummaryCard
+                  title={p.name}
+                  total={p.total}
+                  stats={[
+                    { label: 'Employees',   value: p.Employee },
+                    { label: 'Contractors', value: p.Contractor },
+                    // ...(p.TempBadge ? [{ label: 'TempBadge', value: p.TempBadge }] : [])
+
+          // only show TempBadge on Costa Rica
+         ...(p.name === 'CR.Costa Rica Partition' && p.TempBadge
+          ? [{ label: 'TempBadge', value: p.TempBadge }]
+          : [])
+
+                  ]}
+                  sx={{ width: '100vw%' }}
+                />
+              </Box>
+            ))
+          )}
+        </Box>
+
+        {/* Live totals chart */}
+        <Box mt={4} sx={{ width: '100vw%' }}>
+          <Typography variant="h6" gutterBottom>
+            Live Totals by Partition
+          </Typography>
+          {loading ? (
+            <Skeleton variant="rectangular" width="100%" height={280} />
+          ) : (
+            <ChartCard
+              title="Partition Totals"
+              chartHeight={280}
+              data={partitions.map(p => ({ name: p.name, value: p.total }))}
+            />
+          )}
+        </Box>
+
+        {/* Partition drill-down */}
+        <Box mt={4} sx={{ width: '100vw%' }}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Select Partition</InputLabel>
+            <Select
+              value={partition}
+              label="Select Partition"
+              onChange={e => setPartition(e.target.value)}
+            >
+              <MenuItem value="">— All —</MenuItem>
+              {partitions.map(p => (
+                <MenuItem key={p.name} value={p.name}>{p.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {partition && !loading && (
+            <Box mt={3} sx={{ width: '100vw%' }}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                <Typography variant="h6">{partition} – Floor Breakdown</Typography>
+                <Button
+                  variant="contained"
+                  onClick={() => navigate(`/realtime/${encodeURIComponent(partition)}`)}
+                >
+                  See Swipe Details
+                </Button>
+              </Box>
+              <ChartCard
+                title="Live Floor Counts"
+                chartHeight={240}
+                data={Object.entries(
+                  partitions.find(p => p.name === partition)?.floors || {}
+                ).map(([floor, cnt]) => ({ name: floor, value: cnt }))}
+              />
+            </Box>
+          )}
+        </Box>
+      </Container>
+
+      <footer style={{
+        backgroundColor: '#000000',
+        color: '#FFC107',
+        padding: '1.5rem 0',
+        textAlign: 'center',
+        marginTop: 0,
+        borderTop: '2px solid #FFC107',
+        fontSize: '0.95rem',
+        lineHeight: '1.6'
+      }}>
+        <div><strong>Global Security Operations Center</strong><br/>
+          Live HeadCount against Occupancy dashboard for Western Union — Real-time occupancy, floor activity, and personnel insights.
+        </div>
+        <div style={{ marginTop: '0.75rem' }}>
+          Contact us:&nbsp;
+          <a href="mailto:GSOC-GlobalSecurityOperationCenter.SharedMailbox@westernunion.com"
+             style={{ color: '#FFC107', textDecoration: 'underline' }}>
+            GSOC Mail
+          </a>&nbsp;|&nbsp;
+          Landline:&nbsp;<span style={{ color: '#FFC107' }}>+91-020-67632394</span>
+        </div>
+      </footer>
+    </>
+  );
+}
+
+
+
+
+//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\History.jsx
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Grid,
+  Button,
+  Typography,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
+  Breadcrumbs,
+  Link
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SummaryCard from '../components/SummaryCard';
+import { fetchHistory } from '../api/occupancy.service';
+
+export default function History() {
+  const [location, setLocation]         = useState('');
+  const [dateList, setDateList]         = useState([]);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [data, setData]                 = useState(null);
+  const [loading, setLoading]           = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setLoading(true);
+    fetchHistory(location || null).then(json => {
+      setData(json);
+      setLoading(false);
+      if (!location) {
+        setDateList(json.summaryByDate.map(d => d.date));
+      }
+    });
+  }, [location]);
+
+  if (loading) return <LoadingSpinner />;
+  if (!data)    return null;
+
+  // 1) Pick a date
+  if (!location && !selectedDate) {
+    return (
+      <>
+        <Header />
+        <Container sx={{ mt: 2 }}>
+          <Typography variant="h6">Select a date:</Typography>
+          <FormControl fullWidth sx={{ mt: 1 }}>
+            <InputLabel>Date</InputLabel>
+            <Select
+              value={selectedDate}
+              label="Date"
+              onChange={e => setSelectedDate(e.target.value)}
+            >
+              {dateList.map(d => (
+                <MenuItem key={d} value={d}>{d}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Container>
+        <Footer />
+      </>
+    );
+  }
+
+  // 2) Show partition summaries for that date
+  if (!location) {
+    const daySummary = data.summaryByDate.find(d => d.date === selectedDate);
+    const partitionCards = Object.entries(daySummary.partitions).map(([name, stats]) => ({
+      title: name,
+      stats: [
+        { label: 'Total',       value: stats.total },
+        { label: 'Employees',   value: stats.Employee },
+        { label: 'Contractors', value: stats.Contractor }
+      ],
+    }));
+
+    return (
+      <>
+        <Header />
+        <Container sx={{ mt: 2, mb: 4 }}>
+          <Breadcrumbs separator="›" aria-label="breadcrumb">
+            <Link component="button" onClick={() => setSelectedDate('')}>
+              Dates
+            </Link>
+            <Typography color="text.primary">{selectedDate}</Typography>
+          </Breadcrumbs>
+
+          <Typography variant="h5" sx={{ my: 2 }}>
+            Partitions on {selectedDate}
+          </Typography>
+
+          <Grid container spacing={2}>
+            {partitionCards.map(card => (
+              <Grid item xs={12} sm={6} md={4} key={card.title}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => setLocation(card.title)}
+                >
+                  <SummaryCard title={card.title} stats={card.stats} />
+                </Button>
+              </Grid>
+            ))}
+          </Grid>
+        </Container>
+        <Footer />
+      </>
+    );
+  }
+
+  // 3) Drilled into a partition: show its daily totals
+  const partitionSummary = data.summaryByDate.map(d => ({
+    title: d.date,
+    stats: [
+      { label: 'Total',       value: d.region.total },
+      { label: 'Employees',   value: d.region.Employee },
+      { label: 'Contractors', value: d.region.Contractor }
+    ]
+  }));
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2, mb: 4 }}>
+        <Breadcrumbs separator="›" aria-label="breadcrumb">
+          <Link component="button" onClick={() => setLocation('')}>
+            {selectedDate}
+          </Link>
+          <Typography color="text.primary">{location}</Typography>
+        </Breadcrumbs>
+
+        <Typography variant="h5" sx={{ my: 2 }}>
+          History for {location}
+        </Typography>
+
+        <Grid container spacing={2}>
+          {partitionSummary.map(card => (
+            <Grid item xs={12} sm={6} md={4} key={card.title}>
+              <SummaryCard title={card.title} stats={card.stats} />
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
