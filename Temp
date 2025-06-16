@@ -1,3 +1,175 @@
+// src/pages/History.jsx
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Grid,
+  Button,
+  Typography,
+  Skeleton,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
+  Breadcrumbs,
+  Link
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SummaryCard from '../components/SummaryCard';
+import { fetchHistory } from '../api/occupancy.service';
+
+export default function History() {
+  const [location, setLocation]         = useState('');
+  const [dateList, setDateList]         = useState([]);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [data, setData]                 = useState(null);
+  const [loading, setLoading]           = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setLoading(true);
+    fetchHistory(location || null).then(json => {
+      setData(json);
+      setLoading(false);
+      if (!location) {
+        setDateList(json.summaryByDate.map(d => d.date));
+      }
+    });
+  }, [location]);
+
+  if (loading) return <LoadingSpinner />;
+  if (!data)    return null;
+
+  // 1) Pick a date
+  if (!location && !selectedDate) {
+    return (
+      <>
+        <Header />
+        <Container maxWidth={false} disableGutters sx={{ pt:2, pb:4, px:'20px' }}>
+          <Typography variant="h6" gutterBottom>
+            Select a date:
+          </Typography>
+          <FormControl fullWidth sx={{ mb:2 }}>
+            <InputLabel>Date</InputLabel>
+            <Select
+              value={selectedDate}
+              label="Date"
+              onChange={e => setSelectedDate(e.target.value)}
+            >
+              {dateList.map(d => (
+                <MenuItem key={d} value={d}>{d}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Container>
+        <Footer />
+      </>
+    );
+  }
+
+  // 2) Show partition summaries for that date
+  if (!location) {
+    const daySummary = data.summaryByDate.find(d => d.date === selectedDate);
+    const partitionCards = Object.entries(daySummary.partitions).map(([name, stats]) => ({
+      title: name,
+      stats: [
+        { label: 'Employees',   value: stats.Employee },
+        { label: 'Contractors', value: stats.Contractor },
+        // only show Temp Badge on Costa Rica
+        ...(name === 'CR.Costa Rica Partition'
+          ? [{ label: 'Temp Badge', value: stats.TempBadge }]
+          : [])
+      ],
+    }));
+
+    return (
+      <>
+        <Header />
+        <Container maxWidth={false} disableGutters sx={{ pt:2, pb:4, px:'20px' }}>
+          <Breadcrumbs separator="›" sx={{ mb:2 }}>
+            <Link component="button" onClick={() => setSelectedDate('')}>
+              Dates
+            </Link>
+            <Typography color="text.primary">{selectedDate}</Typography>
+          </Breadcrumbs>
+
+          <Typography variant="h5" gutterBottom>
+            Partitions on {selectedDate}
+          </Typography>
+
+          <Box sx={{ display:'flex', flexWrap:'wrap', gap:1 }}>
+            {partitionCards.map(card => (
+              <Box key={card.title} sx={{ flex:'1 1 calc(33.33% - 8px)' }}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => setLocation(card.title)}
+                >
+                  <SummaryCard title={card.title} stats={card.stats} />
+                </Button>
+              </Box>
+            ))}
+          </Box>
+        </Container>
+        <Footer />
+      </>
+    );
+  }
+
+  // 3) Drilled into a partition: show its daily totals
+  const partitionSummary = data.summaryByDate.map(d => ({
+    title: d.date,
+    stats: [
+      { label: 'Employees',   value: d.region.Employee },
+      { label: 'Contractors', value: d.region.Contractor },
+      // only show Temp Badge on Costa Rica
+      ...(location === 'CR.Costa Rica Partition'
+        ? [{ label: 'Temp Badge', value: d.region.TempBadge }]
+        : [])
+    ]
+  }));
+
+  return (
+    <>
+      <Header />
+      <Container maxWidth={false} disableGutters sx={{ pt:2, pb:4, px:'20px' }}>
+        <Breadcrumbs separator="›" sx={{ mb:2 }}>
+          <Link component="button" onClick={() => setLocation('')}>
+            {selectedDate}
+          </Link>
+          <Typography color="text.primary">{location}</Typography>
+        </Breadcrumbs>
+
+        <Typography variant="h5" gutterBottom>
+          History for {location}
+        </Typography>
+
+        <Box sx={{ display:'flex', flexWrap:'wrap', gap:1 }}>
+          {partitionSummary.map(card => (
+            <Box key={card.title} sx={{ flex:'1 1 calc(33.33% - 8px)' }}>
+              <SummaryCard title={card.title} stats={card.stats} />
+            </Box>
+          ))}
+        </Box>
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
 Refer dashboard page layout dearails ans give me updated history page .make same structure of this pag end to end layout same padding like 
 
 // src/pages/Dashboard.jsx
