@@ -1,3 +1,167 @@
+--- src/pages/PartitionDetailDetails.jsx
++++ src/pages/PartitionDetailDetails.jsx
+@@ export default function PartitionDetailDetails() {
+   const [details, setDetails] = useState([]);
+   const [loading, setLoading] = useState(true);
+   const [lastUpdate, setLastUpdate] = useState("");
+   const [searchTerm, setSearchTerm] = useState("");
+   const [expandedFloor, setExpandedFloor] = useState(null);
+@@
+   useEffect(() => {
+     let timer;
+     async function loadDetails() {
+-      setLoading(true);
++      setLoading(true);
+       const json = await fetchLiveSummary();
+       const det = json.details
+         .filter(r => r.PartitionName2 === partition && r.Direction === "InDirection")
+         .map(r => ({
+           ...r,
+           floor: lookupFloor(r.PartitionName2, r.Door, r.Direction)
+         }));
+       setDetails(det);
+       setLastUpdate(new Date().toLocaleTimeString());
+-      setLoading(false);
++      setLoading(false);
+     }
+     loadDetails();
+     timer = setInterval(loadDetails, 1000);
+     return () => clearInterval(timer);
+   }, [partition]);
+@@
+   return (
+     <>
+       <Header />
+
+       <Box component="main" sx={{ pt: 1, pb: 1 }}>
+         <Container maxWidth={false} disableGutters>
+@@
+           {/* Floor Details + Search */}
+           <Box display="flex" alignItems="center" gap={2} mb={2} sx={{ px: "20px" }}>
+             <Typography variant="h6">Floor Details</Typography>
+             <Typography variant="body2" color="textSecondary">
+               Last updated: {lastUpdate}
+             </Typography>
+             <TextField
+               size="small"
+               placeholder="Search floor / emp…"
+               value={searchTerm}
+               onChange={e => setSearchTerm(e.target.value)}
+             />
+           </Box>
+
++          {loading ? (
++            <Box sx={{ px: "20px", py: 8 }}>
++              <LoadingSpinner />
++            </Box>
++          ) : (
++            <>
++              {/* Edge-to-edge cards */}
++              <Box
++                component="section"
++                sx={{
++                  display: "flex",
++                  flexWrap: "wrap",
++                  width: "100%",
++                  margin: 0,
++                  padding: 0,
++                }}
++              >
++                {displayed.map(([floor, emps]) => (
++                  <Box
++                    key={floor}
++                    sx={{
++                      width: "50%",
++                      boxSizing: "border-box",
++                      p: "20px",
++                    }}
++                  >
++                    {/* (card markup unchanged) */}
++                    <Box
++                      sx={{
++                        border: "1px solid #FFC107",
++                        borderRadius: 2,
++                        height: "100%",
++                      }}
++                    >
++                      <Typography variant="subtitle1" fontWeight={600} gutterBottom>
++                        {floor} (Total {emps.length})
++                      </Typography>
++                      <TableContainer component={Paper} variant="outlined" sx={{ mb: 1 }}>
++                        <Table size="small">
++                          <TableHead>
++                            <TableRow>
++                              {["Emp ID","Name","Swipe Time","Type","Card","Door"].map(h => (
++                                <TableCell key={h} sx={{ fontWeight: "bold" }}>{h}</TableCell>
++                              ))}
++                            </TableRow>
++                          </TableHead>
++                          <TableBody>
++                            {emps.slice(0, 10).map((r, i) => {
++                              const term = searchTerm.trim().toLowerCase();
++                              const isMatch =
++                                term &&
++                                (r.ObjectName1.toLowerCase().includes(term) ||
++                                 r.EmployeeID.toLowerCase().includes(term));
++                              return (
++                                <TableRow
++                                  key={`${r.PersonGUID}-${i}`}
++                                  sx={isMatch ? { backgroundColor: "rgba(255, 235, 59, 0.3)" } : {}}
++                                >
++                                  <TableCell>{r.EmployeeID}</TableCell>
++                                  <TableCell>{r.ObjectName1}</TableCell>
++                                  <TableCell>{new Date(r.LocaleMessageTime).toLocaleTimeString()}</TableCell>
++                                  <TableCell>{r.PersonnelType}</TableCell>
++                                  <TableCell>{r.CardNumber}</TableCell>
++                                  <TableCell>{r.Door}</TableCell>
++                                </TableRow>
++                              );
++                            })}
++                          </TableBody>
++                        </Table>
++                      </TableContainer>
++                      <Button
++                        size="small"
++                        onClick={() =>
++                          setExpandedFloor(expandedFloor === floor ? null : floor)
++                        }
++                      >
++                        {expandedFloor === floor ? "Hide" : "See more…"}
++                      </Button>
++                    </Box>
++                  </Box>
++                ))}
++              </Box>
++
++              {/* Expanded full-width table */}
++              {expandedFloor && (
++                <Box sx={{ px: "20px", mt: 2 }}>
++                  <Typography variant="h6" gutterBottom>
++                    {expandedFloor} — All Entries
++                  </Typography>
++                  <DataTable
++                    columns={columns}
++                    rows={floorMap[expandedFloor].map(r => ({
++                      ...r,
++                      LocaleMessageTime: new Date(r.LocaleMessageTime).toLocaleTimeString()
++                    }))}
++                  />
++                </Box>
++              )}
++            </>
++          )}
+         </Container>
+       </Box>
+
+       <Footer />
+     </>
+   );
+ }
+
+
+
+
+
 Lets check all file carefully and do only necessary changes and give me updated files carefully
 // src/pages/PartitionDetailDetails.jsx
 import React, { useEffect, useState, useMemo } from "react";
