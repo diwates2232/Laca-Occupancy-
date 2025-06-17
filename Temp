@@ -1,3 +1,78 @@
+-export default function ChartCard({
+-  title, data = [], dataKey = 'value', chartHeight = 250
+-}) {
++export default function ChartCard({
++  title,
++  data = [],
++  chartHeight = 250,
++  series = [             // ← new default single‐series config
++    { dataKey: 'value', name: 'Value', stroke: '#FFC107', fillOpacity: 0.4 }
++  ]
++}: {
++  title: string;
++  data: Array<Record<string, any>>;
++  chartHeight?: number;
++  series?: SeriesConfig[];
++}) {
+
+
+
+
+             <defs>
++              {series.map((s, i) => (
++                <linearGradient
++                  key={s.dataKey}
++                  id={`grad-${s.dataKey}`}
++                  x1="0" y1="0" x2="0" y2="1"
++                >
++                  <stop offset="5%" stopColor={s.stroke} stopOpacity={s.fillOpacity ?? 0.4} />
++                  <stop offset="95%" stopColor={s.stroke} stopOpacity={0} />
++                </linearGradient>
++              ))}
+             </defs>
+ 
+-            {hasCapacity && (
+-              <Area … />
+-            )}
+-
+-            <Area … />
+-            <Line … />
++            {series.map(s => (
++              <React.Fragment key={s.dataKey}>
++                <Area
++                  type="monotone"
++                  dataKey={s.dataKey}
++                  name={s.name}
++                  stroke={s.stroke}
++                  fill={`url(#grad-${s.dataKey})`}
++                  dot={false}
++                />
++                <Line
++                  type="monotone"
++                  dataKey={s.dataKey}
++                  stroke={s.stroke}
++                  strokeWidth={2}
++                  dot={false}
++                  activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
++                />
++              </React.Fragment>
++            ))}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 --- src/components/ChartCard.jsx
 +++ src/components/ChartCard.jsx
 @@
