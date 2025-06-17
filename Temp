@@ -1,3 +1,20 @@
+export default function Header() {
+-  return (
+-    <AppBar position="static" color="primary" sx={{ mb: 2 }}>
++  return (
++    <AppBar position="fixed" color="primary" sx={{ zIndex: theme => theme.zIndex.drawer + 1 }}>
+       <Toolbar sx={{ justifyContent: 'space-between' }}>
+         …  
+       </Toolbar>
+     </AppBar>
+   );
+}
+
+
+
+
+
+
 Now all is looking good just few improvenemnt need to update 
 Floor Details add serch option just side of the floor with using name or Employee ID ,
 
