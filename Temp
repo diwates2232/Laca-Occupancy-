@@ -1,3 +1,22 @@
+AS per below Updatede files We are getting Responce like as belows
+
+Unmapped (Total 4)    ---------here Floor name is unmapped / expected out need to map Floor name 
+Emp ID	Name	Swipe Time	Type	Card #	Door
+W0019098	Andrada, Nestor	10:54:25 AM	Contractor	614137	LACA ARG MOLINETE 1 IN
+W0018199	Santa Maria, Jose	12:01:49 PM	Contractor	616986	LACA ARG 4th Floor Main Entrance
+W0026213	Padilla, Sol Daina	12:00:36 PM	Contractor	617927	LACA ARG 5th Floor Main Entrance
+0	Argentina, VIS_ARG_019 019	11:49:07 AM	Visitor	606117	LACA ARG MOLINETE 1 IN
+
+There is no table Formating for 
+
+also all Floors data are display in one table need to create new box for new Floor or building.
+
+if u want ti check Fllor map.js file kindly inform me then update Floor data carefully
+
+
+
+
+
 // src/pages/PartitionDetail.jsx
 
 import React, { useEffect, useState, useMemo } from 'react';
@@ -210,443 +229,33 @@ export default function PartitionDetail() {
 
 
 
+// src/components/DataTable.jsx
 
-
-
-
-
-// src/pages/PartitionDetail.jsx
-
-import React, { useEffect, useState, useMemo } from 'react';
+import React from 'react';
 import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  Grid,
-  CircularProgress
+  Table, TableHead, TableBody, TableRow, TableCell, Paper, TableContainer
 } from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import LoadingSpinner from '../components/LoadingSpinner';
 
-import {
-  fetchLiveSummary,
-  fetchHistory
-} from '../api/occupancy.service';
-import ZoneDetailsTable from '../components/ZoneDetailsTable';
-
-export default function PartitionDetail() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-
-  const [liveSummary, setLiveSummary] = useState(null);
-  const [history, setHistory] = useState(null);
-  const [historyLoading, setHistoryLoading] = useState(true);
-  const [details, setDetails] = useState([]);
-  const [lastUpdate, setLastUpdate] = useState('');
-
-  // Live summary every second
-  useEffect(() => {
-    let timer;
-    const loadLive = async () => {
-      const json = await fetchLiveSummary();
-      setLiveSummary(json);
-      setDetails(
-        json.details.filter(
-          r => r.PartitionName2 === partition && r.Direction === 'InDirection'
-        )
-      );
-      setLastUpdate(new Date().toLocaleTimeString());
-    };
-    loadLive();
-    timer = setInterval(loadLive, 1000);
-    return () => clearInterval(timer);
-  }, [partition]);
-
-  // Historical (today's) headcount once
-  useEffect(() => {
-    setHistoryLoading(true);
-    fetchHistory(partition).then(json => {
-      setHistory(json);
-      setHistoryLoading(false);
-    });
-  }, [partition]);
-
-  // **Always** build floorMap hook before any early return
-  const floorMap = useMemo(() => {
-    const m = {};
-    details.forEach(r => {
-      const f = (r.floor || '').trim() || 'Unmapped';
-      if (!m[f]) m[f] = [];
-      m[f].push(r);
-    });
-    return m;
-  }, [details]);
-
-  // show spinner until both live & history have arrived
-  if (!liveSummary || !history) {
-    return <LoadingSpinner />;
-  }
-
-  // derive counts
-  const lastDay = history.summaryByDate.slice(-1)[0];
-  const partToday = lastDay.region;
-  const live = liveSummary.realtime[partition] || {
-    total: 0, Employee: 0, Contractor: 0, TempBadge: 0, floors: {}
-  };
-
+export default function DataTable({ columns, rows }) {
   return (
-    <>
-      <Header />
-      <Container
-        maxWidth={false}
-        disableGutters
-        sx={{ px: '20px', pt: 2, pb: 4 }}
-      >
-        {/* Back + Title */}
-        <Box display="flex" alignItems="center" mb={2}>
-          <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
-          <Typography variant="h6" sx={{ ml: 2 }}>
-            {partition.replace('CR.Costa Rica Partition', 'Costa Rica')}
-          </Typography>
-        </Box>
-
-        {/* Summary Cards */}
-        <Box display="flex" alignItems="stretch" gap={2} mb={4}>
-          {/* Today’s headcount card */}
-          <SummaryCard
-            title={`Today’s ${partition} Headcount`}
-            total={historyLoading ? 0 : partToday.total}
-            stats={[
-              {
-                label: 'Employees',
-                value: historyLoading
-                  ? <CircularProgress size={20} />
-                  : partToday.Employee
-              },
-              {
-                label: 'Contractors',
-                value: historyLoading
-                  ? <CircularProgress size={20} />
-                  : partToday.Contractor
-              },
-              {
-                label: 'Temp Badge',
-                value: historyLoading
-                  ? <CircularProgress size={20} />
-                  : partToday.TempBadge
-              }
-            ]}
-            sx={{ flex: 1, height: 180 }}
-          />
-
-          {/* Live headcount card */}
-          <SummaryCard
-            title={`Live ${partition} Headcount`}
-            total={live.total}
-            stats={[
-              { label: 'Employees',   value: live.Employee },
-              { label: 'Contractors', value: live.Contractor },
-              { label: 'Temp Badge',  value: live.TempBadge }
-            ]}
-            sx={{ flex: 1, height: 180 }}
-          />
-        </Box>
-
-        {/* Floor‐wise Chart */}
-        <Box mb={4}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-            <Typography variant="h6">Live Floor Counts</Typography>
-            <Typography variant="body2" color="textSecondary">
-              Last updated: {lastUpdate}
-            </Typography>
-          </Box>
-          <ChartCard
-            title=""
-            data={Object.entries(live.floors).map(([floor, cnt]) => ({
-              name: floor.trim(),
-              value: cnt
-            }))}
-            chartHeight={260}
-          />
-        </Box>
-
-        {/* Floor Details */}
-        <Typography variant="h6" gutterBottom>
-          Floor Details
-        </Typography>
-        <ZoneDetailsTable data={floorMap} />
-      </Container>
-      <Footer />
-    </>
-  );
-}
-
-
-
-
-
-
-
-
-
-
-ERROR
-Rendered more hooks than during the previous render.
-    at updateWorkInProgressHook (http://localhost:3000/static/js/bundle.js:53896:15)
-    at updateMemo (http://localhost:3000/static/js/bundle.js:54493:16)
-    at Object.useMemo (http://localhost:3000/static/js/bundle.js:62931:16)
-    at exports.useMemo (http://localhost:3000/static/js/bundle.js:80007:32)
-    at PartitionDetail (http://localhost:3000/main.db32560b116fd380b657.hot-update.js:309:66)
-    at react-stack-bottom-frame (http://localhost:3000/static/js/bundle.js:63572:18)
-    at renderWithHooks (http://localhost:3000/static/js/bundle.js:53782:20)
-    at updateFunctionComponent (http://localhost:3000/static/js/bundle.js:55475:17)
-    at beginWork (http://localhost:3000/static/js/bundle.js:56061:16)
-    at runWithFiberInDEV (http://localhost:3000/static/js/bundle.js:51553:68)
-
-
-
-
-// C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\PartitionDetail.jsx
-
-import React, { useEffect, useState, useMemo } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  Grid,
-   CircularProgress
-//   Skeleton
-} from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import LoadingSpinner from '../components/LoadingSpinner';
-
-import {
-  fetchLiveSummary,
-  fetchHistory
-} from '../api/occupancy.service';
-import ZoneDetailsTable from '../components/ZoneDetailsTable';    // ← add this import
-export default function PartitionDetail() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-  const [liveSummary, setLiveSummary] = useState(null);
-  const [history, setHistory] = useState(null);
-  const [historyLoading, setHistoryLoading] = useState(true);
-  const [details, setDetails] = useState([]);
-  const [lastUpdate, setLastUpdate] = useState('');
-
-  // Live summary every second
-  useEffect(() => {
-    let timer;
-    const loadLive = async () => {
-      const json = await fetchLiveSummary();
-      setLiveSummary(json);
-      setDetails(
-        json.details.filter(
-          r => r.PartitionName2 === partition && r.Direction === 'InDirection'
-        )
-      );
-      setLastUpdate(new Date().toLocaleTimeString());
-    };
-    loadLive();
-    timer = setInterval(loadLive, 1000);
-    return () => clearInterval(timer);
-  }, [partition]);
-
-  // Historical (today's) headcount once
-  useEffect(() => {
-    setHistoryLoading(true);
-    fetchHistory(partition).then(json => {
-      setHistory(json);
-      setHistoryLoading(false);
-    });
-  }, [partition]);
-
-  // show spinner until both are ready
-  if (!liveSummary || !history) {
-    return <LoadingSpinner />;
-  }
-
-  // === derive counts ===
-  const lastDay = history.summaryByDate.slice(-1)[0];
-  const partToday = lastDay.region;
-  const live = liveSummary.realtime[partition] || {
-    total: 0, Employee: 0, Contractor: 0, TempBadge: 0, floors: {}
-  };
-
-
- const floorMap = useMemo(() => {
-    const m = {};
-    details.forEach(r => {
-      const f = (r.floor || '').trim() || 'Unmapped';
-      if (!m[f]) m[f] = [];
-      m[f].push(r);
-    });
-    return m;
-  }, [details]);
-
-
-
-  return (
-    <>
-      <Header />
-
-      <Container
-        maxWidth={false}
-        disableGutters
-        sx={{ px: '20px', pt: 2, pb: 4 }}
-      >
-        {/* Back + Title */}
-        <Box display="flex" alignItems="center" mb={2}>
-          <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
-          <Typography variant="h6" sx={{ ml: 2 }}>
-            {partition.replace('CR.Costa Rica Partition', 'Costa Rica')}
-          </Typography>
-        </Box>
-
-      
-      
-      <Box display="flex" alignItems="stretch" gap={2} mb={4}>
-  {/* Today’s headcount card */}
-  <SummaryCard
-    title={`Today’s ${partition} Headcount`}
-    total={historyLoading ? 0 : partToday.total}
-    stats={[
-      {
-        label: 'Employees',
-        value: historyLoading
-          ? <CircularProgress size={20} />
-          : partToday.Employee
-      },
-      {
-        label: 'Contractors',
-        value: historyLoading
-          ? <CircularProgress size={20} />
-          : partToday.Contractor
-      },
-      {
-        label: 'Temp Badge',
-        value: historyLoading
-          ? <CircularProgress size={20} />
-          : partToday.TempBadge
-      }
-    ]}
-    sx={{ flex: 1, height: 180 }}
-  />
-
-  {/* Live headcount card */}
-  <SummaryCard
-    title={`Live ${partition} Headcount`}
-    total={live.total}
-    stats={[
-      { label: 'Employees',   value: live.Employee },
-      { label: 'Contractors', value: live.Contractor },
-      { label: 'Temp Badge',  value: live.TempBadge }
-    ]}
-    sx={{ flex: 1, height: 180 }}
-  />
-</Box>
-
-
-
-        {/* Floor‐wise Chart */}
-        <Box mb={4}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-            <Typography variant="h6">Live Floor Counts</Typography>
-            <Typography variant="body2" color="textSecondary">
-              Last updated: {lastUpdate}
-            </Typography>
-          </Box>
-          <ChartCard
-            title=""
-            data={Object.entries(live.floors).map(([floor, cnt]) => ({
-              name: floor.trim(),
-              value: cnt
-            }))}
-            chartHeight={260}
-          />
-        </Box>
-
-
-        {/* Floor Details */}
-        {/* <Typography variant="h6" gutterBottom>Floor Details</Typography>
-        <Grid container spacing={2}>
-          {Object.entries(live.floors).map(([floor, cnt]) => (
-            <Grid key={floor} item xs={12} md={6}>
-              <Box
-                sx={{
-                  border: '1px solid #FFC107',
-                  borderRadius: 2,
-                  p: 2,
-                  height: '100%'
-                }}
-              >
-                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                  {floor.trim()} (Total {cnt})
-                </Typography>
-                {details
-                  .filter(r => r.floor === floor.trim())
-                  .slice(0, 25)
-                  .map(r => (
-                    <Box
-                      key={r.PersonGUID}
-                      display="flex"
-                      justifyContent="space-between"
-                      sx={{ mb: 1, fontSize: '0.875rem' }}
-                    >
-                      <span>{r.ObjectName1}</span>
-                      <span>{r.EmployeeID}</span>
-                      <span>{new Date(r.LocaleMessageTime).toLocaleTimeString()}</span>
-                      <span>{r.PersonnelType}</span>
-                      <span>{r.CardNumber}</span>
-                      <span>{r.Door}</span>
-                    </Box>
-                  ))}
-                {cnt > 25 && (
-                  <Button
-                    size="small"
-                    onClick={() =>
-                      navigate(
-                        `/partition/${encodeURIComponent(
-                          partition
-                        )}/floor/${encodeURIComponent(floor.trim())}`
-                      )
-                    }
-                  >
-                    See more…
-                  </Button>
-                )}
-              </Box>
-            </Grid>
-
-
+    <TableContainer component={Paper} sx={{ mt: 2 }}>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            {columns.map(c => <TableCell key={c.field}>{c.headerName}</TableCell>)}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows.map((row, i) => (
+            <TableRow key={i}>
+              {columns.map(c => (
+                <TableCell key={c.field}>{row[c.field]}</TableCell>
+              ))}
+            </TableRow>
           ))}
-        </Grid> */}
-
-
-  
-
-        {/* Floor Details */}
-        <Typography variant="h6" gutterBottom>
-          Floor Details
-        </Typography>
-        <ZoneDetailsTable data={floorMap} />
-
-
-
-
-      </Container>
-
-      <Footer />
-    </>
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
 }
+
