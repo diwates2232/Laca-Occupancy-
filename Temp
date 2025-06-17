@@ -1,3 +1,51 @@
+<Box display="flex" alignItems="stretch" gap={2} mb={4}>
+  {/* Today’s headcount card */}
+  <SummaryCard
+    title={`Today’s ${partition} Headcount`}
+    total={historyLoading ? 0 : partToday.total}
+    stats={[
+      {
+        label: 'Employees',
+        value: historyLoading
+          ? <CircularProgress size={20} />
+          : partToday.Employee
+      },
+      {
+        label: 'Contractors',
+        value: historyLoading
+          ? <CircularProgress size={20} />
+          : partToday.Contractor
+      },
+      {
+        label: 'Temp Badge',
+        value: historyLoading
+          ? <CircularProgress size={20} />
+          : partToday.TempBadge
+      }
+    ]}
+    sx={{ flex: 1, height: 180 }}
+  />
+
+  {/* Live headcount card */}
+  <SummaryCard
+    title={`Live ${partition} Headcount`}
+    total={live.total}
+    stats={[
+      { label: 'Employees',   value: live.Employee },
+      { label: 'Contractors', value: live.Contractor },
+      { label: 'Temp Badge',  value: live.TempBadge }
+    ]}
+    sx={{ flex: 1, height: 180 }}
+  />
+</Box>
+
+
+
+
+
+
+
+
 Read file line by line and solve the error ,
 
 ERROR
