@@ -1,3 +1,36 @@
+--- a/src/pages/PartitionDetail.jsx
++++ b/src/pages/PartitionDetail.jsx
+@@ top
+-import {
+-  fetchLiveSummary,
+-  fetchHistoricalOccupancy
+-} from '../api/occupancy.service';
++import {
++  fetchLiveSummary,
++  fetchHistory     // ← correct import
++} from '../api/occupancy.service';
+@@ useEffect for history
+-  // Load historical (for today’s headcount)
+-  useEffect(() => {
+-    fetchHistoricalOccupancy(partition).then(json => {
+-      setHistory(json);
+-    });
+-  }, [partition]);
++  // Load historical (for today’s headcount)
++  useEffect(() => {
++    fetchHistory(partition).then(json => {
++      setHistory(json);
++    });
++  }, [partition]);
+
+
+
+
+
+
+
+
+
 // src/pages/PartitionDetail.jsx
 
 import React, { useEffect, useState } from 'react';
