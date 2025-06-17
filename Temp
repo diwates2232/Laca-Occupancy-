@@ -1,254 +1,43 @@
--export default function ChartCard({
--  title, data = [], dataKey = 'value', chartHeight = 250
--}) {
-+export default function ChartCard({
-+  title,
-+  data = [],
-+  chartHeight = 250,
-+  series = [             // ← new default single‐series config
-+    { dataKey: 'value', name: 'Value', stroke: '#FFC107', fillOpacity: 0.4 }
-+  ]
-+}: {
-+  title: string;
-+  data: Array<Record<string, any>>;
-+  chartHeight?: number;
-+  series?: SeriesConfig[];
-+}) {
+add all above updation in below file and give me fully updated files ,carefully then we move next step
 
-
-
-
-             <defs>
-+              {series.map((s, i) => (
-+                <linearGradient
-+                  key={s.dataKey}
-+                  id={`grad-${s.dataKey}`}
-+                  x1="0" y1="0" x2="0" y2="1"
-+                >
-+                  <stop offset="5%" stopColor={s.stroke} stopOpacity={s.fillOpacity ?? 0.4} />
-+                  <stop offset="95%" stopColor={s.stroke} stopOpacity={0} />
-+                </linearGradient>
-+              ))}
-             </defs>
- 
--            {hasCapacity && (
--              <Area … />
--            )}
--
--            <Area … />
--            <Line … />
-+            {series.map(s => (
-+              <React.Fragment key={s.dataKey}>
-+                <Area
-+                  type="monotone"
-+                  dataKey={s.dataKey}
-+                  name={s.name}
-+                  stroke={s.stroke}
-+                  fill={`url(#grad-${s.dataKey})`}
-+                  dot={false}
-+                />
-+                <Line
-+                  type="monotone"
-+                  dataKey={s.dataKey}
-+                  stroke={s.stroke}
-+                  strokeWidth={2}
-+                  dot={false}
-+                  activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
-+                />
-+              </React.Fragment>
-+            ))}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
---- src/components/ChartCard.jsx
-+++ src/components/ChartCard.jsx
-@@
--import {
--  AreaChart,
--  Area,
--  Line,
--  XAxis,
--  YAxis,
--  Tooltip,
--  ResponsiveContainer,
--  CartesianGrid,
--  Legend,
--  Defs,
--  linearGradient,
--  stop
--} from 'recharts';
-+import {
-+  AreaChart,
-+  Area,
-+  Line,
-+  XAxis,
-+  YAxis,
-+  Tooltip,
-+  ResponsiveContainer,
-+  CartesianGrid,
-+  Legend,
-+} from 'recharts';
-@@
--            <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
--              {/* define yellow gradient */}
--              <Defs>
--                <linearGradient id="colorHead" x1="0" y1="0" x2="0" y2="1">
--                  <stop offset="5%" stopColor="#FFC107" stopOpacity={0.4}/>
--                  <stop offset="95%" stopColor="#FFC107" stopOpacity={0}/>
--                </linearGradient>
--              </Defs>
-+            <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-+              {/* define yellow gradient */}
-+              <defs>
-+                <linearGradient id="colorHead" x1="0" y1="0" x2="0" y2="1">
-+                  <stop offset="5%" stopColor="#FFC107" stopOpacity={0.4}/>
-+                  <stop offset="95%" stopColor="#FFC107" stopOpacity={0}/>
-+                </linearGradient>
-+              </defs>
-
-
-
-
-
-
-
-
-
---- src/components/ChartCard.jsx
-+++ src/components/ChartCard.jsx
-@@
--import {
--  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, LabelList
--} from 'recharts';
-+import {
-+  AreaChart,
-+  Area,
-+  Line,
-+  XAxis,
-+  YAxis,
-+  Tooltip,
-+  ResponsiveContainer,
-+  CartesianGrid,
-+  Legend,
-+  Defs,
-+  linearGradient,
-+  stop
-+} from 'recharts';
-
- export default function ChartCard({
-   title, data = [], dataKey = 'value', chartHeight = 250
- }) {
-@@
-           <ResponsiveContainer>
--            <BarChart data={data}>
--              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
--              <XAxis dataKey="name" tick={{ fill: '#FFF', fontWeight: 600 }} />
--              <YAxis tick={{ fill: '#FFF', fontWeight: 600 }} />
--              <Tooltip contentStyle={{ backgroundColor: '#333' }} />
--              <Legend wrapperStyle={{ color: '#FFF' }} />
--              {hasCapacity && (
--                <Bar dataKey="Capacity" name="Capacity" fill="#B0BEC5">
--                  <LabelList dataKey="Capacity" position="top" fill="#FFF" />
--                </Bar>
--              )}
--              <Bar
--                dataKey={hasCapacity ? 'Headcount' : dataKey}
--                name={hasCapacity ? 'Headcount' : dataKey}
--                fill="#FFC107"
--              >
--                <LabelList 
--                  dataKey={hasCapacity ? 'Headcount' : dataKey}
--                  position="top" 
--                  fill="#fff"
--                  style={{ fontWeight: 600 }}
--                />
--              </Bar>
--            </BarChart>
-+            <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-+              {/* define yellow gradient */}
-+              <Defs>
-+                <linearGradient id="colorHead" x1="0" y1="0" x2="0" y2="1">
-+                  <stop offset="5%" stopColor="#FFC107" stopOpacity={0.4}/>
-+                  <stop offset="95%" stopColor="#FFC107" stopOpacity={0}/>
-+                </linearGradient>
-+              </Defs>
-+
-+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-+              <XAxis dataKey="name" tick={{ fill: '#FFF', fontWeight: 600 }} />
-+              <YAxis tick={{ fill: '#FFF', fontWeight: 600 }} />
-+              <Tooltip contentStyle={{ backgroundColor: '#333' }} itemStyle={{ color: '#FFF' }} />
-+              <Legend wrapperStyle={{ color: '#FFF' }} />
-+
-+              {hasCapacity && (
-+                <Area
-+                  type="monotone"
-+                  dataKey="Capacity"
-+                  name="Capacity"
-+                  stroke="#B0BEC5"
-+                  fill="rgba(176,190,197,0.2)"
-+                  dot={false}
-+                />
-+              )}
-+
-+              <Area
-+                type="monotone"
-+                dataKey={hasCapacity ? 'Headcount' : dataKey}
-+                name={hasCapacity ? 'Headcount' : dataKey}
-+                stroke="#FFC107"
-+                fill="url(#colorHead)"
-+                dot={{ stroke: '#FFC107', strokeWidth: 2 }}
-+              />
-+              
-+              {/* overlay a crisp line on top for that market “spark” */}
-+              <Line
-+                type="monotone"
-+                dataKey={hasCapacity ? 'Headcount' : dataKey}
-+                stroke="#FFC107"
-+                strokeWidth={2}
-+                dot={false}
-+                activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
-+              />
-+            </AreaChart>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Below is my Current File then help to improve chart 
 
 //C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\ChartCard.jsx
 
 import React from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
+
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, LabelList
+  AreaChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
 } from 'recharts';
 
+
+// export default function ChartCard({
+//   title, data = [], dataKey = 'value', chartHeight = 250
+// }) {
+
 export default function ChartCard({
-  title, data = [], dataKey = 'value', chartHeight = 250
+  title,
+  data = [],
+  chartHeight = 250,
+  series = [             // ← new default single‐series config
+    { dataKey: 'value', name: 'Value', stroke: '#FFC107', fillOpacity: 0.4 }
+  ]
+}: {
+  title: string;
+  data: Array<Record<string, any>>;
+  chartHeight?: number;
+  series?: SeriesConfig[];
 }) {
+
+
   if (!Array.isArray(data) || !data.length) {
     return (
       <Card sx={{ mb: 2 }}>
@@ -267,31 +56,102 @@ export default function ChartCard({
       <CardContent sx={{ textAlign: 'center' }}>
         <Typography variant="h6" gutterBottom>{title}</Typography>
         <Box sx={{ width: '100%', height: chartHeight }}>
-          <ResponsiveContainer>
-            <BarChart data={data}>
+
+ <ResponsiveContainer>
+      
+            <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              {/* define yellow gradient */}
+              <defs>
+
+              {series.map((s, i) => (
+                <linearGradient
+                  key={s.dataKey}
+                  id={`grad-${s.dataKey}`}
+                  x1="0" y1="0" x2="0" y2="1"
+                >
+                  <stop offset="5%" stopColor={s.stroke} stopOpacity={s.fillOpacity ?? 0.4} />
+                  <stop offset="95%" stopColor={s.stroke} stopOpacity={0} />
+                </linearGradient>
+              ))}
+             
+
+
+
+
+
+                <linearGradient id="colorHead" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#FFC107" stopOpacity={0.4}/>
+                  <stop offset="95%" stopColor="#FFC107" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+
+
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
               <XAxis dataKey="name" tick={{ fill: '#FFF', fontWeight: 600 }} />
               <YAxis tick={{ fill: '#FFF', fontWeight: 600 }} />
-              <Tooltip contentStyle={{ backgroundColor: '#333' }} />
+              <Tooltip contentStyle={{ backgroundColor: '#333' }} itemStyle={{ color: '#FFF' }} />
               <Legend wrapperStyle={{ color: '#FFF' }} />
-              {hasCapacity && (
-                <Bar dataKey="Capacity" name="Capacity" fill="#B0BEC5">
-                  <LabelList dataKey="Capacity" position="top" fill="#FFF" />
-                </Bar>
+
+              {/* {hasCapacity && (
+                <Area
+                  type="monotone"
+                  dataKey="Capacity"
+                  name="Capacity"
+                  stroke="#B0BEC5"
+                  fill="rgba(176,190,197,0.2)"
+                  dot={false}
+                />
               )}
-              <Bar
+
+              <Area
+                type="monotone"
                 dataKey={hasCapacity ? 'Headcount' : dataKey}
                 name={hasCapacity ? 'Headcount' : dataKey}
-                fill="#FFC107"
-              >
-                <LabelList 
-                  dataKey={hasCapacity ? 'Headcount' : dataKey}
-                  position="top" 
-                  fill="#fff"
-                  style={{ fontWeight: 600 }}
+                stroke="#FFC107"
+                fill="url(#colorHead)"
+                dot={{ stroke: '#FFC107', strokeWidth: 2 }}
+              />
+               */}
+              {/* overlay a crisp line on top for that market “spark” */}
+              {/* <Line
+                type="monotone"
+                dataKey={hasCapacity ? 'Headcount' : dataKey}
+                stroke="#FFC107"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
+              /> */}
+
+            {series.map(s => (
+              <React.Fragment key={s.dataKey}>
+                <Area
+                  type="monotone"
+                  dataKey={s.dataKey}
+                  name={s.name}
+                  stroke={s.stroke}
+                  fill={`url(#grad-${s.dataKey})`}
+                  dot={false}
                 />
-              </Bar>
-            </BarChart>
+                <Line
+                  type="monotone"
+                  dataKey={s.dataKey}
+                  stroke={s.stroke}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
+                />
+              </React.Fragment>
+            ))}
+
+
+            </AreaChart>
+
+
+    
+
+
+
+
           </ResponsiveContainer>
         </Box>
       </CardContent>
@@ -299,145 +159,3 @@ export default function ChartCard({
   );
 }
 
-
-
-
-
-
-
-
-// src/pages/PartitionDetail.jsx
-import React, { useEffect, useState, useMemo } from "react";
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  CircularProgress,
-} from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
-import SummaryCard from "../components/SummaryCard";
-import ChartCard from "../components/ChartCard";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import LoadingSpinner from "../components/LoadingSpinner";
-import { fetchLiveSummary, fetchHistory } from "../api/occupancy.service";
-import { lookupFloor } from "../utils/floorLookup";
-
-export default function PartitionDetail() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-
-  const [liveSummary, setLiveSummary] = useState(null);
-  const [history, setHistory] = useState(null);
-  const [historyLoading, setHistoryLoading] = useState(true);
-  const [details, setDetails] = useState([]);
-  const [lastUpdate, setLastUpdate] = useState("");
-
-  // Auto-refresh live
-  useEffect(() => {
-    let timer;
-    async function loadLive() {
-      const json = await fetchLiveSummary();
-      setLiveSummary(json);
-      // we'll still fetch details so partition/details page has data ready
-      const det = json.details
-        .filter(r => r.PartitionName2 === partition && r.Direction === "InDirection")
-        .map(r => ({
-          ...r,
-          floor: lookupFloor(r.PartitionName2, r.Door, r.Direction)
-        }));
-      setDetails(det);
-      setLastUpdate(new Date().toLocaleTimeString());
-    }
-    loadLive();
-    timer = setInterval(loadLive, 1000);
-    return () => clearInterval(timer);
-  }, [partition]);
-
-  // Load history
-  useEffect(() => {
-    setHistoryLoading(true);
-    fetchHistory(partition).then(json => {
-      setHistory(json);
-      setHistoryLoading(false);
-    });
-  }, [partition]);
-
-  if (!liveSummary || !history) return <LoadingSpinner />;
-
-  // Totals
-  const lastDay = history.summaryByDate.at(-1);
-  const partToday = lastDay.region;
-  const live = liveSummary.realtime[partition] || {
-    total: 0, Employee: 0, Contractor: 0, TempBadge: 0, floors: {}
-  };
-
-  return (
-    <>
-      <Header />
-
-      <Box component="main" sx={{ pt: 1, pb: 1 }}>
-        <Container maxWidth={false} disableGutters>
-          {/* Back */}
-          <Box display="flex" alignItems="center" mb={1} sx={{ px: "20px" }}>
-            <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
-          </Box>
-
-          {/* Summary */}
-          <Box display="flex" gap={2} mb={2} sx={{ px: "20px" }}>
-            <SummaryCard
-              title={`Today’s ${partition} Headcount`}
-              total={historyLoading ? 0 : partToday.total}
-              stats={[
-                { label: "Employees",   value: historyLoading ? <CircularProgress size={20} /> : partToday.Employee },
-                { label: "Contractors", value: historyLoading ? <CircularProgress size={20} /> : partToday.Contractor },
-                { label: "Temp Badge",  value: historyLoading ? <CircularProgress size={20} /> : partToday.TempBadge },
-              ]}
-              sx={{ flex: 1, height: 180,p:2, border: '2px solid #FFC107'  }}
-            />
-            <SummaryCard
-              title={`Live ${partition} Headcount`}
-              total={live.total}
-              stats={[
-                { label: "Employees",   value: live.Employee },
-                { label: "Contractors", value: live.Contractor },
-                { label: "Temp Badge",  value: live.TempBadge },
-              ]}
-              sx={{ flex: 1, height: 180 ,p:2, border: '2px solid #FFC107' }}
-            />
-          </Box>
-
-          {/* Chart + See Details */}
-          <Box mb={4} sx={{ px: "20px",p:2, border: '2px solid #FFC107'  }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-              <Typography variant="h6">Live Floor Counts</Typography>
-              <Typography variant="body2" color="textSecondary">
-                Last updated: {lastUpdate}
-              </Typography>
-            </Box>
-            <ChartCard
-              title=""
-              data={Object.entries(live.floors).map(([floor, cnt]) => ({ name: floor.trim(), value: cnt }))}
-              chartHeight={320}
-            />
-            <Box display="flex" justifyContent="flex-end" mt={1}>  
-  <Button
-  variant="contained"
-  size="small"
-  onClick={() =>
-    navigate(`/partition/${encodeURIComponent(partition)}/details`)
-  }
->
-  See Details
-</Button>
-
-            </Box>
-          </Box>
-        </Container>
-      </Box>
-
-      <Footer />
-    </>
-  );
-}
