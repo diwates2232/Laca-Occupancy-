@@ -1,3 +1,112 @@
+--- src/components/ChartCard.jsx
++++ src/components/ChartCard.jsx
+@@
+-import {
+-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, LabelList
+-} from 'recharts';
++import {
++  AreaChart,
++  Area,
++  Line,
++  XAxis,
++  YAxis,
++  Tooltip,
++  ResponsiveContainer,
++  CartesianGrid,
++  Legend,
++  Defs,
++  linearGradient,
++  stop
++} from 'recharts';
+
+ export default function ChartCard({
+   title, data = [], dataKey = 'value', chartHeight = 250
+ }) {
+@@
+           <ResponsiveContainer>
+-            <BarChart data={data}>
+-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+-              <XAxis dataKey="name" tick={{ fill: '#FFF', fontWeight: 600 }} />
+-              <YAxis tick={{ fill: '#FFF', fontWeight: 600 }} />
+-              <Tooltip contentStyle={{ backgroundColor: '#333' }} />
+-              <Legend wrapperStyle={{ color: '#FFF' }} />
+-              {hasCapacity && (
+-                <Bar dataKey="Capacity" name="Capacity" fill="#B0BEC5">
+-                  <LabelList dataKey="Capacity" position="top" fill="#FFF" />
+-                </Bar>
+-              )}
+-              <Bar
+-                dataKey={hasCapacity ? 'Headcount' : dataKey}
+-                name={hasCapacity ? 'Headcount' : dataKey}
+-                fill="#FFC107"
+-              >
+-                <LabelList 
+-                  dataKey={hasCapacity ? 'Headcount' : dataKey}
+-                  position="top" 
+-                  fill="#fff"
+-                  style={{ fontWeight: 600 }}
+-                />
+-              </Bar>
+-            </BarChart>
++            <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
++              {/* define yellow gradient */}
++              <Defs>
++                <linearGradient id="colorHead" x1="0" y1="0" x2="0" y2="1">
++                  <stop offset="5%" stopColor="#FFC107" stopOpacity={0.4}/>
++                  <stop offset="95%" stopColor="#FFC107" stopOpacity={0}/>
++                </linearGradient>
++              </Defs>
++
++              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
++              <XAxis dataKey="name" tick={{ fill: '#FFF', fontWeight: 600 }} />
++              <YAxis tick={{ fill: '#FFF', fontWeight: 600 }} />
++              <Tooltip contentStyle={{ backgroundColor: '#333' }} itemStyle={{ color: '#FFF' }} />
++              <Legend wrapperStyle={{ color: '#FFF' }} />
++
++              {hasCapacity && (
++                <Area
++                  type="monotone"
++                  dataKey="Capacity"
++                  name="Capacity"
++                  stroke="#B0BEC5"
++                  fill="rgba(176,190,197,0.2)"
++                  dot={false}
++                />
++              )}
++
++              <Area
++                type="monotone"
++                dataKey={hasCapacity ? 'Headcount' : dataKey}
++                name={hasCapacity ? 'Headcount' : dataKey}
++                stroke="#FFC107"
++                fill="url(#colorHead)"
++                dot={{ stroke: '#FFC107', strokeWidth: 2 }}
++              />
++              
++              {/* overlay a crisp line on top for that market “spark” */}
++              <Line
++                type="monotone"
++                dataKey={hasCapacity ? 'Headcount' : dataKey}
++                stroke="#FFC107"
++                strokeWidth={2}
++                dot={false}
++                activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
++              />
++            </AreaChart>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Below is my Current File then help to improve chart 
 
 //C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\ChartCard.jsx
