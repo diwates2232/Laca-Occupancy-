@@ -1,3 +1,14 @@
+Read below File carefully I want to do some improvement in below file 
+1)Floor Details
+in this section arrange Search option exat near to this header like Floor Details and Search bar , 
+When i search employee name using name or id highlight this employee...
+
+Strickly in one row add Two Exact size box like 
+_______________________|______________________________
+and add 20 px padding for both side strickly 
+
+and give me updated file carefully ,
+dont make unencessary changes in below file 
 // src/pages/PartitionDetail.jsx
 import React, { useEffect, useState, useMemo } from "react";
 import {
@@ -105,22 +116,20 @@ export default function PartitionDetail() {
 
   return (
     <>
-      <AppBar position="fixed">
-        <Toolbar><Header /></Toolbar>
-      </AppBar>
+    
+ <Header />
+      <Container maxWidth={false} disableGutters sx={{ px: 0, pt: 0, pb: 0 }}></Container>
 
-      <Box component="main" sx={{ pt: 8, pb: 4 }}>
+
+      <Box component="main" sx={{ pt: 1, pb: 1 }}>
         <Container maxWidth={false} disableGutters sx={{ px: "20px" }}>
           {/* Back + Title */}
-          <Box display="flex" alignItems="center" mb={2}>
+          <Box display="flex" alignItems="center" mb={1}>
             <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
-            <Typography variant="h6" sx={{ ml: 2 }}>
-              {partition.replace("CR.Costa Rica Partition", "Costa Rica")}
-            </Typography>
           </Box>
 
           {/* Summary */}
-          <Box display="flex" gap={2} mb={4}>
+          <Box display="flex" gap={2} mb={2}>
             <SummaryCard
               title={`Today’s ${partition} Headcount`}
               total={historyLoading ? 0 : partToday.total}
@@ -144,7 +153,7 @@ export default function PartitionDetail() {
           </Box>
 
           {/* Chart */}
-          <Box mb={4}>
+          <Box mb={2}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
               <Typography variant="h6">Live Floor Counts</Typography>
               <Typography variant="body2" color="textSecondary">
@@ -169,11 +178,11 @@ export default function PartitionDetail() {
             />
           </Box>
 
-          {/* 3 per row */}
+          {/* 2 per row */}
           <Grid container spacing={2}>
             {displayed.map(([floor, emps]) => (
-              <Grid key={floor} item xs={12} sm={6} md={4}>
-                <Box sx={{ border: "1px solid #FFC107", borderRadius: 2, p: 2, height: "100%" }}>
+              <Grid key={floor} item xs={12} sm={2} md={2}>
+                <Box sx={{ border: "1px solid #FFC107", borderRadius: 2, p: 2, height: "100vw%" }}>
                   <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                     {floor} (Total {emps.length})
                   </Typography>
@@ -181,13 +190,13 @@ export default function PartitionDetail() {
                     <Table size="small">
                       <TableHead>
                         <TableRow>
-                          {["Emp ID","Name","Swipe Time","Type","Card #","Door"].map(h => (
+                          {["Emp ID","Name","Swipe Time","Type","Card","Door"].map(h => (
                             <TableCell key={h} sx={{ fontWeight: "bold" }}>{h}</TableCell>
                           ))}
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {emps.slice(0,20).map((r,i) => (
+                        {emps.slice(0,10).map((r,i) => (
                           <TableRow key={`${r.PersonGUID}-${i}`}>
                             <TableCell>{r.EmployeeID}</TableCell>
                             <TableCell>{r.ObjectName1}</TableCell>
@@ -200,7 +209,7 @@ export default function PartitionDetail() {
                       </TableBody>
                     </Table>
                   </TableContainer>
-                  {emps.length > 20 && (
+                  {emps.length > 10 && (
                     <Button
                       size="small"
                       onClick={() => navigate(
@@ -215,252 +224,9 @@ export default function PartitionDetail() {
             ))}
           </Grid>
         </Container>
+        
       </Box>
-
-      <Footer />
-    </>
-  );
-}
-
-
-
-
-
-
-
-Read below file and solve this issue 
-ERROR
-Rendered more hooks than during the previous render.
-    at updateWorkInProgressHook (http://localhost:3000/static/js/bundle.js:54645:15)
-    at updateMemo (http://localhost:3000/static/js/bundle.js:55242:16)
-    at Object.useMemo (http://localhost:3000/static/js/bundle.js:63680:16)
-    at exports.useMemo (http://localhost:3000/static/js/bundle.js:80756:32)
-    at PartitionDetail (http://localhost:3000/static/js/bundle.js:105845:66)
-    at react-stack-bottom-frame (http://localhost:3000/static/js/bundle.js:64321:18)
-    at renderWithHooks (http://localhost:3000/static/js/bundle.js:54531:20)
-    at updateFunctionComponent (http://localhost:3000/static/js/bundle.js:56224:17)
-    at beginWork (http://localhost:3000/static/js/bundle.js:56810:16)
-    at runWithFiberInDEV (http://localhost:3000/static/js/bundle.js:52302:68)
-
-
-// src/pages/PartitionDetail.jsx
-import React, { useEffect, useState, useMemo } from "react";
-import {
-  AppBar,
-  Toolbar,
-  Container,
-  Box,
-  Typography,
-  Button,
-  Grid,
-  CircularProgress,
-  TextField,
-  TableContainer,
-  Paper,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-} from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
-import SummaryCard from "../components/SummaryCard";
-import ChartCard from "../components/ChartCard";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import LoadingSpinner from "../components/LoadingSpinner";
-import { fetchLiveSummary, fetchHistory } from "../api/occupancy.service";
-import { lookupFloor } from "../utils/floorLookup";
-
-export default function PartitionDetail() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-
-  // State
-  const [liveSummary, setLiveSummary] = useState(null);
-  const [history, setHistory] = useState(null);
-  const [historyLoading, setHistoryLoading] = useState(true);
-  const [details, setDetails] = useState([]);
-  const [lastUpdate, setLastUpdate] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-
-  // 1) live, auto-refresh
-  useEffect(() => {
-    let timer;
-    async function loadLive() {
-      const json = await fetchLiveSummary();
-      setLiveSummary(json);
-      const det = json.details
-        .filter(r => r.PartitionName2 === partition && r.Direction === "InDirection")
-        .map(r => ({ ...r, floor: lookupFloor(r.PartitionName2, r.Door, r.Direction) }));
-      setDetails(det);
-      setLastUpdate(new Date().toLocaleTimeString());
-    }
-    loadLive();
-    timer = setInterval(loadLive, 1000);
-    return () => clearInterval(timer);
-  }, [partition]);
-
-  // 2) history once
-  useEffect(() => {
-    setHistoryLoading(true);
-    fetchHistory(partition).then(json => {
-      setHistory(json);
-      setHistoryLoading(false);
-    });
-  }, [partition]);
-
-  // early loader
-  if (!liveSummary || !history) return <LoadingSpinner />;
-
-  // derive totals
-  const lastDay = history.summaryByDate.at(-1);
-  const partToday = lastDay.region;
-  const live = liveSummary.realtime[partition] || { total: 0, Employee: 0, Contractor: 0, TempBadge: 0, floors: {} };
-
-  // group by floor
-  const floorMap = useMemo(() => {
-    const m = {};
-    details.forEach(r => {
-      m[r.floor] = m[r.floor] || [];
-      m[r.floor].push(r);
-    });
-    return m;
-  }, [details]);
-
-  // apply search + sort by count desc
-  const displayed = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    return Object.entries(floorMap)
-      .filter(([floor, emps]) => {
-        if (!term) return true;
-        if (floor.toLowerCase().includes(term)) return true;
-        return emps.some(r =>
-          r.ObjectName1.toLowerCase().includes(term) ||
-          r.EmployeeID.toLowerCase().includes(term)
-        );
-      })
-      .sort((a, b) => b[1].length - a[1].length);
-  }, [floorMap, searchTerm]);
-
-  return (
-    <>
-      <AppBar position="fixed">
-        <Toolbar>
-          <Header />
-        </Toolbar>
-      </AppBar>
-
-      {/* main content */}
-      <Box component="main" sx={{ pt: 8, pb: 4 }}>
-        <Container maxWidth={false} disableGutters sx={{ px: "20px" }}>
-          {/* Back + Title */}
-          <Box display="flex" alignItems="center" mb={2}>
-            <Button size="small" onClick={() => navigate(-1)}>
-              ← Back
-            </Button>
-            <Typography variant="h6" sx={{ ml: 2 }}>
-              {partition.replace("CR.Costa Rica Partition", "Costa Rica")}
-            </Typography>
-          </Box>
-
-          {/* Summary */}
-          <Box display="flex" gap={2} mb={4}>
-            <SummaryCard
-              title={`Today’s ${partition} Headcount`}
-              total={historyLoading ? 0 : partToday.total}
-              stats={[
-                { label: "Employees", value: historyLoading ? <CircularProgress size={20}/> : partToday.Employee },
-                { label: "Contractors", value: historyLoading ? <CircularProgress size={20}/> : partToday.Contractor },
-                { label: "Temp Badge", value: historyLoading ? <CircularProgress size={20}/> : partToday.TempBadge },
-              ]}
-              sx={{ flex: 1, height: 180 }}
-            />
-            <SummaryCard
-              title={`Live ${partition} Headcount`}
-              total={live.total}
-              stats={[
-                { label: "Employees", value: live.Employee },
-                { label: "Contractors", value: live.Contractor },
-                { label: "Temp Badge", value: live.TempBadge },
-              ]}
-              sx={{ flex: 1, height: 180 }}
-            />
-          </Box>
-
-          {/* Chart */}
-          <Box mb={4}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-              <Typography variant="h6">Live Floor Counts</Typography>
-              <Typography variant="body2" color="textSecondary">
-                Last updated: {lastUpdate}
-              </Typography>
-            </Box>
-            <ChartCard
-              title=""
-              data={Object.entries(live.floors).map(([floor, cnt])=>({ name: floor.trim(), value: cnt }))}
-              chartHeight={260}
-            />
-          </Box>
-
-          {/* Floor Details + Search on same line */}
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-            <Typography variant="h6">Floor Details</Typography>
-            <TextField
-              size="small"
-              placeholder="Search floor / emp…"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
-          </Box>
-
-          {/* 3 cards per row */}
-          <Grid container spacing={2}>
-            {displayed.map(([floor, emps]) => (
-              <Grid key={floor} item xs={12} sm={6} md={4}>
-                <Box sx={{ border: "1px solid #FFC107", borderRadius: 2, p: 2, height: "100%" }}>
-                  <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                    {floor} (Total {emps.length})
-                  </Typography>
-                  <TableContainer component={Paper} variant="outlined" sx={{ mb: 1 }}>
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          {["Emp ID","Name","Swipe Time","Type","Card #","Door"].map(h => (
-                            <TableCell key={h} sx={{ fontWeight: "bold" }}>{h}</TableCell>
-                          ))}
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {emps.slice(0,20).map((r,i) => (
-                          <TableRow key={`${r.PersonGUID}-${i}`}>
-                            <TableCell>{r.EmployeeID}</TableCell>
-                            <TableCell>{r.ObjectName1}</TableCell>
-                            <TableCell>{new Date(r.LocaleMessageTime).toLocaleTimeString()}</TableCell>
-                            <TableCell>{r.PersonnelType}</TableCell>
-                            <TableCell>{r.CardNumber}</TableCell>
-                            <TableCell>{r.Door}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                  {emps.length > 20 && (
-                    <Button
-                      size="small"
-                      onClick={() => navigate(
-                        `/partition/${encodeURIComponent(partition)}/floor/${encodeURIComponent(floor)}`
-                      )}
-                    >
-                      See more…
-                    </Button>
-                  )}
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
-        </Container>
-      </Box>
+      
 
       <Footer />
     </>
