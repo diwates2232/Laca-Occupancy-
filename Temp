@@ -1,4 +1,48 @@
+import { BarChart, Bar, /* … */ } from 'recharts';
+
+if (chartType === 'bar') {
+  return (
+    <Card sx={sx}>
+      <CardContent>
+        <Typography variant="h6">{title}</Typography>
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <BarChart data={data}>
+            <XAxis dataKey="name" tick={{ fill: '#FFF' }} />
+            <YAxis tick={{ fill: '#FFF' }} />
+            <Tooltip />
+            <Legend onClick={handleLegendClick} />
+            <CartesianGrid strokeDasharray="3 3" />
+            <Bar 
+              dataKey="value" 
+              isAnimationActive={false}
+              onClick={(d) => console.log('Clicked partition', d.name)}
+              fill={({ fill }) => fill}  // use per-item fill
+            />
+            <Brush dataKey="name" height={30} stroke="#FFC107" />
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // src/components/ChartCard.jsx
+
+
+
 import React, { useState } from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import {
