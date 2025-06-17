@@ -1,3 +1,278 @@
+import React, { useEffect, useState, useMemo } from "react";
+import {
+  Container,
+  Box,
+  Typography,
+  Button,
+  Grid,
+  CircularProgress,
+  TextField,
+  TableContainer,
+  Paper,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+} from "@mui/material";
+import { useParams, useNavigate } from "react-router-dom";
+import SummaryCard from "../components/SummaryCard";
+import ChartCard from "../components/ChartCard";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import LoadingSpinner from "../components/LoadingSpinner";
+import DataTable from "../components/DataTable";
+import { fetchLiveSummary, fetchHistory } from "../api/occupancy.service";
+import { lookupFloor } from "../utils/floorLookup";
+
+export default function PartitionDetail() {
+  const { partition } = useParams();
+  const navigate = useNavigate();
+
+  const [liveSummary, setLiveSummary] = useState(null);
+  const [history, setHistory] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [details, setDetails] = useState([]);
+  const [lastUpdate, setLastUpdate] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [expandedFloor, setExpandedFloor] = useState(null);
+
+  // Auto-refresh live
+  useEffect(() => {
+    let timer;
+    async function loadLive() {
+      const json = await fetchLiveSummary();
+      setLiveSummary(json);
+      const det = json.details
+        .filter(r => r.PartitionName2 === partition && r.Direction === "InDirection")
+        .map(r => ({
+          ...r,
+          floor: lookupFloor(r.PartitionName2, r.Door, r.Direction)
+        }));
+      setDetails(det);
+      setLastUpdate(new Date().toLocaleTimeString());
+    }
+    loadLive();
+    timer = setInterval(loadLive, 1000);
+    return () => clearInterval(timer);
+  }, [partition]);
+
+  // Load history
+  useEffect(() => {
+    setHistoryLoading(true);
+    fetchHistory(partition).then(json => {
+      setHistory(json);
+      setHistoryLoading(false);
+    });
+  }, [partition]);
+
+  // Group by floor
+  const floorMap = useMemo(() => {
+    const m = {};
+    details.forEach(r => {
+      m[r.floor] = m[r.floor] || [];
+      m[r.floor].push(r);
+    });
+    return m;
+  }, [details]);
+
+  // Apply search + sort desc
+  const displayed = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return Object.entries(floorMap)
+      .filter(([floor, emps]) => {
+        if (!term) return true;
+        if (floor.toLowerCase().includes(term)) return true;
+        return emps.some(r =>
+          r.ObjectName1.toLowerCase().includes(term) ||
+          r.EmployeeID.toLowerCase().includes(term)
+        );
+      })
+      .sort((a, b) => b[1].length - a[1].length);
+  }, [floorMap, searchTerm]);
+
+  if (!liveSummary || !history) return <LoadingSpinner />;
+
+  // Totals
+  const lastDay = history.summaryByDate.at(-1);
+  const partToday = lastDay.region;
+  const live = liveSummary.realtime[partition] || {
+    total: 0, Employee: 0, Contractor: 0, TempBadge: 0, floors: {}
+  };
+
+  // DataTable columns for “See more”
+  const columns = [
+    { field: "EmployeeID", headerName: "Emp ID" },
+    { field: "ObjectName1", headerName: "Name" },
+    { field: "LocaleMessageTime", headerName: "Swipe Time" },
+    { field: "PersonnelType", headerName: "Type" },
+    { field: "CardNumber", headerName: "Card" },
+    { field: "Door", headerName: "Door" },
+  ];
+
+  return (
+    <>
+      <Header />
+
+      <Box component="main" sx={{ pt: 1, pb: 1 }}>
+        <Container maxWidth={false} disableGutters>
+          {/* Back */}
+          <Box display="flex" alignItems="center" mb={1} sx={{ px: "20px" }}>
+            <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
+          </Box>
+
+          {/* Summary */}
+          <Box display="flex" gap={2} mb={2} sx={{ px: "20px" }}>
+            <SummaryCard
+              title={`Today’s ${partition} Headcount`}
+              total={historyLoading ? 0 : partToday.total}
+              stats={[
+                { label: "Employees",   value: historyLoading ? <CircularProgress size={20} /> : partToday.Employee },
+                { label: "Contractors", value: historyLoading ? <CircularProgress size={20} /> : partToday.Contractor },
+                { label: "Temp Badge",  value: historyLoading ? <CircularProgress size={20} /> : partToday.TempBadge },
+              ]}
+              sx={{ flex: 1, height: 180 }}
+            />
+            <SummaryCard
+              title={`Live ${partition} Headcount`}
+              total={live.total}
+              stats={[
+                { label: "Employees",   value: live.Employee },
+                { label: "Contractors", value: live.Contractor },
+                { label: "Temp Badge",  value: live.TempBadge },
+              ]}
+              sx={{ flex: 1, height: 180 }}
+            />
+          </Box>
+
+          {/* Chart */}
+          <Box mb={2} sx={{ px: "20px" }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+              <Typography variant="h6">Live Floor Counts</Typography>
+              <Typography variant="body2" color="textSecondary">
+                Last updated: {lastUpdate}
+              </Typography>
+            </Box>
+            <ChartCard
+              title=""
+              data={Object.entries(live.floors).map(([floor, cnt]) => ({ name: floor.trim(), value: cnt }))}
+              chartHeight={260}
+            />
+          </Box>
+
+          {/* Floor Details + Search */}
+          <Box display="flex" alignItems="center" gap={2} mb={2} sx={{ px: "20px" }}>
+            <Typography variant="h6">Floor Details</Typography>
+            <TextField
+              size="small"
+              placeholder="Search floor / emp…"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </Box>
+
+          {/* Edge-to-edge grid, 2 cards per row */}
+          <Grid
+            container
+            spacing={0}
+            sx={{
+              width: "100vw",
+              marginLeft: "calc(-50vw + 50%)",
+            }}
+          >
+            {displayed.map(([floor, emps]) => (
+              <Grid key={floor} item xs={12} sm={6} md={6}>
+                <Box
+                  sx={{
+                    border: "1px solid #FFC107",
+                    borderRadius: 2,
+                    p: "20px",
+                    height: "100%",
+                  }}
+                >
+                  <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                    {floor} (Total {emps.length})
+                  </Typography>
+                  <TableContainer component={Paper} variant="outlined" sx={{ mb: 1 }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          {["Emp ID","Name","Swipe Time","Type","Card","Door"].map(h => (
+                            <TableCell key={h} sx={{ fontWeight: "bold" }}>{h}</TableCell>
+                          ))}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {emps.slice(0, 10).map((r, i) => {
+                          const term = searchTerm.trim().toLowerCase();
+                          const isMatch =
+                            term &&
+                            (r.ObjectName1.toLowerCase().includes(term) ||
+                             r.EmployeeID.toLowerCase().includes(term));
+                          return (
+                            <TableRow
+                              key={`${r.PersonGUID}-${i}`}
+                              sx={isMatch ? { backgroundColor: "rgba(255, 235, 59, 0.3)" } : {}}
+                            >
+                              <TableCell>{r.EmployeeID}</TableCell>
+                              <TableCell>{r.ObjectName1}</TableCell>
+                              <TableCell>{new Date(r.LocaleMessageTime).toLocaleTimeString()}</TableCell>
+                              <TableCell>{r.PersonnelType}</TableCell>
+                              <TableCell>{r.CardNumber}</TableCell>
+                              <TableCell>{r.Door}</TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  {/* See more toggles expansion */}
+                  <Button
+                    size="small"
+                    onClick={() =>
+                      setExpandedFloor(expandedFloor === floor ? null : floor)
+                    }
+                  >
+                    {expandedFloor === floor ? "Hide" : "See more…"}
+                  </Button>
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
+
+          {/* Expanded full-width table */}
+          {expandedFloor && (
+            <Box sx={{ px: "20px", mt: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                {expandedFloor} — All Entries
+              </Typography>
+              <DataTable
+                columns={columns}
+                rows={floorMap[expandedFloor].map(r => ({
+                  ...r,
+                  LocaleMessageTime: new Date(r.LocaleMessageTime).toLocaleTimeString()
+                }))}
+              />
+            </Box>
+          )}
+        </Container>
+      </Box>
+
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
 Understand What i exactly want 
 now Floor Details in this section 
 display details like 
