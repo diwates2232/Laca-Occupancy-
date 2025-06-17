@@ -1,3 +1,220 @@
+// src/components/ChartCard.jsx
+import React, { useState } from 'react';
+import { Card, CardContent, Typography, Box } from '@mui/material';
+import {
+  AreaChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
++  Brush,
+} from 'recharts';
+
+export default function ChartCard({
+  title,
+  data = [],
+  dataKey = 'value',
+  chartHeight = 250,
++  colors = { head: '#FFC107', cap: '#B0BEC5' },
+}) {
++ const [hidden, setHidden] = useState({});  // track which series are hidden
+
+  if (!Array.isArray(data) || !data.length) {
+    return (
+      <Card sx={{ mb: 2 }}>
+        <CardContent sx={{ textAlign: 'center' }}>
+          <Typography variant="h6">{title}</Typography>
+          <Typography variant="body2">No data to display.</Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const hasCapacity = data[0].Capacity != null;
+
++ const handleLegendClick = (o) => {
++   const { dataKey } = o;
++   setHidden(prev => ({ ...prev, [dataKey]: !prev[dataKey] }));
++ };
+
+  return (
+    <Card sx={{ mb: 2, border: '2px solid #FFC107' }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom sx={{ color: colors.head }}>
+          {title}
+        </Typography>
+        <Box sx={{ width: '100%', height: chartHeight }}>
+          <ResponsiveContainer>
+            <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorHead" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={colors.head} stopOpacity={0.4}/>
+                  <stop offset="95%" stopColor={colors.head} stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="name" tick={{ fill: '#FFF', fontWeight: 600 }} />
+              <YAxis tick={{ fill: '#FFF', fontWeight: 600 }} />
+
+-             <Tooltip contentStyle={{ backgroundColor: '#333' }} itemStyle={{ color: '#FFF' }} />
++             <Tooltip 
++               contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}` }}
++               labelStyle={{ color: '#FFC107' }}
++               formatter={(value, name) => {
++                 if (name === 'Headcount' && hasCapacity) {
++                   const cap = data.find(d => d[value.name])?.Capacity;
++                   const pct = ((value / cap) * 100).toFixed(1);
++                   return [`${value} (${pct}%)`, name];
++                 }
++                 return [value, name];
++               }}
++             />
+
+-             <Legend wrapperStyle={{ color: '#FFF' }} />
++             <Legend 
++               wrapperStyle={{ color: '#FFF' }}
++               onClick={handleLegendClick}
++             />
+
++             {/* brush for zooming/panning */}
++             <Brush
++               dataKey="name"
++               height={30}
++               stroke={colors.head}
++               travellerWidth={10}
++             />
+
+              {hasCapacity && !hidden.Capacity && (
+                <Area
+                  type="monotone"
+                  dataKey="Capacity"
+                  name="Capacity"
+-                 stroke="#B0BEC5"
++                 stroke={colors.cap}
+-                 fill="rgba(176,190,197,0.2)"
++                 fill={`${colors.cap}33`}
+                  dot={false}
+                />
+              )}
+
+              {!hidden.Headcount && (
+                <Area
+                  type="monotone"
+-                 dataKey={hasCapacity ? 'Headcount' : dataKey}
++                 dataKey={hasCapacity ? 'Headcount' : dataKey}
+                  name={hasCapacity ? 'Headcount' : dataKey}
+-                 stroke="#FFC107"
++                 stroke={colors.head}
+-                 fill="url(#colorHead)"
++                 fill="url(#colorHead)"
+                  dot={{ stroke: colors.head, strokeWidth: 2 }}
+                />
+              )}
+              
+              {!hidden.Headcount && (
+                <Line
+                  type="monotone"
+-                 dataKey={hasCapacity ? 'Headcount' : dataKey}
++                 dataKey={hasCapacity ? 'Headcount' : dataKey}
+-                 stroke="#FFC107"
++                 stroke={colors.head}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
+                />
+              )}
+            </AreaChart>
+          </ResponsiveContainer>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
+
+
+
+// In src/pages/Dashboard.jsx
+
+{!loading && (
+-  <ChartCard
+-    title="Partition Totals"
+-    chartHeight={320}
+-    data={partitions.map(p => ({ name: p.name, value: p.total }))}
+-    sx={{ border: '2px solid #FFC107' }}
+-  />
++  <ChartCard
++    chartType="bar"                  // new prop
++    title="Live Totals by Partition"
++    chartHeight={360}
++    data={partitions.map((p,i) => ({
++      name: p.name,
++      value: p.total,
++      fill: i % 2 === 0 ? '#FFC107' : '#B0BEC5'
++    }))}
++    dataKey="value"
++    colors={{ head: '#FFC107', cap: '#B0BEC5' }}
++    sx={{ border: '2px solid #FFC107' }}
++  />
+)}
+
+
+
+
+
+
+
+
+
+
+
+import { BarChart, Bar, /* … */ } from 'recharts';
+
+if (chartType === 'bar') {
+  return (
+    <Card sx={sx}>
+      <CardContent>
+        <Typography variant="h6">{title}</Typography>
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <BarChart data={data}>
+            <XAxis dataKey="name" tick={{ fill: '#FFF' }} />
+            <YAxis tick={{ fill: '#FFF' }} />
+            <Tooltip />
+            <Legend onClick={handleLegendClick} />
+            <CartesianGrid strokeDasharray="3 3" />
+            <Bar 
+              dataKey="value" 
+              isAnimationActive={false}
+              onClick={(d) => console.log('Clicked partition', d.name)}
+              fill={({ fill }) => fill}  // use per-item fill
+            />
+            <Brush dataKey="name" height={30} stroke="#FFC107" />
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
+
+
+
+
 Read below dashboard file and help to improve Chat to amke more interactive and add legends and deatails fill more brand colours 
 
 // src/pages/Dashboard.jsx
