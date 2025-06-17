@@ -1,3 +1,64 @@
+--- a/src/pages/PartitionDetail.jsx
++++ b/src/pages/PartitionDetail.jsx
+@@
+-import React, { useEffect, useState } from 'react';
++import React, { useEffect, useState, useMemo } from 'react';
+ import {
+   Container,
+   Box,
+   Typography,
+   Button,
+   Grid,
+   CircularProgress
+ } from '@mui/material';
+@@
+ import LoadingSpinner from '../components/LoadingSpinner';
+ 
+ import {
+   fetchLiveSummary,
+   fetchHistory
+ } from '../api/occupancy.service';
++import ZoneDetailsTable from '../components/ZoneDetailsTable';    // ← add this import
+ 
+ export default function PartitionDetail() {
+   const { partition } = useParams();
+@@
+   // derive a map: floorName → array of detail records
+-  
++  const floorMap = useMemo(() => {
++    const m = {};
++    details.forEach(r => {
++      const f = (r.floor || '').trim() || 'Unmapped';
++      if (!m[f]) m[f] = [];
++      m[f].push(r);
++    });
++    return m;
++  }, [details]);
+ 
+   return (
+     <>
+@@
+-        {/* Floor Details */}
+-        <Typography variant="h6" gutterBottom>
+-          Floor Details
+-        </Typography>
+-        <ZoneDetailsTable data={floorMap} />
++        {/* Floor Details */}
++        <Typography variant="h6" gutterBottom>
++          Floor Details
++        </Typography>
++        <ZoneDetailsTable data={floorMap} />
+
+
+
+
+
+
+
+
+
+
+
 Read all files carefully and solve the issue 
 
 ERROR
