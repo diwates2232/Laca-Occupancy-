@@ -1,36 +1,3 @@
---- a/src/pages/PartitionDetail.jsx
-+++ b/src/pages/PartitionDetail.jsx
-@@ top
--import {
--  fetchLiveSummary,
--  fetchHistoricalOccupancy
--} from '../api/occupancy.service';
-+import {
-+  fetchLiveSummary,
-+  fetchHistory     // ← correct import
-+} from '../api/occupancy.service';
-@@ useEffect for history
--  // Load historical (for today’s headcount)
--  useEffect(() => {
--    fetchHistoricalOccupancy(partition).then(json => {
--      setHistory(json);
--    });
--  }, [partition]);
-+  // Load historical (for today’s headcount)
-+  useEffect(() => {
-+    fetchHistory(partition).then(json => {
-+      setHistory(json);
-+    });
-+  }, [partition]);
-
-
-
-
-
-
-
-
-
 // src/pages/PartitionDetail.jsx
 
 import React, { useEffect, useState } from 'react';
@@ -47,10 +14,12 @@ import SummaryCard from '../components/SummaryCard';
 import ChartCard from '../components/ChartCard';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+
 import {
   fetchLiveSummary,
-  fetchHistoricalOccupancy
+  fetchHistory     // ← correct import
 } from '../api/occupancy.service';
+
 
 export default function PartitionDetail() {
   const { partition } = useParams();
@@ -78,12 +47,16 @@ export default function PartitionDetail() {
     return () => clearInterval(timer);
   }, [partition]);
 
+
   // Load historical (for today’s headcount)
   useEffect(() => {
-    fetchHistoricalOccupancy(partition).then(json => {
+    fetchHistory(partition).then(json => {
       setHistory(json);
     });
   }, [partition]);
+
+
+
 
   if (!liveSummary || !history) {
     return (
@@ -237,311 +210,50 @@ export default function PartitionDetail() {
 
 
 
+// src/components/LoadingSpinner.jsx
 
+import React from 'react';
+import { CircularProgress, Box } from '@mui/material';
 
-
-
-
-
-We have 2 API 
-
-http://localhost:3001/api/occupancy/live-summary
-
-{
-  "success": true,
-  "today": {
-    "total": 750,     ------ This Total are Region Total ( Costa +rica + Angentina etc...)
-    "Employee": 650,
-    "Contractor": 99,
-    "TempBadge": 1
-  },
-  "realtime": {
-    "CR.Costa Rica Partition": {
-      "total": 19,  -------------This is realtime HeadCount Which is changes every seconds for Specxifice partation 
-      "Employee": 9,
-      "Contractor": 10,
-      "TempBadge": 0,
-      "floors": {
-        "Building A1": 6,
-        " Building B1": 2,
-        "Building A2": 2,
-        "Building B2": 2,
-        "Building E3": 1,
-        "Building B3": 1,
-        "Building F4": 1,
-        "Building E2": 2,
-        "Building E4": 2
-      }
-    },
-    "AR.Cordoba": {
-      "total": 2,
-      "Employee": 0,
-      "Contractor": 2,
-      "floors": {
-        "2nd Floor": 1,
-        "1st Floor": 1
-      }
-    },
-    "MX.Mexico City": {
-      "total": 12,
-      "Employee": 11,
-      "Contractor": 1,
-      "floors": {
-        "Floor 01": 12
-      }
-    },
-    "BR.Sao Paulo": {
-      "total": 4,
-      "Employee": 3,
-      "Contractor": 1,
-      "floors": {
-        "6th Floor": 4
-      }
-    }
-  },
-  "details": [              --------------------This are partation Details , Who is Actually present in live time -----I want display this details section in Floor Box like (Building A1 (Total 6)) then below table Which is display name , ID , Card Number, Swipe time , Door , For Current Floor 
-    {
-      "LocaleMessageTime": "2025-06-16T22:15:32.000Z",
-      "Dateonly": "2025-06-16",
-      "Swipe_Time": "22:15:32",
-      "EmployeeID": "W0022873",
-      "PersonGUID": "98DA6E7A-3EE1-47AA-B843-599EB1A6EF21",
-      "ObjectName1": "Hernandez, Sofia",
-      "Door": "LACA CR Shower Men Door",
-      "PersonnelType": "Contractor",
-      "CardNumber": "612791",
-      "Text5": "Santa Ana - Parque Empresarial",
-      "PartitionName2": "CR.Costa Rica Partition",
-      "AdmitCode": "Admit",
-      "Direction": "InDirection"
-    },
-
-
-
-
-Another Api is 
-
-http://localhost:3001/api/occupancy/history/CR.Costa%20Rica%20Partition  -------- We can Replace Partation name as per our requirnment 
-This Api Display 30 days Historical headcount 
-
-      "date": "2025-06-15",-----------date 
-      "day": "Sunday", -------------day
-      "region": {
-        "name": "CR.Costa Rica Partition", ---------Partation  Nam e
-        "total": 38, ------------------------This is Actually partation headcount for Specific day
-        "Employee": 23,
-        "Contractor": 15,
-        "TempBadge": 0
-      }
-    },
-    {
-      "date": "2025-06-16",
-      "day": "Monday",
-      "region": {
-        "name": "CR.Costa Rica Partition",
-        "total": 556, ------------------------same for all day for partastion Wise Headcount in ex -Today’s CR.Costa Rica Partition Headcount for there display   "total": 556,  this total and below Employe and Contractor details /
-        "Employee": 489,
-        "Contractor": 66,
-        "TempBadge": 1
-      }
-    }
-  ],
-  "details": [
-    {
-      "LocaleMessageTime": "2025-05-17T00:01:56.000Z",
-      "ObjectName1": "Hernandez, Sofia",
-      "Door": "LACA CR A3 Emergency Elevator Door",
-      "EmployeeID": "W0022873",
-      "Text5": "Santa Ana - Parque Empresarial",
-      "PartitionName2": "CR.Costa Rica Partition",
-      "PersonGUID": "98DA6E7A-3EE1-47AA-B843-599EB1A6EF21",
-      "PersonnelType": "Contractor",
-      "CardNumber": "612791",
-      "AdmitCode": "Admit",
-      "Direction": "OutDirection",
-      "SwipeDate": "2025-05-17T00:00:00.000Z"
-    },
-
-
-
-Now as per my request update below file carefully and give me updated files carefully
-
-
-
-
-// C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\PartitionDetail.jsx
-
-
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  Grid,
-  Link
-} from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import { fetchLiveSummary, fetchLiveDetails } from '../api/occupancy.service';
-
-export default function PartitionDetail() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-  const [summary, setSummary] = useState(null);
-  const [details, setDetails] = useState([]);
-  const [lastUpdate, setLastUpdate] = useState('');
-
-  useEffect(() => {
-    let timer;
-    const load = async () => {
-      const json = await fetchLiveSummary();
-      setSummary(json);
-      setDetails(json.details.filter(r =>
-        r.PartitionName2 === partition && r.Direction === 'InDirection'
-      ));
-      setLastUpdate(new Date().toLocaleTimeString());
-    };
-    load();
-    // refresh every second
-    timer = setInterval(load, 1000);
-    return () => clearInterval(timer);
-  }, [partition]);
-
-  if (!summary) {
-    return <Box sx={{ p: 4 }}><Typography>Loading…</Typography></Box>;
-  }
-
-//   const todayCount = summary.today;
- // Use the partition's realtime total as its "today" headcount
- const partToday = summary.realtime[partition] || { total:0, Employee:0, Contractor:0, TempBadge:0 };
-  const live = summary.realtime[partition] || { total:0, Employee:0, Contractor:0, TempBadge:0, floors:{} };
-
+export default function LoadingSpinner() {
   return (
-    <>
-      <Header />
-      <Container maxWidth={false} disableGutters sx={{ px:'10px', pt:1, pb:2 }}>
-        {/* Back + Page Title */}
-        <Box display="flex" alignItems="center" mb={0}>
-          <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
-        </Box>
-
-        {/* Two summary cards */}
-         {/* Two summary cards */}
-        <Box display="flex" alignItems="stretch" gap={2} sx={{ mb:2 }}>
-          <SummaryCard
-            title={`Today’s ${partition} Headcount`}
-            total={partToday.total}
-            stats={[
-              { label: 'Employees',   value: partToday.Employee },
-              { label: 'Contractors', value: partToday.Contractor },
-              ...(partToday.TempBadge != null
-                ? [{ label: 'Temp Badge', value: partToday.TempBadge }]
-                : [])
-            ]}
-            sx={{ flex:1, height:180 }}
-          />
-
-          <SummaryCard
-            title={`Live ${partition} Headcount`}
-            total={live.total}
-            stats={[
-              { label: 'Employees',   value: live.Employee },
-              { label: 'Contractors', value: live.Contractor },
-              ...(live.TempBadge != null
-                ? [{ label: 'Temp Badge', value: live.TempBadge }]
-                : [])
-            ]}
-            sx={{ flex:1, height:180 }}
-          />
-        </Box>
-
-
-        {/* Floor‐wise chart + last updated */}
-        <Box mb={2}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-            <Typography variant="h6">Live Floor Counts</Typography>
-            <Typography variant="body2" color="textSecondary">
-              Last updated: {lastUpdate}
-            </Typography>
-          </Box>
-          <ChartCard
-            title=""
-            data={Object.entries(live.floors).map(([floor, cnt])=>({ name:floor, value:cnt }))}
-            dataKey="value"
-            chartHeight={260}
-          />
-        </Box>
-
-        {/* Per‐floor detail boxes */}
-        <Typography variant="h6" gutterBottom>Floor Details</Typography>
-        <Grid container spacing={2}>
-          {Object.entries(live.floors).map(([floor, cnt])=>(
-            <Grid key={floor} item xs={12} md={6}>
-              <Box sx={{ border:'1px solid #FFC107', borderRadius:2, p:2, height:'100%' }}>
-                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                  {floor} (Total {cnt})
-                </Typography>
-                {details
-                  .filter(r => {
-                    /* match floor by lookup you already use; assuming r.floor was injected */
-                    return r.floor === floor;
-                  })
-                  .slice(0,25)
-                  .map(r => (
-                    <Box key={r.PersonGUID} display="flex" justifyContent="space-between" sx={{ mb:1, fontSize:'0.875rem' }}>
-                      <span>{r.ObjectName1}</span>
-                      <span>{r.PersonGUID.slice(-4)}</span>
-                      <span>{new Date(r.LocaleMessageTime).toLocaleTimeString()}</span>
-                      <span>{r.PersonnelType}</span>
-                      <span>{r.CardNumber}</span>
-                      <span>{r.Door}</span>
-                    </Box>
-                  ))
-                }
-                {cnt > 25 && (
-                  <Button size="small" onClick={()=>navigate(`/partition/${encodeURIComponent(partition)}/floor/${encodeURIComponent(floor)}`)}>
-                    See more…
-                  </Button>
-                )}
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
-      <footer style={{
-        backgroundColor: '#000000',
-        color: '#FFC107',
-        padding: '1.5rem 0',
-        textAlign: 'center',
-        marginTop: 0,
-        borderTop: '2px solid #FFC107',
-        fontSize: '0.95rem',
-        lineHeight: '1.6'
-      }}>
-        <div><strong>Global Security Operations Center</strong><br/>
-          Live HeadCount against Occupancy dashboard for Western Union — Real-time occupancy, floor activity, and personnel insights.
-        </div>
-        <div style={{ marginTop: '0.75rem' }}>
-          Contact us:&nbsp;
-          <a href="mailto:GSOC-GlobalSecurityOperationCenter.SharedMailbox@westernunion.com"
-             style={{ color: '#FFC107', textDecoration: 'underline' }}>
-            GSOC Mail
-          </a>&nbsp;|&nbsp;
-          Landline:&nbsp;<span style={{ color: '#FFC107' }}>+91-020-67632394</span>
-        </div>
-      </footer>
-
-
-
-
-      {/* <Footer /> */}
-    </>
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      height="100%"
+    >
+      <CircularProgress />
+    </Box>
   );
 }
+
+
+
+
+
+
+
+// src/api/occupancy.service.js
+
+// Point to your backend when no REACT_APP_API_BASE is set
+const BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
+
+export async function fetchLiveSummary() {
+  const res = await fetch(`${BASE}/api/occupancy/live-summary`);
+  if (!res.ok) throw new Error(`Live summary fetch failed: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchHistory(location) {
+  const url = location
+    ? `${BASE}/api/occupancy/history/${encodeURIComponent(location)}`
+    : `${BASE}/api/occupancy/history`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`History fetch failed: ${res.status}`);
+  return res.json();
+}
+
 
 
 
