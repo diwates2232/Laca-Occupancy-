@@ -1,3 +1,15 @@
+Now all is looking good just few improvenemnt need to update 
+Floor Details add serch option just side of the floor with using name or Employee ID ,
+
+And Ordered box as per count , for all boxes limit show only 20 rows and add see more details option
+and in one row adjust strickly 3 boxes with same height and Width , need to autoresize as per Desktop or laptop Screen size 
+i need to fix Header and footer when i scroll Ui scroll only components not header and footer strickly
+
+check below files carefully and update all files carefully and share me updatede files
+
+Dont make unencessary changes 
+
+
 // src/pages/PartitionDetail.jsx
 import React, { useEffect, useState, useMemo } from "react";
 import {
@@ -185,7 +197,7 @@ export default function PartitionDetail() {
                   <Table size="small">
                     <TableHead>
                       <TableRow>
-                        {["Emp ID", "Name", "Swipe Time", "Type", "Card #", "Door"].map(
+                        {["Emp ID", "Name", "Swipe Time", "Type", "Card ", "Door"].map(
                           (h) => (
                             <TableCell key={h} sx={{ fontWeight: "bold" }}>
                               {h}
@@ -240,211 +252,81 @@ export default function PartitionDetail() {
 
 
 
+//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\ZoneDetailsTable.jsx
+import React, { useState, useMemo } from 'react';
+// import './ZoneDetailsTable.css'; // copy over your CSS from Pune
 
+export default function ZoneDetailsTable({ data = {} }) {
+  const [searchTerm, setSearchTerm] = useState('');
 
-// src/pages/PartitionDetail.jsx
-import React, { useEffect, useState, useMemo } from "react";
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  Grid,
-  CircularProgress,
-  TableContainer,
-  Paper,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-} from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
-import SummaryCard from "../components/SummaryCard";
-import ChartCard from "../components/ChartCard";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import LoadingSpinner from "../components/LoadingSpinner";
-import { fetchLiveSummary, fetchHistory } from "../api/occupancy.service";
-// import { lookupFloor } from "../utils/doorMap";
- import { lookupFloor } from "../utils/floorLookup";
+  // 1) sort floors by descending count
+  const sortedFloors = useMemo(() => {
+    return Object.entries(data).sort(([, listA], [, listB]) => listB.length - listA.length);
+  }, [data]);
 
-export default function PartitionDetail() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-  const [liveSummary, setLiveSummary] = useState(null);
-  const [history, setHistory] = useState(null);
-  const [historyLoading, setHistoryLoading] = useState(true);
-  const [details, setDetails] = useState([]);
-  const [lastUpdate, setLastUpdate] = useState("");
+  // 2) filter predicate
+  const matches = emp =>
+    emp.ObjectName1.toLowerCase().includes(searchTerm.trim().toLowerCase());
 
-  // Live summary every second
-  useEffect(() => {
-    let timer;
-    const loadLive = async () => {
-      const json = await fetchLiveSummary();
-      setLiveSummary(json);
-
-      // inject `floor` into each detail via our lookup
-      const det = json.details
-        .filter(r => r.PartitionName2 === partition && r.Direction === "InDirection")
-        .map(r => ({
-          ...r,
-          floor: lookupFloor(r.PartitionName2, r.Door, r.Direction)
-        }));
-      setDetails(det);
-
-      setLastUpdate(new Date().toLocaleTimeString());
-    };
-    loadLive();
-    timer = setInterval(loadLive, 1000);
-    return () => clearInterval(timer);
-  }, [partition]);
-
-  // Historical (today's) headcount once
-  useEffect(() => {
-    setHistoryLoading(true);
-    fetchHistory(partition).then(json => {
-      setHistory(json);
-      setHistoryLoading(false);
-    });
-  }, [partition]);
-
-  if (!liveSummary || !history) return <LoadingSpinner />;
-
-  // derive counts
-  const lastDay = history.summaryByDate.slice(-1)[0];
-  const partToday = lastDay.region;
-  const live = liveSummary.realtime[partition] || {
-    total: 0,
-    Employee: 0,
-    Contractor: 0,
-    TempBadge: 0,
-    floors: {}
-  };
-
-  // group details by floor
-  const floorMap = useMemo(() => {
-    const m = {};
-    details.forEach(r => {
-      if (!m[r.floor]) m[r.floor] = [];
-      m[r.floor].push(r);
-    });
-    return m;
-  }, [details]);
+  if (sortedFloors.length === 0) {
+    return <p>No floor details available.</p>;
+  }
 
   return (
-    <>
-      <Header />
-      <Container maxWidth={false} disableGutters sx={{ px: 2, pt: 2, pb: 4 }}>
-        {/* Back + Title */}
-        <Box display="flex" alignItems="center" mb={2}>
-          <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
-          <Typography variant="h6" sx={{ ml: 2 }}>
-            {partition.replace("CR.Costa Rica Partition", "Costa Rica")}
-          </Typography>
-        </Box>
+    <div className="zone-cards">
+      <div style={{ marginBottom: 16, textAlign: 'right' }}>
+        <input
+          type="text"
+          placeholder="Search employee..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          style={{
+            padding: '6px 12px',
+            fontSize: '0.9rem',
+            borderRadius: 4,
+            border: '1px solid #ccc'
+          }}
+        />
+      </div>
 
-        {/* Summary Cards */}
-        <Box display="flex" gap={2} mb={4}>
-          <SummaryCard
-            title={`Today’s ${partition} Headcount`}
-            total={historyLoading ? 0 : partToday.total}
-            stats={[
-              {
-                label: "Employees",
-                value: historyLoading ? <CircularProgress size={20}/> : partToday.Employee
-              },
-              {
-                label: "Contractors",
-                value: historyLoading ? <CircularProgress size={20}/> : partToday.Contractor
-              },
-              {
-                label: "Temp Badge",
-                value: historyLoading ? <CircularProgress size={20}/> : partToday.TempBadge
-              }
-            ]}
-            sx={{ flex: 1, height: 180 }}
-          />
-          <SummaryCard
-            title={`Live ${partition} Headcount`}
-            total={live.total}
-            stats={[
-              { label: "Employees", value: live.Employee },
-              { label: "Contractors", value: live.Contractor },
-              { label: "Temp Badge", value: live.TempBadge }
-            ]}
-            sx={{ flex: 1, height: 180 }}
-          />
-        </Box>
+      {sortedFloors.map(([floor, emps]) => {
+        const filtered = emps.filter(matches);
+        if (!filtered.length) return null;
 
-        {/* Floor‐wise Chart */}
-        <Box mb={4}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-            <Typography variant="h6">Live Floor Counts</Typography>
-            <Typography variant="body2" color="textSecondary">
-              Last updated: {lastUpdate}
-            </Typography>
-          </Box>
-          <ChartCard
-            title=""
-            data={Object.entries(live.floors).map(([floor, cnt]) => ({
-              name: floor.trim(),
-              value: cnt
-            }))}
-            chartHeight={260}
-          />
-        </Box>
-
-        {/* Floor Details: two per row */}
-        <Typography variant="h6" gutterBottom>Floor Details</Typography>
-        <Grid container spacing={2}>
-          {Object.entries(floorMap).map(([floor, emps]) => (
-            <Grid key={floor} item xs={12} md={6}>
-              <Box sx={{ border: "1px solid #FFC107", borderRadius: 2, p: 2 }}>
-                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                  {floor} (Total {emps.length})
-                </Typography>
-                <TableContainer component={Paper} variant="outlined" sx={{ mb: 1 }}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        {["Emp ID","Name","Swipe Time","Type","Card #","Door"].map(h => (
-                          <TableCell key={h} sx={{ fontWeight: "bold" }}>{h}</TableCell>
-                        ))}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {emps.slice(0, 25).map((r, i) => (
-                        <TableRow key={`${r.PersonGUID}-${i}`}>
-                          <TableCell>{r.EmployeeID}</TableCell>
-                          <TableCell>{r.ObjectName1}</TableCell>
-                          <TableCell>{new Date(r.LocaleMessageTime).toLocaleTimeString()}</TableCell>
-                          <TableCell>{r.PersonnelType}</TableCell>
-                          <TableCell>{r.CardNumber}</TableCell>
-                          <TableCell>{r.Door}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                {emps.length > 25 && (
-                  <Button
-                    size="small"
-                    onClick={() =>
-                      navigate(`/partition/${encodeURIComponent(partition)}/floor/${encodeURIComponent(floor)}`)
-                    }
-                  >
-                    See more…
-                  </Button>
-                )}
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
-      <Footer />
-    </>
+        return (
+          <div key={floor} className="zone-card">
+            <div className="zone-header">
+              <h3>{floor.trim()}</h3>
+              <span className="zone-badge">Total: {filtered.length}</span>
+            </div>
+            <table className="zone-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Emp ID</th>
+                  <th>Swipe Time</th>
+                  <th>Type</th>
+                  <th>Card</th>
+                  <th>Door</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((r, i) => (
+                  <tr key={`${r.PersonGUID}-${i}`}>
+                    <td>{r.ObjectName1}</td>
+                    <td>{r.EmployeeID}</td>
+                    <td>{new Date(r.LocaleMessageTime).toLocaleTimeString()}</td>
+                    <td>{r.PersonnelType}</td>
+                    <td>{r.CardNumber}</td>
+                    <td>{r.Door}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -454,3 +336,71 @@ export default function PartitionDetail() {
 
 
 
+// src/components/Header.jsx
+import React from 'react';
+import { AppBar, Toolbar, Box, Typography, Select, MenuItem } from '@mui/material';
+import { useNavigate, useLocation } from 'react-router-dom';
+import WuLogo from '../assets/wu-logo.png';
+import LacaFlag from '../assets/laca-flag.png';
+import { partitionList } from '../services/occupancy.service';
+
+export default function Header() {
+  const navigate = useNavigate();
+  const loc = useLocation();
+  const currentPartition = loc.pathname.startsWith('/partition/')
+    ? decodeURIComponent(loc.pathname.replace('/partition/',''))
+    : '';
+
+  return (
+    <AppBar position="static" color="primary" sx={{ mb: 2 }}>
+      <Toolbar sx={{ justifyContent: 'space-between' }}>
+        <Box display="flex" alignItems="center">
+          <Box component="img" src={WuLogo} alt="WU Logo" sx={{ height: 36, mr: 2 }} />
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+             Western Union – LACA
+            {currentPartition && <> • {currentPartition.replace('CR.Costa Rica Partition','Costa Rica')}</>}
+          </Typography>
+        </Box>
+        <Box display="flex" alignItems="center">
+          <Select
+            size="small"
+            value={currentPartition}
+            displayEmpty
+            onChange={e => {
+              const p = e.target.value;
+              if (p) navigate(`/partition/${encodeURIComponent(p)}`);
+              else navigate('/');
+            }}
+            sx={{ bgcolor: 'background.paper', mr: 2 }}
+          >
+            <MenuItem value="">— Select Partition —</MenuItem>
+            {partitionList.map(p => (
+              <MenuItem key={p} value={p}>{p.replace('Partition','')}</MenuItem>
+            ))}
+          </Select>
+          <Box component="img" src={LacaFlag} alt="LACA Flag" sx={{ height: 30 }} />
+        </Box>
+      </Toolbar>
+    </AppBar>
+  );
+}
+
+
+
+
+
+
+// src/components/Footer.jsx
+
+import React from 'react';
+import { Box, Typography } from '@mui/material';
+
+export default function Footer() {
+  return (
+    <Box component="footer" p={2} textAlign="center">
+      <Typography variant="body2" color="textSecondary">
+        © {new Date().getFullYear()} Western Union. All rights reserved.
+      </Typography>
+    </Box>
+  );
+}
