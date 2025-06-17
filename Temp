@@ -1,4 +1,18 @@
-// src/pages/PartitionDetail.jsx
+Read file line by line and solve the error ,
+
+ERROR
+Objects are not valid as a React child (found: object with keys {label, value}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (http://localhost:3000/static/js/bundle.js:54783:11)
+    at createChild (http://localhost:3000/static/js/bundle.js:54876:9)
+    at reconcileChildrenArray (http://localhost:3000/static/js/bundle.js:54976:66)
+    at reconcileChildFibersImpl (http://localhost:3000/static/js/bundle.js:55083:109)
+    at http://localhost:3000/static/js/bundle.js:55110:31
+    at reconcileChildren (http://localhost:3000/static/js/bundle.js:55372:47)
+    at beginWork (http://localhost:3000/static/js/bundle.js:56137:16)
+    at runWithFiberInDEV (http://localhost:3000/static/js/bundle.js:51553:68)
+    at performUnitOfWork (http://localhost:3000/static/js/bundle.js:58134:93)
+    at workLoopSync (http://localhost:3000/static/js/bundle.js:58027:38)
+
 import React, { useEffect, useState } from 'react';
 import {
   Container,
@@ -6,343 +20,8 @@ import {
   Typography,
   Button,
   Grid,
-+ CircularProgress
-} from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import LoadingSpinner from '../components/LoadingSpinner';
-
-import {
-  fetchLiveSummary,
-  fetchHistory
-} from '../api/occupancy.service';
-
-export default function PartitionDetail() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-  const [liveSummary, setLiveSummary] = useState(null);
-  const [history, setHistory]         = useState(null);
-  const [historyLoading, setHistoryLoading] = useState(true);
-  const [details, setDetails]         = useState([]);
-  const [lastUpdate, setLastUpdate]   = useState('');
-
-  // Live summary every second...
-  useEffect(() => {
-    let timer;
-    const loadLive = async () => {
-      const json = await fetchLiveSummary();
-      setLiveSummary(json);
-      setDetails(
-        json.details.filter(
-          r => r.PartitionName2 === partition && r.Direction === 'InDirection'
-        )
-      );
-      setLastUpdate(new Date().toLocaleTimeString());
-    };
-    loadLive();
-    timer = setInterval(loadLive, 1000);
-    return () => clearInterval(timer);
-  }, [partition]);
-
-  // Historical headcount once per partition
-  useEffect(() => {
-    setHistoryLoading(true);
-    fetchHistory(partition).then(json => {
-      setHistory(json);
-      setHistoryLoading(false);
-    });
-  }, [partition]);
-
-  if (!liveSummary || !history) {
-    return <LoadingSpinner />;
-  }
-
-  // derive counts
-  const lastDay = history.summaryByDate.slice(-1)[0];
-  const partToday = lastDay.region;
-  const live = liveSummary.realtime[partition] || {
-    total: 0, Employee: 0, Contractor: 0, TempBadge: 0, floors: {}
-  };
-
-  return (
-    <>
-      <Header />
-      <Container maxWidth={false} disableGutters sx={{ px: '20px', pt: 2, pb: 4 }}>
-        {/* Back + Title */}
-        <Box display="flex" alignItems="center" mb={2}>
-          <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
-          <Typography variant="h6" sx={{ ml: 2 }}>
-            {partition.replace('CR.Costa Rica Partition', 'Costa Rica')}
-          </Typography>
-        </Box>
-
-        {/* Summary Cards */}
-        <Box display="flex" alignItems="stretch" gap={2} mb={4}>
-+         {/* Today’s headcount - show zeros or inline spinner while loading */}
-          <SummaryCard
-            title={`Today’s ${partition} Headcount`}
--           total={partToday.total}
--           stats={[
--             { label: 'Employees', value: partToday.Employee },
--             { label: 'Contractors', value: partToday.Contractor },
--             { label: 'Temp Badge', value: partToday.TempBadge }
--           ]}
-+           total={historyLoading ? 0 : partToday.total}
-+           stats={[
-+             {
-+               label: 'Employees',
-+               value: historyLoading
-+                 ? <CircularProgress size={20} />
-+                 : partToday.Employee
-+             },
-+             {
-+               label: 'Contractors',
-+               value: historyLoading
-+                 ? <CircularProgress size={20} />
-+                 : partToday.Contractor
-+             },
-+             {
-+               label: 'Temp Badge',
-+               value: historyLoading
-+                 ? <CircularProgress size={20} />
-+                 : partToday.TempBadge
-+             }
-+           ]}
-            sx={{ flex: 1, height: 180 }}
-          />
-
-          {/* Live headcount */}
-          <SummaryCard
-            title={`Live ${partition} Headcount`}
-            total={live.total}
-            stats={[
-              { label: 'Employees', value: live.Employee },
-              { label: 'Contractors', value: live.Contractor },
-              { label: 'Temp Badge', value: live.TempBadge }
-            ]}
-            sx={{ flex: 1, height: 180 }}
-          />
-        </Box>
-
-        {/* ...rest unchanged */}
-      </Container>
-      <Footer />
-    </>
-  );
-}
-
-
-
-
-
-
-
-
-// src/pages/PartitionDetail.jsx
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  Grid,
-+ Skeleton
-} from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import LoadingSpinner from '../components/LoadingSpinner';
-
-import {
-  fetchLiveSummary,
-  fetchHistory
-} from '../api/occupancy.service';
-
-export default function PartitionDetail() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-  const [liveSummary, setLiveSummary] = useState(null);
-  const [history, setHistory]         = useState(null);
-+ const [historyLoading, setHistoryLoading] = useState(true);
-  const [details, setDetails]         = useState([]);
-  const [lastUpdate, setLastUpdate]   = useState('');
-
-  // Live summary every second
-  useEffect(() => {
-    let timer;
-    const loadLive = async () => {
-      const json = await fetchLiveSummary();
-      setLiveSummary(json);
-      setDetails(
-        json.details.filter(
-          r => r.PartitionName2 === partition && r.Direction === 'InDirection'
-        )
-      );
-      setLastUpdate(new Date().toLocaleTimeString());
-    };
-    loadLive();
-    timer = setInterval(loadLive, 1000);
-    return () => clearInterval(timer);
-  }, [partition]);
-
-  // Historical (today's) headcount once per partition change
-  useEffect(() => {
-+   setHistoryLoading(true);
-    fetchHistory(partition).then(json => {
-      setHistory(json);
-+     setHistoryLoading(false);
-    });
-  }, [partition]);
-
-  // until both calls have started, show full‐page spinner
-  if (!liveSummary || !history) {
-    return <LoadingSpinner />;
-  }
-
-  // derive counts
-  const lastDay = history.summaryByDate.slice(-1)[0];
-  const partToday = lastDay.region;
-  const live = liveSummary.realtime[partition] || {
-    total: 0, Employee: 0, Contractor: 0, TempBadge: 0, floors: {}
-  };
-
-  return (
-    <>
-      <Header />
-      <Container maxWidth={false} disableGutters sx={{ px: '20px', pt: 2, pb: 4 }}>
-        {/* Back + Title */}
-        <Box display="flex" alignItems="center" mb={2}>
-          <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
-          <Typography variant="h6" sx={{ ml: 2 }}>
-            {partition.replace('CR.Costa Rica Partition', 'Costa Rica')}
-          </Typography>
-        </Box>
-
-        {/* Summary Cards */}
-        <Box display="flex" alignItems="stretch" gap={2} mb={4}>
-+         {/* Today’s headcount: show skeleton until history arrives */}
-+         {historyLoading ? (
-+           <Skeleton variant="rectangular" sx={{ flex: 1, height: 180 }} />
-+         ) : (
-            <SummaryCard
-              title={`Today’s ${partition} Headcount`}
-              total={partToday.total}
-              stats={[
-                { label: 'Employees',   value: partToday.Employee },
-                { label: 'Contractors', value: partToday.Contractor },
-                { label: 'Temp Badge',  value: partToday.TempBadge }
-              ]}
-              sx={{ flex: 1, height: 180 }}
-            />
-+         )}
-
-          {/* Live headcount always renders immediately */}
-          <SummaryCard
-            title={`Live ${partition} Headcount`}
-            total={live.total}
-            stats={[
-              { label: 'Employees',   value: live.Employee },
-              { label: 'Contractors', value: live.Contractor },
-              { label: 'Temp Badge',  value: live.TempBadge }
-            ]}
-            sx={{ flex: 1, height: 180 }}
-          />
-        </Box>
-
-        {/* Floor‐wise chart + last updated */}
-        <Box mb={4}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-            <Typography variant="h6">Live Floor Counts</Typography>
-            <Typography variant="body2" color="textSecondary">
-              Last updated: {lastUpdate}
-            </Typography>
-          </Box>
-          <ChartCard
-            title=""
-            data={Object.entries(live.floors).map(([floor, cnt]) => ({
-              name: floor.trim(),
-              value: cnt
-            }))}
-            chartHeight={260}
-          />
-        </Box>
-
-        {/* Floor Details */}
-        <Typography variant="h6" gutterBottom>Floor Details</Typography>
-        <Grid container spacing={2}>
-          {Object.entries(live.floors).map(([floor, cnt]) => (
-            <Grid key={floor} item xs={12} md={6}>
-              <Box
-                sx={{
-                  border: '1px solid #FFC107',
-                  borderRadius: 2,
-                  p: 2,
-                  height: '100%'
-                }}
-              >
-                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                  {floor.trim()} (Total {cnt})
-                </Typography>
-                {details
-                  .filter(r => r.floor === floor.trim())
-                  .slice(0, 25)
-                  .map(r => (
-                    <Box
-                      key={r.PersonGUID}
-                      display="flex"
-                      justifyContent="space-between"
-                      sx={{ mb: 1, fontSize: '0.875rem' }}
-                    >
-                      <span>{r.ObjectName1}</span>
-                      <span>{r.EmployeeID}</span>
-                      <span>{new Date(r.LocaleMessageTime).toLocaleTimeString()}</span>
-                      <span>{r.PersonnelType}</span>
-                      <span>{r.CardNumber}</span>
-                      <span>{r.Door}</span>
-                    </Box>
-                  ))}
-                {cnt > 25 && (
-                  <Button
-                    size="small"
-                    onClick={() =>
-                      navigate(
-                        `/partition/${encodeURIComponent(
-                          partition
-                        )}/floor/${encodeURIComponent(floor.trim())}`
-                      )
-                    }
-                  >
-                    See more…
-                  </Button>
-                )}
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
-      <Footer />
-    </>
-  );
-}
-
-
-
-
-
-
-
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  Grid
+   CircularProgress
+//   Skeleton
 } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import SummaryCard from '../components/SummaryCard';
@@ -361,6 +40,7 @@ export default function PartitionDetail() {
   const navigate = useNavigate();
   const [liveSummary, setLiveSummary] = useState(null);
   const [history, setHistory] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [details, setDetails] = useState([]);
   const [lastUpdate, setLastUpdate] = useState('');
 
@@ -384,8 +64,10 @@ export default function PartitionDetail() {
 
   // Historical (today's) headcount once
   useEffect(() => {
+    setHistoryLoading(true);
     fetchHistory(partition).then(json => {
       setHistory(json);
+      setHistoryLoading(false);
     });
   }, [partition]);
 
@@ -419,7 +101,39 @@ export default function PartitionDetail() {
         </Box>
 
         {/* Summary Cards */}
-        <Box display="flex" alignItems="stretch" gap={2} mb={4}>
+        {/* <Box display="flex" alignItems="stretch" gap={2} mb={4}> */}
+ <Box display="flex" alignItems="stretch" gap={2} mb={4}>
+    {/* Today’s headcount - show zeros or inline spinner while loading */} 
+    
+         {/* {historyLoading ? (
+           <Skeleton variant="rectangular" sx={{ flex: 1, height: 180 }} />
+         ) : ( */}
+
+
+           total={historyLoading ? 0 : partToday.total}
+           stats={[
+             {
+               label: 'Employees',
+               value: historyLoading
+                 ? <CircularProgress size={20} />
+                 : partToday.Employee
+             },
+             {
+               label: 'Contractors',
+               value: historyLoading
+                 ? <CircularProgress size={20} />
+                 : partToday.Contractor
+             },
+             {
+               label: 'Temp Badge',
+               value: historyLoading
+                 ? <CircularProgress size={20} />
+                 : partToday.TempBadge
+             }
+           ]}
+
+
+
           <SummaryCard
             title={`Today’s ${partition} Headcount`}
             total={partToday.total}
@@ -430,6 +144,7 @@ export default function PartitionDetail() {
             ]}
             sx={{ flex: 1, height: 180 }}
           />
+          
           <SummaryCard
             title={`Live ${partition} Headcount`}
             total={live.total}
@@ -518,317 +233,3 @@ export default function PartitionDetail() {
     </>
   );
 }
-
-
-
-
-
-
-import React from 'react';
-import { CircularProgress, Box } from '@mui/material';
-
-export default function LoadingSpinner() {
-  return (
-    <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      height="60vh"
-    >
-      <CircularProgress />
-    </Box>
-  );
-}
-
-
-
-
-
-
-
-
-const BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
-
-export async function fetchLiveSummary() {
-  const res = await fetch(`${BASE}/api/occupancy/live-summary`);
-  if (!res.ok) throw new Error(`Live summary fetch failed: ${res.status}`);
-  return res.json();
-}
-
-export async function fetchHistory(location) {
-  const url = location
-    ? `${BASE}/api/occupancy/history/${encodeURIComponent(location)}`
-    : `${BASE}/api/occupancy/history`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`History fetch failed: ${res.status}`);
-  return res.json();
-}
-
-
-
-
-
-
-
-
-
-// src/pages/PartitionDetail.jsx
-
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  Grid,
-  Link as MuiLink
-} from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-
-import {
-  fetchLiveSummary,
-  fetchHistory     // ← correct import
-} from '../api/occupancy.service';
-
-
-export default function PartitionDetail() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-  const [liveSummary, setLiveSummary] = useState(null);
-  const [history, setHistory] = useState(null);
-  const [details, setDetails] = useState([]);
-  const [lastUpdate, setLastUpdate] = useState('');
-
-  // Load live‐summary every second
-  useEffect(() => {
-    let timer;
-    const loadLive = async () => {
-      const json = await fetchLiveSummary();
-      setLiveSummary(json);
-      setDetails(
-        json.details.filter(
-          r => r.PartitionName2 === partition && r.Direction === 'InDirection'
-        )
-      );
-      setLastUpdate(new Date().toLocaleTimeString());
-    };
-    loadLive();
-    timer = setInterval(loadLive, 1000);
-    return () => clearInterval(timer);
-  }, [partition]);
-
-
-  // Load historical (for today’s headcount)
-  useEffect(() => {
-    fetchHistory(partition).then(json => {
-      setHistory(json);
-    });
-  }, [partition]);
-
-
-
-
-  if (!liveSummary || !history) {
-    return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
-        <Typography>Loading…</Typography>
-      </Box>
-    );
-  }
-
-  // Today's headcount from the last historical entry
-  const last = history.summaryByDate.slice(-1)[0];
-  const partToday = last.region;
-
-  // Live headcount
-  const live = liveSummary.realtime[partition] || {
-    total: 0,
-    Employee: 0,
-    Contractor: 0,
-    TempBadge: 0,
-    floors: {}
-  };
-
-  return (
-    <>
-      <Header />
-      <Container
-        maxWidth={false}
-        disableGutters
-        sx={{ px: '20px', pt: 2, pb: 4 }}
-      >
-        {/* Back Button & Title */}
-        <Box display="flex" alignItems="center" mb={2}>
-          <Button size="small" onClick={() => navigate(-1)}>
-            ← Back
-          </Button>
-          <Typography variant="h6" sx={{ ml: 2 }}>
-            {partition.replace('CR.Costa Rica Partition', 'Costa Rica')}
-          </Typography>
-        </Box>
-
-        {/* Summary Cards */}
-        <Box display="flex" alignItems="stretch" gap={2} mb={4}>
-          <Box flex={1}>
-            <SummaryCard
-              title={`Today’s ${partition} Headcount`}
-              total={partToday.total}
-              stats={[
-                { label: 'Employees', value: partToday.Employee },
-                { label: 'Contractors', value: partToday.Contractor },
-                { label: 'Temp Badge', value: partToday.TempBadge }
-              ]}
-              sx={{ height: 180 }}
-            />
-          </Box>
-          <Box flex={1}>
-            <SummaryCard
-              title={`Live ${partition} Headcount`}
-              total={live.total}
-              stats={[
-                { label: 'Employees', value: live.Employee },
-                { label: 'Contractors', value: live.Contractor },
-                { label: 'Temp Badge', value: live.TempBadge }
-              ]}
-              sx={{ height: 180 }}
-            />
-          </Box>
-        </Box>
-
-        {/* Floor‐wise Chart */}
-        <Box mb={4}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-            <Typography variant="h6">Live Floor Counts</Typography>
-            <Typography variant="body2" color="textSecondary">
-              Last updated: {lastUpdate}
-            </Typography>
-          </Box>
-          <ChartCard
-            title=""
-            data={Object.entries(live.floors).map(([floor, cnt]) => ({
-              name: floor.trim(),
-              value: cnt
-            }))}
-            chartHeight={260}
-          />
-        </Box>
-
-        {/* Floor Details Boxes */}
-        <Typography variant="h6" gutterBottom>
-          Floor Details
-        </Typography>
-        <Grid container spacing={2}>
-          {Object.entries(live.floors).map(([floor, cnt]) => (
-            <Grid key={floor} item xs={12} md={6}>
-              <Box
-                sx={{
-                  border: '1px solid #FFC107',
-                  borderRadius: 2,
-                  p: 2,
-                  height: '100%'
-                }}
-              >
-                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                  {floor.trim()} (Total {cnt})
-                </Typography>
-                {details
-                  .filter(r => {
-                    // assume you have injected a `floor` field or lookupFloor logic
-                    return r.floor === floor.trim();
-                  })
-                  .slice(0, 25)
-                  .map(r => (
-                    <Box
-                      key={r.PersonGUID}
-                      display="flex"
-                      justifyContent="space-between"
-                      sx={{ mb: 1, fontSize: '0.875rem' }}
-                    >
-                      <span>{r.ObjectName1}</span>
-                      <span>{r.EmployeeID}</span>
-                      <span>{new Date(r.LocaleMessageTime).toLocaleTimeString()}</span>
-                      <span>{r.PersonnelType}</span>
-                      <span>{r.CardNumber}</span>
-                      <span>{r.Door}</span>
-                    </Box>
-                  ))}
-                {cnt > 25 && (
-                  <Button
-                    size="small"
-                    onClick={() =>
-                      navigate(
-                        `/partition/${encodeURIComponent(
-                          partition
-                        )}/floor/${encodeURIComponent(floor.trim())}`
-                      )
-                    }
-                  >
-                    See more…
-                  </Button>
-                )}
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
-      <Footer />
-    </>
-  );
-}
-
-
-
-
-
-// src/components/LoadingSpinner.jsx
-
-import React from 'react';
-import { CircularProgress, Box } from '@mui/material';
-
-export default function LoadingSpinner() {
-  return (
-    <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      height="100%"
-    >
-      <CircularProgress />
-    </Box>
-  );
-}
-
-
-
-
-
-
-
-// src/api/occupancy.service.js
-
-// Point to your backend when no REACT_APP_API_BASE is set
-const BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
-
-export async function fetchLiveSummary() {
-  const res = await fetch(`${BASE}/api/occupancy/live-summary`);
-  if (!res.ok) throw new Error(`Live summary fetch failed: ${res.status}`);
-  return res.json();
-}
-
-export async function fetchHistory(location) {
-  const url = location
-    ? `${BASE}/api/occupancy/history/${encodeURIComponent(location)}`
-    : `${BASE}/api/occupancy/history`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`History fetch failed: ${res.status}`);
-  return res.json();
-}
-
-
-
-
-
