@@ -1,65 +1,155 @@
-<Box display="flex" alignItems="stretch" gap={2} mb={4}>
-  {/* Today’s headcount card */}
-  <SummaryCard
-    title={`Today’s ${partition} Headcount`}
-    total={historyLoading ? 0 : partToday.total}
-    stats={[
-      {
-        label: 'Employees',
-        value: historyLoading
-          ? <CircularProgress size={20} />
-          : partToday.Employee
-      },
-      {
-        label: 'Contractors',
-        value: historyLoading
-          ? <CircularProgress size={20} />
-          : partToday.Contractor
-      },
-      {
-        label: 'Temp Badge',
-        value: historyLoading
-          ? <CircularProgress size={20} />
-          : partToday.TempBadge
-      }
-    ]}
-    sx={{ flex: 1, height: 180 }}
-  />
+Let refer both file carefully and update as per details page as per requirnment 
 
-  {/* Live headcount card */}
-  <SummaryCard
-    title={`Live ${partition} Headcount`}
-    total={live.total}
-    stats={[
-      { label: 'Employees',   value: live.Employee },
-      { label: 'Contractors', value: live.Contractor },
-      { label: 'Temp Badge',  value: live.TempBadge }
-    ]}
-    sx={{ flex: 1, height: 180 }}
-  />
-</Box>
+C:\Users\W0024618\Desktop\swipeData\client\src\pages\ZoneDeatailsPage.jsx
+
+import React, { useState, useMemo } from 'react';
+import './ZoneDetailsTable.css';
+
+function ZoneDetailsTable({ data = {}, searchTerm: outerSearch = '' }) {
+  const [searchTerm, setSearchTerm] = useState(outerSearch);
+
+  // 1) Sort zones by descending count (memoized)
+  const sortedEntries = useMemo(() => {
+    return Object.entries(data).sort(([, aList], [, bList]) => bList.length - aList.length);
+  }, [data]);
+
+  // 2) Filter predicate
+  const matchesSearch = (emp) =>
+    emp.ObjectName1.toLowerCase().includes(searchTerm.trim().toLowerCase());
+
+  // 3) Handler for search input
+  const handleSearchChange = (e) => setSearchTerm(e.target.value);
+
+  if (!sortedEntries.length) {
+    return <p>No zone detail data available.</p>;
+  }
+
+  return (
+    <div className="zone-cards">
+      <div style={{ marginBottom: '1rem', textAlign: 'right' }}>
+        <input
+          type="text"
+          placeholder="Search employee..."
+          value={searchTerm}
+          onChange={handleSearchChange}
+          style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem', borderRadius: 4, border: '1px solid #ccc' }}
+        />
+      </div>
+
+      {sortedEntries.map(([zone, emps]) => {
+        const filteredEmps = emps.filter(matchesSearch);
+        if (filteredEmps.length === 0) return null;
+
+        return (
+          <div key={zone} className="zone-card">
+            <div className="zone-header">
+              <h3>{zone}</h3>
+              <span className="zone-badge">Total: {filteredEmps.length}</span>
+            </div>
+            <table className="zone-table">
+              <thead>
+                <tr>
+                  <th>Name</th><th>Swipe Time</th><th>Type</th><th>Door Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredEmps.map((emp, i) => (
+                  <tr key={`${emp.EmployeeID}-${i}`}>
+                    <td>{emp.ObjectName1}</td>
+                    <td>{emp.Swipe_Time}</td>
+                    <td>{emp.PersonnelType}</td>
+                    <td>{emp.door}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export default React.memo(ZoneDetailsTable);
 
 
 
 
 
+// src/components/ZoneDetailsTable.jsx
+
+
+import React, { useMemo } from 'react';
+import './ZoneDetailsTable.css';
+
+export default function ZoneDetailsTable({ data = {}, searchTerm = '' }) {
+  // 1) Sort zones by descending count
+  const sortedEntries = useMemo(() => {
+    return Object.entries(data).sort(([, aList], [, bList]) => bList.length - aList.length);
+  }, [data]);
+
+  // 2) Filter predicate (case‐insensitive)
+  const matchesSearch = (emp) =>
+    emp.ObjectName1.toLowerCase().includes(searchTerm.trim().toLowerCase());
+
+  if (!sortedEntries.length) {
+    return <p>No zone detail data available.</p>;
+  }
+
+
+  return (
+    <div className="zone-cards">
+      {sortedEntries.map(([zone, emps]) => {
+        // 3) Filter employees in this zone by searchTerm
+        const filteredEmps = emps.filter(matchesSearch);
+        if (filteredEmps.length === 0) {
+          return null;
+        }
+
+        return (
+          <div key={zone} className="zone-card">
+            <div className="zone-header">
+              <h3>{zone}</h3>
+              <span className="zone-badge">Total: {filteredEmps.length}</span>
+            </div>
+
+            <table className="zone-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Swipe Time</th>
+                  <th>Type</th>
+                  <th>Door Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredEmps.map((emp, i) => (
+                  <tr key={`${emp.EmployeeID}-${i}`}>
+                    <td>{emp.ObjectName1}</td>
+                    <td>{emp.Swipe_Time}</td>
+                    <td>{emp.PersonnelType}</td>
+                    <td>{emp.door}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 
 
-Read file line by line and solve the error ,
 
-ERROR
-Objects are not valid as a React child (found: object with keys {label, value}). If you meant to render a collection of children, use an array instead.
-    at throwOnInvalidObjectType (http://localhost:3000/static/js/bundle.js:54783:11)
-    at createChild (http://localhost:3000/static/js/bundle.js:54876:9)
-    at reconcileChildrenArray (http://localhost:3000/static/js/bundle.js:54976:66)
-    at reconcileChildFibersImpl (http://localhost:3000/static/js/bundle.js:55083:109)
-    at http://localhost:3000/static/js/bundle.js:55110:31
-    at reconcileChildren (http://localhost:3000/static/js/bundle.js:55372:47)
-    at beginWork (http://localhost:3000/static/js/bundle.js:56137:16)
-    at runWithFiberInDEV (http://localhost:3000/static/js/bundle.js:51553:68)
-    at performUnitOfWork (http://localhost:3000/static/js/bundle.js:58134:93)
-    at workLoopSync (http://localhost:3000/static/js/bundle.js:58027:38)
+refer above file carefully and update laca pages carefully
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\PartitionDetail.jsx
+
+
+
+// C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\PartitionDetail.jsx
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -148,62 +238,50 @@ export default function PartitionDetail() {
           </Typography>
         </Box>
 
-        {/* Summary Cards */}
-        {/* <Box display="flex" alignItems="stretch" gap={2} mb={4}> */}
- <Box display="flex" alignItems="stretch" gap={2} mb={4}>
-    {/* Today’s headcount - show zeros or inline spinner while loading */} 
-    
-         {/* {historyLoading ? (
-           <Skeleton variant="rectangular" sx={{ flex: 1, height: 180 }} />
-         ) : ( */}
+      
+      
+      <Box display="flex" alignItems="stretch" gap={2} mb={4}>
+  {/* Today’s headcount card */}
+  <SummaryCard
+    title={`Today’s ${partition} Headcount`}
+    total={historyLoading ? 0 : partToday.total}
+    stats={[
+      {
+        label: 'Employees',
+        value: historyLoading
+          ? <CircularProgress size={20} />
+          : partToday.Employee
+      },
+      {
+        label: 'Contractors',
+        value: historyLoading
+          ? <CircularProgress size={20} />
+          : partToday.Contractor
+      },
+      {
+        label: 'Temp Badge',
+        value: historyLoading
+          ? <CircularProgress size={20} />
+          : partToday.TempBadge
+      }
+    ]}
+    sx={{ flex: 1, height: 180 }}
+  />
+
+  {/* Live headcount card */}
+  <SummaryCard
+    title={`Live ${partition} Headcount`}
+    total={live.total}
+    stats={[
+      { label: 'Employees',   value: live.Employee },
+      { label: 'Contractors', value: live.Contractor },
+      { label: 'Temp Badge',  value: live.TempBadge }
+    ]}
+    sx={{ flex: 1, height: 180 }}
+  />
+</Box>
 
 
-           total={historyLoading ? 0 : partToday.total}
-           stats={[
-             {
-               label: 'Employees',
-               value: historyLoading
-                 ? <CircularProgress size={20} />
-                 : partToday.Employee
-             },
-             {
-               label: 'Contractors',
-               value: historyLoading
-                 ? <CircularProgress size={20} />
-                 : partToday.Contractor
-             },
-             {
-               label: 'Temp Badge',
-               value: historyLoading
-                 ? <CircularProgress size={20} />
-                 : partToday.TempBadge
-             }
-           ]}
-
-
-
-          <SummaryCard
-            title={`Today’s ${partition} Headcount`}
-            total={partToday.total}
-            stats={[
-              { label: 'Employees', value: partToday.Employee },
-              { label: 'Contractors', value: partToday.Contractor },
-              { label: 'Temp Badge', value: partToday.TempBadge }
-            ]}
-            sx={{ flex: 1, height: 180 }}
-          />
-          
-          <SummaryCard
-            title={`Live ${partition} Headcount`}
-            total={live.total}
-            stats={[
-              { label: 'Employees', value: live.Employee },
-              { label: 'Contractors', value: live.Contractor },
-              { label: 'Temp Badge', value: live.TempBadge }
-            ]}
-            sx={{ flex: 1, height: 180 }}
-          />
-        </Box>
 
         {/* Floor‐wise Chart */}
         <Box mb={4}>
@@ -281,3 +359,92 @@ export default function PartitionDetail() {
     </>
   );
 }
+
+
+
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\RealtimeDetails.jsx
+
+
+// src/pages/RealtimeDetails.jsx
+
+import React, { useEffect, useState } from 'react';
+import { Container, Typography, Box, Skeleton } from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import DataTable from '../components/DataTable';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+const columns = [
+  { field: 'ObjectName1',  headerName: 'Name' },
+  { field: 'Door',         headerName: 'Door' },
+  { field: 'Swipe_Time',   headerName: 'Time' },
+  { field: 'PersonnelType',headerName: 'Type' },
+];
+
+export default function RealtimeDetails() {
+  const { partition } = useParams();
+  const navigate = useNavigate();
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState(null);
+
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) {
+    return (
+      <Container sx={{ mt: 4 }}>
+        <Typography color="error">Error loading data</Typography>
+      </Container>
+    );
+  }
+
+  const rows = data?.details.filter(r => r.PartitionName2 === partition) || [];
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ mt: 2, mb: 4 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography
+            variant="button"
+            onClick={() => navigate(-1)}
+            sx={{ cursor: 'pointer' }}
+          >
+            ← Back
+          </Typography>
+          <Typography variant="h5">{partition}</Typography>
+          {loading ? (
+            <Skeleton width={100} />
+          ) : (
+            <Typography variant="body2" color="textSecondary">
+              Updated: {lastUpdate}
+            </Typography>
+          )}
+        </Box>
+
+        {loading ? (
+          <LoadingSpinner />
+        ) : rows.length > 0 ? (
+          <DataTable columns={columns} rows={rows} />
+        ) : (
+          <Typography>No swipes recorded yet for this partition.</Typography>
+        )}
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
