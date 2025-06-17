@@ -1,3 +1,180 @@
+
+// src/components/ChartCard.jsx
+import React, { useState } from 'react';
+import { Card, CardContent, Typography, Box } from '@mui/material';
+import {
+  AreaChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
+  Brush,
++ LabelList,
+} from 'recharts';
+
+export default function ChartCard({
+  title,
+  data = [],
+  dataKey = 'value',
+  chartHeight = 250,
+  colors = { head: '#FFC107', cap: '#B0BEC5' },
+}) {
+  const [hidden, setHidden] = useState({});
+
+  if (!Array.isArray(data) || !data.length) {
+    return (
+      <Card sx={{ mb: 2 }}>
+        <CardContent sx={{ textAlign: 'center' }}>
+          <Typography variant="h6">{title}</Typography>
+          <Typography variant="body2">No data to display.</Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const hasCapacity = data[0].Capacity != null;
+  const handleLegendClick = o => {
+    const { dataKey } = o;
+    setHidden(prev => ({ ...prev, [dataKey]: !prev[dataKey] }));
+  };
+
+  return (
+    <Card sx={{ mb: 2 }}>
+      <CardContent>
+        {/* Chart title */}
+        <Typography variant="h6" gutterBottom sx={{ color: colors.head }}>
+          {title}
+        </Typography>
+
+        {/* Chart container */}
+        <Box sx={{ width: '100%', height: chartHeight }}>
+          <ResponsiveContainer>
+            <AreaChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+              <defs>
+                <linearGradient id="colorHead" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={colors.head} stopOpacity={0.4} />
+                  <stop offset="95%" stopColor={colors.head} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+
+              {/* Grid and axes */}
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+
+              <XAxis
+                dataKey="name"
+                tick={{ fill: '#FFF', fontWeight: 600 }}
++               label={{
++                 value: 'Time',
++                 position: 'insideBottomRight',
++                 offset: -10,
++                 fill: '#FFF',
++                 fontWeight: 600
++               }}
+              />
+
+              <YAxis
+                tick={{ fill: '#FFF', fontWeight: 600 }}
++               label={{
++                 value: 'Count',
++                 angle: -90,
++                 position: 'insideLeft',
++                 fill: '#FFF',
++                 fontWeight: 600
++               }}
+              />
+
+              {/* Tooltip & Legend */}
+              <Tooltip
+                contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}` }}
+                labelStyle={{ color: colors.head, fontWeight: 600 }}
+                formatter={(value, name) => {
+                  if (name === 'Headcount' && hasCapacity) {
+                    const cap = data.find(d => d.Headcount === value)?.Capacity || 0;
+                    const pct = cap ? ((value / cap) * 100).toFixed(1) : '0.0';
+                    return [`${value} (${pct}%)`, name];
+                  }
+                  return [value, name];
+                }}
+              />
+              <Legend wrapperStyle={{ color: '#FFF' }} onClick={handleLegendClick} />
+
+              {/* Brush for zooming/panning */}
+              <Brush
+                dataKey="name"
+                height={30}
+                stroke={colors.head}
+                travellerWidth={10}
+              />
+
+              {/* Capacity area */}
+              {hasCapacity && !hidden.Capacity && (
+                <Area
+                  type="monotone"
+                  dataKey="Capacity"
+                  name="Capacity"
+                  stroke={colors.cap}
+                  fill={`${colors.cap}33`}
+                  dot={false}
+                >
++                 <LabelList
++                   dataKey="Capacity"
++                   position="top"
++                   style={{ fill: colors.cap, fontSize: 10, fontWeight: 600 }}
++                 />
+                </Area>
+              )}
+
+              {/* Headcount area */}
+              {!hidden.Headcount && (
+                <Area
+                  type="monotone"
+                  dataKey={hasCapacity ? 'Headcount' : dataKey}
+                  name={hasCapacity ? 'Headcount' : dataKey}
+                  stroke={colors.head}
+                  fill="url(#colorHead)"
+                  dot={{ stroke: colors.head, strokeWidth: 2 }}
+                >
++                 <LabelList
++                   dataKey={hasCapacity ? 'Headcount' : dataKey}
++                   position="top"
++                   style={{ fill: '#FFF', fontSize: 12, fontWeight: 600 }}
++                 />
+                </Area>
+              )}
+
+              {/* Overlay line for crisp “spark” */}
+              {!hidden.Headcount && (
+                <Line
+                  type="monotone"
+                  dataKey={hasCapacity ? 'Headcount' : dataKey}
+                  stroke={colors.head}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
+                />
+              )}
+            </AreaChart>
+          </ResponsiveContainer>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
 // src/components/ChartCard.jsx
 import React, { useState } from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
