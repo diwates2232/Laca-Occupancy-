@@ -149,3 +149,745 @@ export async function fetchHistory(location) {
 
 
 
+
+// src/pages/Dashboard.jsx
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Typography,
+  Skeleton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  Divider
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+import { partitionList } from '../services/occupancy.service';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+  const [partition, setPartition] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) {
+    return (
+      <Box width="100vw%" py={4}>
+        <Typography color="error" align="center">
+          Error loading live data
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Build and sort partitions
+  const regions = data?.realtime || {};
+  const partitions = partitionList
+    .map(name => {
+      const key = Object.keys(regions).find(k => k.includes(name));
+      const p = key ? regions[key] : {};
+      return {
+        name,
+        total: p.total || 0,
+        Employee: p.Employee || 0,
+        Contractor: p.Contractor || 0,
+        TempBadge: p.TempBadge || 0,
+        floors: p.floors || {}
+      };
+    })
+    .sort((a, b) => b.total - a.total);
+
+  // Totals
+  const todayTot   = data?.today?.total    ?? 0;
+  const todayEmp   = data?.today?.Employee ?? 0;
+  const todayCont  = data?.today?.Contractor ?? 0;
+  const realtimeTot  = partitions.reduce((sum, p) => sum + p.total, 0);
+  const realtimeEmp  = partitions.reduce((sum, p) => sum + p.Employee, 0);
+  const realtimeCont = partitions.reduce((sum, p) => sum + p.Contractor, 0);
+
+  return (
+    <>
+      <Header />
+
+      <Container
+        maxWidth={false}
+        disableGutters
+        sx={{
+          pt: 1,
+          pb: 2,
+          px: '20px',        // ← exactly 20px padding both sides
+        }}
+      >
+        {/* Top summary cards */}
+        <Box
+          display="flex"
+          alignItems="stretch"
+          sx={{ mb: 1, width: '100vw%' }}
+        >
+          <Box sx={{ flex: 1 }}>
+            <SummaryCard
+              title="Today’s Headcount"
+              total={todayTot}
+              stats={[
+                { label: 'Employees',   value: todayEmp },
+                { label: 'Contractors', value: todayCont }
+              ]}
+              sx={{ height: 190 }}
+            />
+          </Box>
+
+          <Divider
+            // orientation="vertical"
+            flexItem
+            sx={{ mx: 1 }}
+          />
+
+          <Box sx={{ flex: 1 }}>
+            <SummaryCard
+              title="Realtime Headcount"
+              total={realtimeTot}
+              stats={[
+                { label: 'Employees',   value: realtimeEmp },
+                { label: 'Contractors', value: realtimeCont }
+              ]}
+              sx={{ height: 190 }}
+            />
+          </Box>
+        </Box>
+
+        {/* Partition cards */}
+        <Box mt={4} sx={{ width: '100vw%', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          {loading ? (
+            <Skeleton variant="rectangular" width="100vw%" height={240} />
+          ) : (
+            partitions.map(p => (
+              <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+                <SummaryCard
+                  title={p.name}
+                 
+                  total={p.total}
+  
+
+ stats={[
+   { label: 'Employees',   value: p.Employee },
+   { label: 'Contractors', value: p.Contractor },
+   // only show TempBadge on Costa Rica
+   ...(p.name === 'CR.Costa Rica Partition'
+     ? [{ label: 'Temp Badge', value: p.TempBadge }]
+     : [])
+
+
+                  ]}
+                  sx={{ width: '100vw%' }}
+                />
+              </Box>
+            ))
+          )}
+        </Box>
+
+        {/* Live totals chart */}
+
+
+        <Box mt={4} sx={{ width: '100vw%' }}>
+       
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6" gutterBottom>
+                  Live Totals by Partition
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              Last updated: {lastUpdate}
+            </Typography>
+          </Box>
+
+          {loading ? (
+            <Skeleton variant="rectangular" width="100%" height={320} />
+          ) : (
+            <ChartCard
+              title="Partition Totals"
+              chartHeight={320}
+              data={partitions.map(p => ({ name: p.name, value: p.total }))}
+            />
+          )}
+        </Box>
+
+
+      </Container>
+
+      <footer style={{
+        backgroundColor: '#000000',
+        color: '#FFC107',
+        padding: '1.5rem 0',
+        textAlign: 'center',
+        marginTop: 0,
+        borderTop: '2px solid #FFC107',
+        fontSize: '0.95rem',
+        lineHeight: '1.6'
+      }}>
+        <div><strong>Global Security Operations Center</strong><br/>
+          Live HeadCount against Occupancy dashboard for Western Union — Real-time occupancy, floor activity, and personnel insights.
+        </div>
+        <div style={{ marginTop: '0.75rem' }}>
+          Contact us:&nbsp;
+          <a href="mailto:GSOC-GlobalSecurityOperationCenter.SharedMailbox@westernunion.com"
+             style={{ color: '#FFC107', textDecoration: 'underline' }}>
+            GSOC Mail
+          </a>&nbsp;|&nbsp;
+          Landline:&nbsp;<span style={{ color: '#FFC107' }}>+91-020-67632394</span>
+        </div>
+      </footer>
+    </>
+  );
+}
+
+
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\History.jsx
+
+
+
+// src/pages/History.jsx
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Grid,
+  Button,
+  Typography,
+  Skeleton,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
+  Breadcrumbs,
+  Link
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SummaryCard from '../components/SummaryCard';
+import { fetchHistory } from '../api/occupancy.service';
+
+export default function History() {
+  const [location, setLocation]         = useState('');
+  const [dateList, setDateList]         = useState([]);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [data, setData]                 = useState(null);
+  const [loading, setLoading]           = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setLoading(true);
+    fetchHistory(location || null).then(json => {
+      setData(json);
+      setLoading(false);
+      if (!location) {
+        setDateList(json.summaryByDate.map(d => d.date));
+      }
+    });
+  }, [location]);
+
+  if (loading) return <LoadingSpinner />;
+  if (!data)    return null;
+
+  // 1) Pick a date
+  if (!location && !selectedDate) {
+    return (
+      <>
+        <Header />
+        <Container maxWidth={false} disableGutters sx={{ pt:2, pb:4, px:'20px' }}>
+          <Typography variant="h6" gutterBottom>
+            Select a date:
+          </Typography>
+          <FormControl fullWidth sx={{ mb:2 }}>
+            <InputLabel>Date</InputLabel>
+            <Select
+              value={selectedDate}
+              label="Date"
+              onChange={e => setSelectedDate(e.target.value)}
+            >
+              {dateList.map(d => (
+                <MenuItem key={d} value={d}>{d}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Container>
+        <Footer />
+      </>
+    );
+  }
+
+  // 2) Show partition summaries for that date
+  if (!location) {
+    const daySummary = data.summaryByDate.find(d => d.date === selectedDate);
+    const partitionCards = Object.entries(daySummary.partitions).map(([name, stats]) => ({
+      title: name,
+      stats: [
+        { label: 'Employees',   value: stats.Employee },
+        { label: 'Contractors', value: stats.Contractor },
+        // only show Temp Badge on Costa Rica
+        ...(name === 'CR.Costa Rica Partition'
+          ? [{ label: 'Temp Badge', value: stats.TempBadge }]
+          : [])
+      ],
+    }));
+
+    return (
+      <>
+        <Header />
+        <Container maxWidth={false} disableGutters sx={{ pt:2, pb:4, px:'20px' }}>
+          <Breadcrumbs separator="›" sx={{ mb:2 }}>
+            <Link component="button" onClick={() => setSelectedDate('')}>
+              Dates
+            </Link>
+            <Typography color="text.primary">{selectedDate}</Typography>
+          </Breadcrumbs>
+
+          <Typography variant="h5" gutterBottom>
+            Partitions on {selectedDate}
+          </Typography>
+
+          <Box sx={{ display:'flex', flexWrap:'wrap', gap:1 }}>
+            {partitionCards.map(card => (
+              <Box key={card.title} sx={{ flex:'1 1 calc(33.33% - 8px)' }}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => setLocation(card.title)}
+                >
+                  <SummaryCard title={card.title} stats={card.stats} />
+                </Button>
+              </Box>
+            ))}
+          </Box>
+        </Container>
+        <Footer />
+      </>
+    );
+  }
+
+  // 3) Drilled into a partition: show its daily totals
+  const partitionSummary = data.summaryByDate.map(d => ({
+    title: d.date,
+    stats: [
+      { label: 'Employees',   value: d.region.Employee },
+      { label: 'Contractors', value: d.region.Contractor },
+      // only show Temp Badge on Costa Rica
+      ...(location === 'CR.Costa Rica Partition'
+        ? [{ label: 'Temp Badge', value: d.region.TempBadge }]
+        : [])
+    ]
+  }));
+
+  return (
+    <>
+      <Header />
+      <Container maxWidth={false} disableGutters sx={{ pt:2, pb:4, px:'20px' }}>
+        <Breadcrumbs separator="›" sx={{ mb:2 }}>
+          <Link component="button" onClick={() => setLocation('')}>
+            {selectedDate}
+          </Link>
+          <Typography color="text.primary">{location}</Typography>
+        </Breadcrumbs>
+
+        <Typography variant="h5" gutterBottom>
+          History for {location}
+        </Typography>
+
+        <Box sx={{ display:'flex', flexWrap:'wrap', gap:1 }}>
+          {partitionSummary.map(card => (
+            <Box key={card.title} sx={{ flex:'1 1 calc(33.33% - 8px)' }}>
+              <SummaryCard title={card.title} stats={card.stats} />
+            </Box>
+          ))}
+        </Box>
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+// src/pages/PartitionDetail.jsx
+import React, { useEffect, useState, useMemo } from "react";
+import {
+  Container,
+  Box,
+  Typography,
+  Button,
+  CircularProgress,
+} from "@mui/material";
+import { useParams, useNavigate } from "react-router-dom";
+import SummaryCard from "../components/SummaryCard";
+import ChartCard from "../components/ChartCard";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { fetchLiveSummary, fetchHistory } from "../api/occupancy.service";
+import { lookupFloor } from "../utils/floorLookup";
+
+export default function PartitionDetail() {
+  const { partition } = useParams();
+  const navigate = useNavigate();
+
+  const [liveSummary, setLiveSummary] = useState(null);
+  const [history, setHistory] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [details, setDetails] = useState([]);
+  const [lastUpdate, setLastUpdate] = useState("");
+
+  // Auto-refresh live
+  useEffect(() => {
+    let timer;
+    async function loadLive() {
+      const json = await fetchLiveSummary();
+      setLiveSummary(json);
+      // we'll still fetch details so partition/details page has data ready
+      const det = json.details
+        .filter(r => r.PartitionName2 === partition && r.Direction === "InDirection")
+        .map(r => ({
+          ...r,
+          floor: lookupFloor(r.PartitionName2, r.Door, r.Direction)
+        }));
+      setDetails(det);
+      setLastUpdate(new Date().toLocaleTimeString());
+    }
+    loadLive();
+    timer = setInterval(loadLive, 1000);
+    return () => clearInterval(timer);
+  }, [partition]);
+
+  // Load history
+  useEffect(() => {
+    setHistoryLoading(true);
+    fetchHistory(partition).then(json => {
+      setHistory(json);
+      setHistoryLoading(false);
+    });
+  }, [partition]);
+
+  if (!liveSummary || !history) return <LoadingSpinner />;
+
+  // Totals
+  const lastDay = history.summaryByDate.at(-1);
+  const partToday = lastDay.region;
+  const live = liveSummary.realtime[partition] || {
+    total: 0, Employee: 0, Contractor: 0, TempBadge: 0, floors: {}
+  };
+
+  return (
+    <>
+      <Header />
+
+      <Box component="main" sx={{ pt: 1, pb: 1 }}>
+        <Container maxWidth={false} disableGutters>
+          {/* Back */}
+          <Box display="flex" alignItems="center" mb={1} sx={{ px: "20px" }}>
+            <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
+          </Box>
+
+          {/* Summary */}
+          <Box display="flex" gap={2} mb={2} sx={{ px: "20px" }}>
+            <SummaryCard
+              title={`Today’s ${partition} Headcount`}
+              total={historyLoading ? 0 : partToday.total}
+              stats={[
+                { label: "Employees",   value: historyLoading ? <CircularProgress size={20} /> : partToday.Employee },
+                { label: "Contractors", value: historyLoading ? <CircularProgress size={20} /> : partToday.Contractor },
+                { label: "Temp Badge",  value: historyLoading ? <CircularProgress size={20} /> : partToday.TempBadge },
+              ]}
+              sx={{ flex: 1, height: 180 }}
+            />
+            <SummaryCard
+              title={`Live ${partition} Headcount`}
+              total={live.total}
+              stats={[
+                { label: "Employees",   value: live.Employee },
+                { label: "Contractors", value: live.Contractor },
+                { label: "Temp Badge",  value: live.TempBadge },
+              ]}
+              sx={{ flex: 1, height: 180 }}
+            />
+          </Box>
+
+          {/* Chart + See Details */}
+          <Box mb={4} sx={{ px: "20px" }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+              <Typography variant="h6">Live Floor Counts</Typography>
+              <Typography variant="body2" color="textSecondary">
+                Last updated: {lastUpdate}
+              </Typography>
+            </Box>
+            <ChartCard
+              title=""
+              data={Object.entries(live.floors).map(([floor, cnt]) => ({ name: floor.trim(), value: cnt }))}
+              chartHeight={320}
+            />
+            <Box display="flex" justifyContent="flex-end" mt={1}>  
+  <Button
+  variant="contained"
+  size="small"
+  onClick={() =>
+    navigate(`/partition/${encodeURIComponent(partition)}/details`)
+  }
+>
+  See Details
+</Button>
+
+            </Box>
+          </Box>
+        </Container>
+      </Box>
+
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+// src/pages/PartitionDetailDetails.jsx
+import React, { useEffect, useState, useMemo } from "react";
+import {
+  Container,
+  Box,
+  Typography,
+  Button,
+  CircularProgress,
+  TextField,
+  TableContainer,
+  Paper,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+} from "@mui/material";
+import { useParams, useNavigate } from "react-router-dom";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import LoadingSpinner from "../components/LoadingSpinner";
+import DataTable from "../components/DataTable";
+import { fetchLiveSummary } from "../api/occupancy.service";
+import { lookupFloor } from "../utils/floorLookup";
+
+export default function PartitionDetailDetails() {
+  const { partition } = useParams();
+  const navigate = useNavigate();
+
+  const [details, setDetails] = useState([]);
+  const [lastUpdate, setLastUpdate] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [expandedFloor, setExpandedFloor] = useState(null);
+
+  // fetch just details
+  useEffect(() => {
+    let timer;
+    async function loadDetails() {
+      const json = await fetchLiveSummary();
+      const det = json.details
+        .filter(r => r.PartitionName2 === partition && r.Direction === "InDirection")
+        .map(r => ({
+          ...r,
+          floor: lookupFloor(r.PartitionName2, r.Door, r.Direction)
+        }));
+      setDetails(det);
+      setLastUpdate(new Date().toLocaleTimeString());
+    }
+    loadDetails();
+    timer = setInterval(loadDetails, 1000);
+    return () => clearInterval(timer);
+  }, [partition]);
+
+  // group and filter
+  const floorMap = useMemo(() => {
+    const m = {};
+    details.forEach(r => {
+      m[r.floor] = m[r.floor] || [];
+      m[r.floor].push(r);
+    });
+    return m;
+  }, [details]);
+
+  const displayed = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return Object.entries(floorMap)
+      .filter(([floor, emps]) => {
+        if (!term) return true;
+        if (floor.toLowerCase().includes(term)) return true;
+        return emps.some(r =>
+          r.ObjectName1.toLowerCase().includes(term) ||
+          r.EmployeeID.toLowerCase().includes(term)
+        );
+      })
+      .sort((a, b) => b[1].length - a[1].length);
+  }, [floorMap, searchTerm]);
+
+  if (!details.length) return <LoadingSpinner />;
+
+  const columns = [
+    { field: "EmployeeID", headerName: "Emp ID" },
+    { field: "ObjectName1", headerName: "Name" },
+    { field: "LocaleMessageTime", headerName: "Swipe Time" },
+    { field: "PersonnelType", headerName: "Type" },
+    { field: "CardNumber", headerName: "Card" },
+    { field: "Door", headerName: "Door" },
+  ];
+
+  return (
+    <>
+      <Header />
+
+      <Box component="main" sx={{ pt: 1, pb: 1 }}>
+        <Container maxWidth={false} disableGutters>
+          {/* Back */}
+          <Box display="flex" alignItems="center" mb={2} sx={{ px: "20px" }}>
+            <Button size="small" onClick={() => navigate(-1)}>← Back to Overview</Button>
+          </Box>
+
+          {/* Floor Details + Search */}
+          <Box display="flex" alignItems="center" gap={2} mb={2} sx={{ px: "20px" }}>
+            <Typography variant="h6">Floor Details</Typography>
+            <Typography variant="body2" color="textSecondary">
+              Last updated: {lastUpdate}
+            </Typography>
+            <TextField
+              size="small"
+              placeholder="Search floor / emp…"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </Box>
+
+          {/* Edge-to-edge cards */}
+          <Box
+            component="section"
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              width: "100%",
+              margin: 0,
+              padding: 0,
+            }}
+          >
+            {displayed.map(([floor, emps]) => (
+              <Box
+                key={floor}
+                sx={{
+                  width: "50%",
+                  boxSizing: "border-box",
+                  p: "20px",
+                }}
+              >
+                <Box
+                  sx={{
+                    border: "1px solid #FFC107",
+                    borderRadius: 2,
+                    height: "100%",
+                  }}
+                >
+                  <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                    {floor} (Total {emps.length})
+                  </Typography>
+                  <TableContainer component={Paper} variant="outlined" sx={{ mb: 1 }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          {["Emp ID","Name","Swipe Time","Type","Card","Door"].map(h => (
+                            <TableCell key={h} sx={{ fontWeight: "bold" }}>{h}</TableCell>
+                          ))}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {emps.slice(0, 10).map((r, i) => {
+                          const term = searchTerm.trim().toLowerCase();
+                          const isMatch =
+                            term &&
+                            (r.ObjectName1.toLowerCase().includes(term) ||
+                             r.EmployeeID.toLowerCase().includes(term));
+                          return (
+                            <TableRow
+                              key={`${r.PersonGUID}-${i}`}
+                              sx={isMatch ? { backgroundColor: "rgba(255, 235, 59, 0.3)" } : {}}
+                            >
+                              <TableCell>{r.EmployeeID}</TableCell>
+                              <TableCell>{r.ObjectName1}</TableCell>
+                              <TableCell>{new Date(r.LocaleMessageTime).toLocaleTimeString()}</TableCell>
+                              <TableCell>{r.PersonnelType}</TableCell>
+                              <TableCell>{r.CardNumber}</TableCell>
+                              <TableCell>{r.Door}</TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  <Button
+                    size="small"
+                    onClick={() =>
+                      setExpandedFloor(expandedFloor === floor ? null : floor)
+                    }
+                  >
+                    {expandedFloor === floor ? "Hide" : "See more…"}
+                  </Button>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+
+          {/* Expanded full-width table */}
+          {expandedFloor && (
+            <Box sx={{ px: "20px", mt: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                {expandedFloor} — All Entries
+              </Typography>
+              <DataTable
+                columns={columns}
+                rows={floorMap[expandedFloor].map(r => ({
+                  ...r,
+                  LocaleMessageTime: new Date(r.LocaleMessageTime).toLocaleTimeString()
+                }))}
+              />
+            </Box>
+          )}
+        </Container>
+      </Box>
+
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
