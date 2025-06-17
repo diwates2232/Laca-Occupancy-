@@ -1,3 +1,183 @@
+// src/pages/PartitionDetail.jsx
+
+import React, { useEffect, useState, useMemo } from 'react';
+import {
+  Container,
+  Box,
+  Typography,
+  Button,
+  Grid,
+  CircularProgress
+} from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+
+import {
+  fetchLiveSummary,
+  fetchHistory
+} from '../api/occupancy.service';
+import ZoneDetailsTable from '../components/ZoneDetailsTable';
+
+export default function PartitionDetail() {
+  const { partition } = useParams();
+  const navigate = useNavigate();
+
+  const [liveSummary, setLiveSummary] = useState(null);
+  const [history, setHistory] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [details, setDetails] = useState([]);
+  const [lastUpdate, setLastUpdate] = useState('');
+
+  // Live summary every second
+  useEffect(() => {
+    let timer;
+    const loadLive = async () => {
+      const json = await fetchLiveSummary();
+      setLiveSummary(json);
+      setDetails(
+        json.details.filter(
+          r => r.PartitionName2 === partition && r.Direction === 'InDirection'
+        )
+      );
+      setLastUpdate(new Date().toLocaleTimeString());
+    };
+    loadLive();
+    timer = setInterval(loadLive, 1000);
+    return () => clearInterval(timer);
+  }, [partition]);
+
+  // Historical (today's) headcount once
+  useEffect(() => {
+    setHistoryLoading(true);
+    fetchHistory(partition).then(json => {
+      setHistory(json);
+      setHistoryLoading(false);
+    });
+  }, [partition]);
+
+  // **Always** build floorMap hook before any early return
+  const floorMap = useMemo(() => {
+    const m = {};
+    details.forEach(r => {
+      const f = (r.floor || '').trim() || 'Unmapped';
+      if (!m[f]) m[f] = [];
+      m[f].push(r);
+    });
+    return m;
+  }, [details]);
+
+  // show spinner until both live & history have arrived
+  if (!liveSummary || !history) {
+    return <LoadingSpinner />;
+  }
+
+  // derive counts
+  const lastDay = history.summaryByDate.slice(-1)[0];
+  const partToday = lastDay.region;
+  const live = liveSummary.realtime[partition] || {
+    total: 0, Employee: 0, Contractor: 0, TempBadge: 0, floors: {}
+  };
+
+  return (
+    <>
+      <Header />
+      <Container
+        maxWidth={false}
+        disableGutters
+        sx={{ px: '20px', pt: 2, pb: 4 }}
+      >
+        {/* Back + Title */}
+        <Box display="flex" alignItems="center" mb={2}>
+          <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
+          <Typography variant="h6" sx={{ ml: 2 }}>
+            {partition.replace('CR.Costa Rica Partition', 'Costa Rica')}
+          </Typography>
+        </Box>
+
+        {/* Summary Cards */}
+        <Box display="flex" alignItems="stretch" gap={2} mb={4}>
+          {/* Today’s headcount card */}
+          <SummaryCard
+            title={`Today’s ${partition} Headcount`}
+            total={historyLoading ? 0 : partToday.total}
+            stats={[
+              {
+                label: 'Employees',
+                value: historyLoading
+                  ? <CircularProgress size={20} />
+                  : partToday.Employee
+              },
+              {
+                label: 'Contractors',
+                value: historyLoading
+                  ? <CircularProgress size={20} />
+                  : partToday.Contractor
+              },
+              {
+                label: 'Temp Badge',
+                value: historyLoading
+                  ? <CircularProgress size={20} />
+                  : partToday.TempBadge
+              }
+            ]}
+            sx={{ flex: 1, height: 180 }}
+          />
+
+          {/* Live headcount card */}
+          <SummaryCard
+            title={`Live ${partition} Headcount`}
+            total={live.total}
+            stats={[
+              { label: 'Employees',   value: live.Employee },
+              { label: 'Contractors', value: live.Contractor },
+              { label: 'Temp Badge',  value: live.TempBadge }
+            ]}
+            sx={{ flex: 1, height: 180 }}
+          />
+        </Box>
+
+        {/* Floor‐wise Chart */}
+        <Box mb={4}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+            <Typography variant="h6">Live Floor Counts</Typography>
+            <Typography variant="body2" color="textSecondary">
+              Last updated: {lastUpdate}
+            </Typography>
+          </Box>
+          <ChartCard
+            title=""
+            data={Object.entries(live.floors).map(([floor, cnt]) => ({
+              name: floor.trim(),
+              value: cnt
+            }))}
+            chartHeight={260}
+          />
+        </Box>
+
+        {/* Floor Details */}
+        <Typography variant="h6" gutterBottom>
+          Floor Details
+        </Typography>
+        <ZoneDetailsTable data={floorMap} />
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
+
 ERROR
 Rendered more hooks than during the previous render.
     at updateWorkInProgressHook (http://localhost:3000/static/js/bundle.js:53896:15)
