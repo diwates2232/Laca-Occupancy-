@@ -1,90 +1,6 @@
 
-// src/utils/floorLookup.js
-import doorMap from './doorMap'; // relative to this file
-
-/**
- * Given a partition, door and direction, return the mapped floor string.
- * Falls back to 'Unmapped' only if there's no matching entry.
- */
-export function lookupFloor(partition, door, direction) {
-  const entry = doorMap.find(d =>
-    d.partition === partition && d.door === door
-  );
-  if (!entry) return 'Unmapped';
-  return direction === 'InDirection'
-    ? entry.inDirectionFloor
-    : entry.outDirectionFloor;
-}
-
-
-
-
-- import { lookupFloor } from "../utils/doorMap";
-+ import { lookupFloor } from "../utils/floorLookup";
-
-
-
-
-
-
-Check below all files carefully and line by line and solve this issue carefully 
-
-ERROR
-(0 , _utils_doorMap__WEBPACK_IMPORTED_MODULE_7__.lookupFloor) is not a function
-TypeError: (0 , _utils_doorMap__WEBPACK_IMPORTED_MODULE_7__.lookupFloor) is not a function
-    at http://localhost:3000/static/js/bundle.js:105041:75
-    at Array.map (<anonymous>)
-    at loadLive (http://localhost:3000/static/js/bundle.js:105039:109)
-
-C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\utils\doorMap.js
-
-
-module.exports = [
-  { partition: 'AR.Cordoba', door: 'LACA ARG 1st Floor Main Entrance', inDirectionFloor: '1st Floor', outDirectionFloor: 'Out of office ' },
-  { partition: 'AR.Cordoba', door: 'LACA ARG 1st Floor Emergency Stairs', inDirectionFloor: '1st Floor', outDirectionFloor: 'Out of office ' },
-  { partition: 'AR.Cordoba', door: 'AR_MonteVideo_DR_1stFlrCSC IN/OUT DELETE', inDirectionFloor: '1st Floor', outDirectionFloor: '1st Floor' },
-  { partition: 'AR.Cordoba', door: 'LACA ARG 2nd Floor Main Entrance', inDirectionFloor: '2nd Floor', outDirectionFloor: 'Out of office ' },
-  { partition: 'AR.Cordoba', door: 'LACA ARG 2nd Floor Emergency Stairs', inDirectionFloor: '2nd Floor', outDirectionFloor: 'Out of office ' },
-  { partition: 'AR.Cordoba', door: 'LACA ARG 2nd Floor HR 2nd Entrance', inDirectionFloor: '2nd Floor', outDirectionFloor: '2nd Floor' },
-  { partition: 'AR.Cordoba', door: 'LACA ARG 2nd Floor IT Room', inDirectionFloor: '2nd Floor', outDirectionFloor: '2nd Floor' },
-  { partition: 'AR.Cordoba', door: 'LACA ARG 2nd Floor 1ST Entrance HR', inDirectionFloor: '2nd Floor', outDirectionFloor: '2nd Floor' },
-  { partition: 'AR.Cordoba', door: 'LACA ARG 3rd Floor Main Entrance', inDirectionFloor: '3rd Floor', outDirectionFloor: 'Out of office ' },
-  { partition: 'AR.Cordoba', door: 'LACA ARG 3rd Floor Emergency Stairs', inDirectionFloor: '3rd Floor', outDirectionFloor: 'Out of office ' },
-   { partition: 'PE.Lima', door: 'LACA PE 2nd West Floor Emergency', inDirectionFloor: '2nd Floor', outDirectionFloor: 'Out of office ' },
-  { partition: 'PE.Lima', door: 'LACA PE 2nd Floor Storage Room', inDirectionFloor: '2nd Floor', outDirectionFloor: '2nd Floor' },
-  { partition: 'BR.Sao Paulo', door: 'LACA BR 6TH IDF DOOR', inDirectionFloor: '6th Floor', outDirectionFloor: '6th Floor' },
-  { partition: 'BR.Sao Paulo', door: 'LACA BR 6TH FLOOR MAIN ENTRANCE DOOR', inDirectionFloor: '6th Floor', outDirectionFloor: 'Out of office ' },
-  { partition: 'BR.Sao Paulo', door: 'LACA BR 6TH FLOOR STORAGE DOOR', inDirectionFloor: '6th Floor', outDirectionFloor: '6th Floor' },
-];
-
-
-
-
-C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\utils\floorLookup.js
-
-// src/utils/floorLookup.js
-import doorMap from "../utils/doorMap"; // copy your existing doorMap JSON/JS here
-
-/**
- * Given a partition, door and direction, return the mapped floor string.
- * Falls back to 'Unmapped' only if there's no matching entry.
- */
-export function lookupFloor(partition, door, direction) {
-  const entry = doorMap.find(d =>
-    d.partition === partition && d.door === door
-  );
-  if (!entry) return "Unmapped";
-  return direction === "InDirection"
-    ? entry.inDirectionFloor
-    : entry.outDirectionFloor;
-}
-
-
-
-
 
 // src/pages/PartitionDetail.jsx
-
 import React, { useEffect, useState, useMemo } from "react";
 import {
   Container,
@@ -108,7 +24,8 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { fetchLiveSummary, fetchHistory } from "../api/occupancy.service";
-import { lookupFloor } from "../utils/doorMap";
+// import { lookupFloor } from "../utils/doorMap";
+ import { lookupFloor } from "../utils/floorLookup";
 
 export default function PartitionDetail() {
   const { partition } = useParams();
@@ -288,9 +205,6 @@ export default function PartitionDetail() {
     </>
   );
 }
-
-
-
 
 
 
