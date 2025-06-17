@@ -1,3 +1,138 @@
+import React, { useEffect, useState, useMemo } from "react";
+import {
+  Container,
+  Box,
+  Typography,
+  Button,
+  Grid,
+  CircularProgress,
+  TableContainer,
+  Paper,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  TextField
+} from "@mui/material";
+…
+export default function PartitionDetail() {
+  …
++ const [searchTerm, setSearchTerm] = useState("");
+
+  // still loading both live+history?
+  if (!liveSummary || !history) {
+    return <LoadingSpinner />;
+  }
+
+  // derive counts …
+  …
+
+  // Filtered floorMap by searchTerm
+  const displayedFloors = useMemo(() => {
+    // contains only floors where at least one emp matches searchTerm
+    const term = searchTerm.trim().toLowerCase();
+    return Object.entries(floorMap).filter(([floor, emps]) => {
+      if (!term) return true;
+      // match floor name or any employee id/name
+      if (floor.toLowerCase().includes(term)) return true;
+      return emps.some(r =>
+        r.ObjectName1.toLowerCase().includes(term) ||
+        r.EmployeeID.toLowerCase().includes(term)
+      );
+    });
+  }, [floorMap, searchTerm]);
+
+  return (
+    <>
+      <Header />
+      <Box sx={{ mt: theme => theme.mixins.toolbar.minHeight }} />
+      <Container maxWidth={false} disableGutters sx={{ px: 2, pb: 8 }}>
+        {/* Back + Title */}
+        …
+
+        {/* Search */}
+        <Box display="flex" justifyContent="flex-end" mb={2}>
+          <TextField
+            size="small"
+            placeholder="Search floor / emp…"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+        </Box>
+
+        {/* Floor Details */}
+        <Typography variant="h6" gutterBottom>
+          Floor Details
+        </Typography>
+        <Grid container spacing={2}>
+-         {Object.entries(floorMap).map(([floor, emps]) => (
++         {displayedFloors.map(([floor, emps]) => (
+            <Grid key={floor} item xs={12} sm={6} md={4}>
+              <Box sx={{ border: "1px solid #FFC107", borderRadius: 2, p: 2, height: '100%' }}>
+                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                  {floor} (Total {emps.length})
+                </Typography>
+                <TableContainer component={Paper} variant="outlined" sx={{ mb: 1 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        {["Emp ID", "Name", "Swipe Time", "Type", "Card #", "Door"].map(h => (
+                          <TableCell key={h} sx={{ fontWeight: "bold" }}>{h}</TableCell>
+                        ))}
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+-                     {emps.slice(0, 25).map((r, i) => (
++                     {emps.slice(0, 20).map((r, i) => (
+                        <TableRow key={`${r.PersonGUID}-${i}`}>
+                          <TableCell>{r.EmployeeID}</TableCell>
+                          <TableCell>{r.ObjectName1}</TableCell>
+                          <TableCell>
+                            {new Date(r.LocaleMessageTime).toLocaleTimeString()}
+                          </TableCell>
+                          <TableCell>{r.PersonnelType}</TableCell>
+                          <TableCell>{r.CardNumber}</TableCell>
+                          <TableCell>{r.Door}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+-               {emps.length > 25 && (
++               {emps.length > 20 && (
+                  <Button
+                    size="small"
+                    onClick={() =>
+                      navigate(
+                        `/partition/${encodeURIComponent(partition)}/floor/${encodeURIComponent(floor)}`
+                      )
+                    }
+                  >
+                    See more…
+                  </Button>
+                )}
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
 export default function Footer() {
 -  return (
 -    <Box component="footer" p={2} textAlign="center">
