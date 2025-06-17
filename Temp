@@ -1,3 +1,77 @@
+--- src/pages/PartitionDetailDetails.jsx
++++ src/pages/PartitionDetailDetails.jsx
+@@
+   export default function PartitionDetailDetails() {
+     const { partition } = useParams();
+     const navigate = useNavigate();
+
+     const [details, setDetails] = useState([]);
+-    const [loading, setLoading] = useState(true);
++    const [loading, setLoading] = useState(false);
+     const [lastUpdate, setLastUpdate] = useState("");
+     const [searchTerm, setSearchTerm] = useState("");
+     const [expandedFloor, setExpandedFloor] = useState(null);
+@@
+-  // fetch just details
+-  useEffect(() => {
+-    let timer;
+-    async function loadDetails() {
+-      setLoading(true);
+-      const json = await fetchLiveSummary();
+-      const det = json.details
+-        .filter(r => r.PartitionName2 === partition && r.Direction === "InDirection")
+-        .map(r => ({
+-          ...r,
+-          floor: lookupFloor(r.PartitionName2, r.Door, r.Direction)
+-        }));
+-      setDetails(det);
+-      setLastUpdate(new Date().toLocaleTimeString());
+-      setLoading(false);
+-    }
+-    loadDetails();
+-    timer = setInterval(loadDetails, 1000);
+-    return () => clearInterval(timer);
+-  }, [partition]);
++  // 1) On partition change: show spinner, load once
++  useEffect(() => {
++    let isMounted = true;
++    setLoading(true);
++    fetchLiveSummary().then(json => {
++      if (!isMounted) return;
++      const det = json.details
++        .filter(r => r.PartitionName2 === partition && r.Direction === "InDirection")
++        .map(r => ({ ...r, floor: lookupFloor(r.PartitionName2, r.Door, r.Direction) }));
++      setDetails(det);
++      setLastUpdate(new Date().toLocaleTimeString());
++      setLoading(false);
++    });
++    return () => { isMounted = false; };
++
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [partition]);
++
++  // 2) After initial load, refresh every second WITHOUT spinner
++  useEffect(() => {
++    const iv = setInterval(async () => {
++      const json = await fetchLiveSummary();
++      const det = json.details
++        .filter(r => r.PartitionName2 === partition && r.Direction === "InDirection")
++        .map(r => ({ ...r, floor: lookupFloor(r.PartitionName2, r.Door, r.Direction) }));
++      setDetails(det);
++      setLastUpdate(new Date().toLocaleTimeString());
++    }, 1000);
++    return () => clearInterval(iv);
++  }, [partition]);
+ 
+   // group and filter
+
+
+
+
+
+
+
+
 When i update below file Spinner Cobtinously spin this is not expected 
 Spin only Spinner When new partation is select and Spin only that time of data loading ....Strickly
 
