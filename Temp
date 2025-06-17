@@ -1,3 +1,70 @@
+
+--- src/components/Header.jsx
++++ src/components/Header.jsx
+@@ export default function Header() {
+-  const currentPartition = loc.pathname.startsWith('/partition/')
+-    ? decodeURIComponent(loc.pathname.replace('/partition/',''))
+-    : '';
++  // If path is /partition/:p(/suffix...), grab p and any suffix after it
++  const pathParts = loc.pathname.split('/');
++  let currentPartition = '';
++  let suffix = '';
++  if (pathParts[1] === 'partition' && pathParts[2]) {
++    currentPartition = decodeURIComponent(pathParts[2]);
++    // join any trailing segments as a suffix (e.g. "details" or "history/custom")
++    suffix = pathParts.slice(3).join('/');
++  }
+
+   return (
+     <AppBar position="static" color="primary" sx={{ mb: 2 }}>
+       <Toolbar sx={{ justifyContent: 'space-between' }}>
+@@
+         <Select
+           size="small"
+           value={currentPartition}
+           displayEmpty
+-          onChange={e => {
+-            const p = e.target.value;
+-            if (p) navigate(`/partition/${encodeURIComponent(p)}`);
+-            else navigate('/');
+-          }}
++          onChange={e => {
++            const p = e.target.value;
++            if (!p) {
++              // back to root
++              return navigate('/');
++            }
++            // build new path, preserving any suffix
++            const newBase = `/partition/${encodeURIComponent(p)}`;
++            const newPath = suffix
++              ? `${newBase}/${suffix}`
++              : newBase;
++            navigate(newPath);
++          }}
+           sx={{ bgcolor: 'background.paper', mr: 2 }}
+         >
+           <MenuItem value="">— Select Partition —</MenuItem>
+           {partitionList.map(p => (
+             <MenuItem key={p} value={p}>
+               {p.replace('Partition','')}
+             </MenuItem>
+           ))}
+         </Select>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Lets check all below files and update it 
 
 // src/components/Header.jsx
