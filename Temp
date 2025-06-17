@@ -1,65 +1,89 @@
-        {/* Two summary cards */}
-        <Box display="flex" alignItems="stretch" gap={2} sx={{ mb:2 }}>
-          <SummaryCard
-            title={`Today’s ${partition} Headcount`}
-            total={partToday.total}
-            stats={[
-              { label: 'Employees',   value: partToday.Employee },
-              { label: 'Contractors', value: partToday.Contractor },
-              ...(partToday.TempBadge != null
-                ? [{ label: 'Temp Badge', value: partToday.TempBadge }]
-                : [])
-            ]}
-            sx={{ flex:1, height:180 }}
-          />
+We have 2 API 
 
-          <SummaryCard
-            title={`Live ${partition} Headcount`}
-            total={live.total}
-            stats={[
-              { label: 'Employees',   value: live.Employee },
-              { label: 'Contractors', value: live.Contractor },
-              ...(live.TempBadge != null
-                ? [{ label: 'Temp Badge', value: live.TempBadge }]
-                : [])
-            ]}
-            sx={{ flex:1, height:180 }}
-          />
-        </Box>
+http://localhost:3001/api/occupancy/live-summary
+
+{
+  "success": true,
+  "today": {
+    "total": 750,     ------ This Total are Region Total ( Costa +rica + Angentina etc...)
+    "Employee": 650,
+    "Contractor": 99,
+    "TempBadge": 1
+  },
+  "realtime": {
+    "CR.Costa Rica Partition": {
+      "total": 19,  -------------This is realtime HeadCount Which is changes every seconds for Specxifice partation 
+      "Employee": 9,
+      "Contractor": 10,
+      "TempBadge": 0,
+      "floors": {
+        "Building A1": 6,
+        " Building B1": 2,
+        "Building A2": 2,
+        "Building B2": 2,
+        "Building E3": 1,
+        "Building B3": 1,
+        "Building F4": 1,
+        "Building E2": 2,
+        "Building E4": 2
+      }
+    },
+    "AR.Cordoba": {
+      "total": 2,
+      "Employee": 0,
+      "Contractor": 2,
+      "floors": {
+        "2nd Floor": 1,
+        "1st Floor": 1
+      }
+    },
+    "MX.Mexico City": {
+      "total": 12,
+      "Employee": 11,
+      "Contractor": 1,
+      "floors": {
+        "Floor 01": 12
+      }
+    },
+    "BR.Sao Paulo": {
+      "total": 4,
+      "Employee": 3,
+      "Contractor": 1,
+      "floors": {
+        "6th Floor": 4
+      }
+    }
+  },
+  "details": [              --------------------This are partation Details , Who is Actually present in live time -----I want display this details section in Floor Box like (Building A1 (Total 6)) then below table Which is display name , ID , Card Number, Swipe time , Door , For Current Floor 
+    {
+      "LocaleMessageTime": "2025-06-16T22:15:32.000Z",
+      "Dateonly": "2025-06-16",
+      "Swipe_Time": "22:15:32",
+      "EmployeeID": "W0022873",
+      "PersonGUID": "98DA6E7A-3EE1-47AA-B843-599EB1A6EF21",
+      "ObjectName1": "Hernandez, Sofia",
+      "Door": "LACA CR Shower Men Door",
+      "PersonnelType": "Contractor",
+      "CardNumber": "612791",
+      "Text5": "Santa Ana - Parque Empresarial",
+      "PartitionName2": "CR.Costa Rica Partition",
+      "AdmitCode": "Admit",
+      "Direction": "InDirection"
+    },
 
 
 
 
+Another Api is 
 
+http://localhost:3001/api/occupancy/history/CR.Costa%20Rica%20Partition  -------- We can Replace Partation name as per our requirnment 
+This Api Display 30 days Historical headcount 
 
-
-// C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\PartitionDetail.jsx
-
-todayCount is not defined
-ReferenceError: todayCount is not defined
-    at PartitionDetail (http://localhost:3000/main.9b8df731806c9cc23f30.hot-update.js:244:18)
-    at react-stack-bottom-frame (http://localhost:3000/static/js/bundle.js:63572:18)
-    at renderWithHooks (http://localhost:3000/static/js/bundle.js:53782:20)
-    at updateFunctionComponent (http://localhost:3000/static/js/bundle.js:55475:17)
-    at beginWork (http://localhost:3000/static/js/bundle.js:56061:16)
-    at runWithFiberInDEV (http://localhost:3000/static/js/bundle.js:51553:68)
-    at performUnitOfWork (http://localhost:3000/static/js/bundle.js:58134:93)
-    at workLoopSync (http://localhost:3000/static/js/bundle.js:58027:38)
-    at renderRootSync (http://localhost:3000/static/js/bundle.js:58011:7)
-    at performWorkOnRoot (http://localhost:3000/static/js/bundle.js:57775:42)
-
-
-
-to fetch Today headcount 
-http://localhost:3001/api/occupancy/history/CR.Costa%20Rica%20Partition
-We can simply change partation anme 
-
- {
-      "date": "2025-06-15",
-      "day": "Sunday",
+      "date": "2025-06-15",-----------date 
+      "day": "Sunday", -------------day
       "region": {
-        "name": "CR.Costa Rica Partition",
-        "total": 38,
+        "name": "CR.Costa Rica Partition", ---------Partation  Nam e
+        "total": 38, ------------------------This is Actually partation headcount for Specific day
         "Employee": 23,
         "Contractor": 15,
         "TempBadge": 0
@@ -70,19 +94,37 @@ We can simply change partation anme
       "day": "Monday",
       "region": {
         "name": "CR.Costa Rica Partition",
-        "total": 423,
-        "Employee": 386,
-        "Contractor": 37,
-        "TempBadge": 0
+        "total": 556, ------------------------same for all day for partastion Wise Headcount in ex -Today’s CR.Costa Rica Partition Headcount for there display   "total": 556,  this total and below Employe and Contractor details /
+        "Employee": 489,
+        "Contractor": 66,
+        "TempBadge": 1
       }
     }
   ],
+  "details": [
+    {
+      "LocaleMessageTime": "2025-05-17T00:01:56.000Z",
+      "ObjectName1": "Hernandez, Sofia",
+      "Door": "LACA CR A3 Emergency Elevator Door",
+      "EmployeeID": "W0022873",
+      "Text5": "Santa Ana - Parque Empresarial",
+      "PartitionName2": "CR.Costa Rica Partition",
+      "PersonGUID": "98DA6E7A-3EE1-47AA-B843-599EB1A6EF21",
+      "PersonnelType": "Contractor",
+      "CardNumber": "612791",
+      "AdmitCode": "Admit",
+      "Direction": "OutDirection",
+      "SwipeDate": "2025-05-17T00:00:00.000Z"
+    },
 
-using this API for today we can render this count as per date
+
+
+Now as per my request update below file carefully and give me updated files carefully
 
 
 
 
+// C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\PartitionDetail.jsx
 
 
 import React, { useEffect, useState } from 'react';
@@ -143,43 +185,35 @@ export default function PartitionDetail() {
         </Box>
 
         {/* Two summary cards */}
+         {/* Two summary cards */}
         <Box display="flex" alignItems="stretch" gap={2} sx={{ mb:2 }}>
           <SummaryCard
             title={`Today’s ${partition} Headcount`}
-            total={todayCount.total}
+            total={partToday.total}
             stats={[
-              { label:'Employees', value: todayCount.Employee },
-              { label:'Contractors', value: todayCount.Contractor },
-              ...(todayCount.TempBadge!=null ? [{ label:'Temp Badge', value:todayCount.TempBadge }] : [])
+              { label: 'Employees',   value: partToday.Employee },
+              { label: 'Contractors', value: partToday.Contractor },
+              ...(partToday.TempBadge != null
+                ? [{ label: 'Temp Badge', value: partToday.TempBadge }]
+                : [])
             ]}
             sx={{ flex:1, height:180 }}
           />
-          {/* <SummaryCard
+
+          <SummaryCard
             title={`Live ${partition} Headcount`}
             total={live.total}
             stats={[
-              { label:'Employees', value: live.Employee },
-              { label:'Contractors', value: live.Contractor },
-              ...(live.TempBadge!=null ? [{ label:'Temp Badge', value:live.TempBadge }] : [])
+              { label: 'Employees',   value: live.Employee },
+              { label: 'Contractors', value: live.Contractor },
+              ...(live.TempBadge != null
+                ? [{ label: 'Temp Badge', value: live.TempBadge }]
+                : [])
             ]}
             sx={{ flex:1, height:180 }}
-          /> */}
-
-         <SummaryCard
-           title={`Today’s ${partition} Headcount`}
-           total={partToday.total}
-           stats={[
-             { label:'Employees',   value: partToday.Employee },
-             { label:'Contractors', value: partToday.Contractor },
-             ...(partToday.TempBadge!=null
-               ? [{ label:'Temp Badge', value: partToday.TempBadge }]
-               : [])
-          ]}
-           sx={{ flex:1, height:180 }}
-         />
-
-
+          />
         </Box>
+
 
         {/* Floor‐wise chart + last updated */}
         <Box mb={2}>
@@ -233,8 +267,37 @@ export default function PartitionDetail() {
           ))}
         </Grid>
       </Container>
-      <Footer />
+      <footer style={{
+        backgroundColor: '#000000',
+        color: '#FFC107',
+        padding: '1.5rem 0',
+        textAlign: 'center',
+        marginTop: 0,
+        borderTop: '2px solid #FFC107',
+        fontSize: '0.95rem',
+        lineHeight: '1.6'
+      }}>
+        <div><strong>Global Security Operations Center</strong><br/>
+          Live HeadCount against Occupancy dashboard for Western Union — Real-time occupancy, floor activity, and personnel insights.
+        </div>
+        <div style={{ marginTop: '0.75rem' }}>
+          Contact us:&nbsp;
+          <a href="mailto:GSOC-GlobalSecurityOperationCenter.SharedMailbox@westernunion.com"
+             style={{ color: '#FFC107', textDecoration: 'underline' }}>
+            GSOC Mail
+          </a>&nbsp;|&nbsp;
+          Landline:&nbsp;<span style={{ color: '#FFC107' }}>+91-020-67632394</span>
+        </div>
+      </footer>
+
+
+
+
+      {/* <Footer /> */}
     </>
   );
 }
+
+
+
 
