@@ -2,6 +2,60 @@
 +++ src/components/ChartCard.jsx
 @@
 -import {
+-  AreaChart,
+-  Area,
+-  Line,
+-  XAxis,
+-  YAxis,
+-  Tooltip,
+-  ResponsiveContainer,
+-  CartesianGrid,
+-  Legend,
+-  Defs,
+-  linearGradient,
+-  stop
+-} from 'recharts';
++import {
++  AreaChart,
++  Area,
++  Line,
++  XAxis,
++  YAxis,
++  Tooltip,
++  ResponsiveContainer,
++  CartesianGrid,
++  Legend,
++} from 'recharts';
+@@
+-            <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+-              {/* define yellow gradient */}
+-              <Defs>
+-                <linearGradient id="colorHead" x1="0" y1="0" x2="0" y2="1">
+-                  <stop offset="5%" stopColor="#FFC107" stopOpacity={0.4}/>
+-                  <stop offset="95%" stopColor="#FFC107" stopOpacity={0}/>
+-                </linearGradient>
+-              </Defs>
++            <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
++              {/* define yellow gradient */}
++              <defs>
++                <linearGradient id="colorHead" x1="0" y1="0" x2="0" y2="1">
++                  <stop offset="5%" stopColor="#FFC107" stopOpacity={0.4}/>
++                  <stop offset="95%" stopColor="#FFC107" stopOpacity={0}/>
++                </linearGradient>
++              </defs>
+
+
+
+
+
+
+
+
+
+--- src/components/ChartCard.jsx
++++ src/components/ChartCard.jsx
+@@
+-import {
 -  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, LabelList
 -} from 'recharts';
 +import {
