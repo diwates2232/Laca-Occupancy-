@@ -1,3 +1,49 @@
+import React from 'react';
+import {
+  Table, TableHead, TableBody, TableRow, TableCell, Paper, TableContainer
+} from '@mui/material';
+
+export default function DataTable({ columns, rows }) {
+  return (
+    <TableContainer component={Paper} sx={{ mt: 2, width: '100%' }}>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            {columns.map(c => (
+              <TableCell key={c.field} sx={{ fontWeight: 'bold' }}>
+                {c.headerName}
+              </TableCell>
+            ))}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows.map((row, i) => (
+            <TableRow key={i}>
+              {columns.map(c => (
+                <TableCell key={c.field}>
+                  {row[c.field]}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 import React, { useEffect, useState, useMemo } from "react";
 import {
   Container,
