@@ -1,3 +1,32 @@
+
+// src/utils/floorLookup.js
+import doorMap from './doorMap'; // relative to this file
+
+/**
+ * Given a partition, door and direction, return the mapped floor string.
+ * Falls back to 'Unmapped' only if there's no matching entry.
+ */
+export function lookupFloor(partition, door, direction) {
+  const entry = doorMap.find(d =>
+    d.partition === partition && d.door === door
+  );
+  if (!entry) return 'Unmapped';
+  return direction === 'InDirection'
+    ? entry.inDirectionFloor
+    : entry.outDirectionFloor;
+}
+
+
+
+
+- import { lookupFloor } from "../utils/doorMap";
++ import { lookupFloor } from "../utils/floorLookup";
+
+
+
+
+
+
 Check below all files carefully and line by line and solve this issue carefully 
 
 ERROR
