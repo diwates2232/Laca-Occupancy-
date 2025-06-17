@@ -1,3 +1,21 @@
+<Button
+  variant="contained"
+  size="small"
+  onClick={() =>
+    navigate(`/partition/${encodeURIComponent(partition)}/details`)
+  }
+>
+  See Details
+</Button>
+
+
+
+
+
+
+
+
+
 // src/App.js (or wherever your <Routes> live)
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
