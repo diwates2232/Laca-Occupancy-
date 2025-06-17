@@ -1,3 +1,233 @@
+// src/pages/PartitionDetail.jsx
+import React, { useEffect, useState, useMemo } from "react";
+import {
+  AppBar,
+  Toolbar,
+  Container,
+  Box,
+  Typography,
+  Button,
+  Grid,
+  CircularProgress,
+  TextField,
+  TableContainer,
+  Paper,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+} from "@mui/material";
+import { useParams, useNavigate } from "react-router-dom";
+import SummaryCard from "../components/SummaryCard";
+import ChartCard from "../components/ChartCard";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { fetchLiveSummary, fetchHistory } from "../api/occupancy.service";
+import { lookupFloor } from "../utils/floorLookup";
+
+export default function PartitionDetail() {
+  const { partition } = useParams();
+  const navigate = useNavigate();
+
+  // 1) Live + history state
+  const [liveSummary, setLiveSummary] = useState(null);
+  const [history, setHistory] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [details, setDetails] = useState([]);
+  const [lastUpdate, setLastUpdate] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // 2) Auto‐refresh live
+  useEffect(() => {
+    let timer;
+    async function loadLive() {
+      const json = await fetchLiveSummary();
+      setLiveSummary(json);
+      const det = json.details
+        .filter(r => r.PartitionName2 === partition && r.Direction === "InDirection")
+        .map(r => ({ ...r, floor: lookupFloor(r.PartitionName2, r.Door, r.Direction) }));
+      setDetails(det);
+      setLastUpdate(new Date().toLocaleTimeString());
+    }
+    loadLive();
+    timer = setInterval(loadLive, 1000);
+    return () => clearInterval(timer);
+  }, [partition]);
+
+  // 3) Load historical once
+  useEffect(() => {
+    setHistoryLoading(true);
+    fetchHistory(partition).then(json => {
+      setHistory(json);
+      setHistoryLoading(false);
+    });
+  }, [partition]);
+
+  // 4) Always define these hooks in the top-level, before any conditional return:
+  //    group by floor
+  const floorMap = useMemo(() => {
+    const m = {};
+    details.forEach(r => {
+      m[r.floor] = m[r.floor] || [];
+      m[r.floor].push(r);
+    });
+    return m;
+  }, [details]);
+
+  //    apply search + sort by count desc
+  const displayed = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return Object.entries(floorMap)
+      .filter(([floor, emps]) => {
+        if (!term) return true;
+        if (floor.toLowerCase().includes(term)) return true;
+        return emps.some(r =>
+          r.ObjectName1.toLowerCase().includes(term) ||
+          r.EmployeeID.toLowerCase().includes(term)
+        );
+      })
+      .sort((a, b) => b[1].length - a[1].length);
+  }, [floorMap, searchTerm]);
+
+  // 5) Early loading state
+  if (!liveSummary || !history) {
+    return <LoadingSpinner />;
+  }
+
+  // 6) derive totals
+  const lastDay = history.summaryByDate.at(-1);
+  const partToday = lastDay.region;
+  const live = liveSummary.realtime[partition] || {
+    total: 0, Employee: 0, Contractor: 0, TempBadge: 0, floors: {}
+  };
+
+  return (
+    <>
+      <AppBar position="fixed">
+        <Toolbar><Header /></Toolbar>
+      </AppBar>
+
+      <Box component="main" sx={{ pt: 8, pb: 4 }}>
+        <Container maxWidth={false} disableGutters sx={{ px: "20px" }}>
+          {/* Back + Title */}
+          <Box display="flex" alignItems="center" mb={2}>
+            <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
+            <Typography variant="h6" sx={{ ml: 2 }}>
+              {partition.replace("CR.Costa Rica Partition", "Costa Rica")}
+            </Typography>
+          </Box>
+
+          {/* Summary */}
+          <Box display="flex" gap={2} mb={4}>
+            <SummaryCard
+              title={`Today’s ${partition} Headcount`}
+              total={historyLoading ? 0 : partToday.total}
+              stats={[
+                { label: "Employees",   value: historyLoading ? <CircularProgress size={20} /> : partToday.Employee },
+                { label: "Contractors", value: historyLoading ? <CircularProgress size={20} /> : partToday.Contractor },
+                { label: "Temp Badge",  value: historyLoading ? <CircularProgress size={20} /> : partToday.TempBadge },
+              ]}
+              sx={{ flex: 1, height: 180 }}
+            />
+            <SummaryCard
+              title={`Live ${partition} Headcount`}
+              total={live.total}
+              stats={[
+                { label: "Employees",   value: live.Employee },
+                { label: "Contractors", value: live.Contractor },
+                { label: "Temp Badge",  value: live.TempBadge },
+              ]}
+              sx={{ flex: 1, height: 180 }}
+            />
+          </Box>
+
+          {/* Chart */}
+          <Box mb={4}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+              <Typography variant="h6">Live Floor Counts</Typography>
+              <Typography variant="body2" color="textSecondary">
+                Last updated: {lastUpdate}
+              </Typography>
+            </Box>
+            <ChartCard
+              title=""
+              data={Object.entries(live.floors).map(([floor, cnt]) => ({ name: floor.trim(), value: cnt }))}
+              chartHeight={260}
+            />
+          </Box>
+
+          {/* Floor Details + Search */}
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="h6">Floor Details</Typography>
+            <TextField
+              size="small"
+              placeholder="Search floor / emp…"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </Box>
+
+          {/* 3 per row */}
+          <Grid container spacing={2}>
+            {displayed.map(([floor, emps]) => (
+              <Grid key={floor} item xs={12} sm={6} md={4}>
+                <Box sx={{ border: "1px solid #FFC107", borderRadius: 2, p: 2, height: "100%" }}>
+                  <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                    {floor} (Total {emps.length})
+                  </Typography>
+                  <TableContainer component={Paper} variant="outlined" sx={{ mb: 1 }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          {["Emp ID","Name","Swipe Time","Type","Card #","Door"].map(h => (
+                            <TableCell key={h} sx={{ fontWeight: "bold" }}>{h}</TableCell>
+                          ))}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {emps.slice(0,20).map((r,i) => (
+                          <TableRow key={`${r.PersonGUID}-${i}`}>
+                            <TableCell>{r.EmployeeID}</TableCell>
+                            <TableCell>{r.ObjectName1}</TableCell>
+                            <TableCell>{new Date(r.LocaleMessageTime).toLocaleTimeString()}</TableCell>
+                            <TableCell>{r.PersonnelType}</TableCell>
+                            <TableCell>{r.CardNumber}</TableCell>
+                            <TableCell>{r.Door}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  {emps.length > 20 && (
+                    <Button
+                      size="small"
+                      onClick={() => navigate(
+                        `/partition/${encodeURIComponent(partition)}/floor/${encodeURIComponent(floor)}`
+                      )}
+                    >
+                      See more…
+                    </Button>
+                  )}
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
+        </Container>
+      </Box>
+
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
 Read below file and solve this issue 
 ERROR
 Rendered more hooks than during the previous render.
