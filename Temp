@@ -1,166 +1,22 @@
---- a/src/pages/PartitionDetail.jsx
-+++ b/src/pages/PartitionDetail.jsx
-@@
--import React, { useEffect, useState } from 'react';
-+import React, { useEffect, useState, useMemo } from 'react';
- import {
-   Container,
-   Box,
-   Typography,
-   Button,
-   Grid,
-   CircularProgress
- } from '@mui/material';
-@@
- import LoadingSpinner from '../components/LoadingSpinner';
- 
- import {
-   fetchLiveSummary,
-   fetchHistory
- } from '../api/occupancy.service';
-+import ZoneDetailsTable from '../components/ZoneDetailsTable';    // ← add this import
- 
- export default function PartitionDetail() {
-   const { partition } = useParams();
-@@
-   // derive a map: floorName → array of detail records
--  
-+  const floorMap = useMemo(() => {
-+    const m = {};
-+    details.forEach(r => {
-+      const f = (r.floor || '').trim() || 'Unmapped';
-+      if (!m[f]) m[f] = [];
-+      m[f].push(r);
-+    });
-+    return m;
-+  }, [details]);
- 
-   return (
-     <>
-@@
--        {/* Floor Details */}
--        <Typography variant="h6" gutterBottom>
--          Floor Details
--        </Typography>
--        <ZoneDetailsTable data={floorMap} />
-+        {/* Floor Details */}
-+        <Typography variant="h6" gutterBottom>
-+          Floor Details
-+        </Typography>
-+        <ZoneDetailsTable data={floorMap} />
-
-
-
-
-
-
-
-
-
-
-
-Read all files carefully and solve the issue 
-
 ERROR
-ZoneDetailsTable is not defined
-ReferenceError: ZoneDetailsTable is not defined
-    at PartitionDetail (http://localhost:3000/static/js/bundle.js:105018:92)
+Rendered more hooks than during the previous render.
+    at updateWorkInProgressHook (http://localhost:3000/static/js/bundle.js:53896:15)
+    at updateMemo (http://localhost:3000/static/js/bundle.js:54493:16)
+    at Object.useMemo (http://localhost:3000/static/js/bundle.js:62931:16)
+    at exports.useMemo (http://localhost:3000/static/js/bundle.js:80007:32)
+    at PartitionDetail (http://localhost:3000/main.db32560b116fd380b657.hot-update.js:309:66)
     at react-stack-bottom-frame (http://localhost:3000/static/js/bundle.js:63572:18)
     at renderWithHooks (http://localhost:3000/static/js/bundle.js:53782:20)
     at updateFunctionComponent (http://localhost:3000/static/js/bundle.js:55475:17)
     at beginWork (http://localhost:3000/static/js/bundle.js:56061:16)
     at runWithFiberInDEV (http://localhost:3000/static/js/bundle.js:51553:68)
-    at performUnitOfWork (http://localhost:3000/static/js/bundle.js:58134:93)
-    at workLoopSync (http://localhost:3000/static/js/bundle.js:58027:38)
-    at renderRootSync (http://localhost:3000/static/js/bundle.js:58011:7)
-    at performWorkOnRoot (http://localhost:3000/static/js/bundle.js:57775:42)
-
-
-//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\ZoneDetailsTable.jsx
-import React, { useState, useMemo } from 'react';
-// import './ZoneDetailsTable.css'; // copy over your CSS from Pune
-
-export default function ZoneDetailsTable({ data = {} }) {
-  const [searchTerm, setSearchTerm] = useState('');
-
-  // 1) sort floors by descending count
-  const sortedFloors = useMemo(() => {
-    return Object.entries(data).sort(([, listA], [, listB]) => listB.length - listA.length);
-  }, [data]);
-
-  // 2) filter predicate
-  const matches = emp =>
-    emp.ObjectName1.toLowerCase().includes(searchTerm.trim().toLowerCase());
-
-  if (sortedFloors.length === 0) {
-    return <p>No floor details available.</p>;
-  }
-
-  return (
-    <div className="zone-cards">
-      <div style={{ marginBottom: 16, textAlign: 'right' }}>
-        <input
-          type="text"
-          placeholder="Search employee..."
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          style={{
-            padding: '6px 12px',
-            fontSize: '0.9rem',
-            borderRadius: 4,
-            border: '1px solid #ccc'
-          }}
-        />
-      </div>
-
-      {sortedFloors.map(([floor, emps]) => {
-        const filtered = emps.filter(matches);
-        if (!filtered.length) return null;
-
-        return (
-          <div key={floor} className="zone-card">
-            <div className="zone-header">
-              <h3>{floor.trim()}</h3>
-              <span className="zone-badge">Total: {filtered.length}</span>
-            </div>
-            <table className="zone-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Emp ID</th>
-                  <th>Swipe Time</th>
-                  <th>Type</th>
-                  <th>Card #</th>
-                  <th>Door</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r, i) => (
-                  <tr key={`${r.PersonGUID}-${i}`}>
-                    <td>{r.ObjectName1}</td>
-                    <td>{r.EmployeeID}</td>
-                    <td>{new Date(r.LocaleMessageTime).toLocaleTimeString()}</td>
-                    <td>{r.PersonnelType}</td>
-                    <td>{r.CardNumber}</td>
-                    <td>{r.Door}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 
 
 
 
 // C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\PartitionDetail.jsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   Container,
   Box,
@@ -181,6 +37,7 @@ import {
   fetchLiveSummary,
   fetchHistory
 } from '../api/occupancy.service';
+import ZoneDetailsTable from '../components/ZoneDetailsTable';    // ← add this import
 export default function PartitionDetail() {
   const { partition } = useParams();
   const navigate = useNavigate();
@@ -228,6 +85,19 @@ export default function PartitionDetail() {
   const live = liveSummary.realtime[partition] || {
     total: 0, Employee: 0, Contractor: 0, TempBadge: 0, floors: {}
   };
+
+
+ const floorMap = useMemo(() => {
+    const m = {};
+    details.forEach(r => {
+      const f = (r.floor || '').trim() || 'Unmapped';
+      if (!m[f]) m[f] = [];
+      m[f].push(r);
+    });
+    return m;
+  }, [details]);
+
+
 
   return (
     <>
@@ -366,12 +236,16 @@ export default function PartitionDetail() {
         </Grid> */}
 
 
+  
+
         {/* Floor Details */}
         <Typography variant="h6" gutterBottom>
           Floor Details
         </Typography>
         <ZoneDetailsTable data={floorMap} />
-       
+
+
+
 
       </Container>
 
@@ -379,6 +253,3 @@ export default function PartitionDetail() {
     </>
   );
 }
-
-
-
