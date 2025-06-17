@@ -1,3 +1,38 @@
+Check below all files carefully and line by line and solve this issue carefully 
+
+ERROR
+(0 , _utils_doorMap__WEBPACK_IMPORTED_MODULE_7__.lookupFloor) is not a function
+TypeError: (0 , _utils_doorMap__WEBPACK_IMPORTED_MODULE_7__.lookupFloor) is not a function
+    at http://localhost:3000/static/js/bundle.js:105041:75
+    at Array.map (<anonymous>)
+    at loadLive (http://localhost:3000/static/js/bundle.js:105039:109)
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\utils\doorMap.js
+
+
+module.exports = [
+  { partition: 'AR.Cordoba', door: 'LACA ARG 1st Floor Main Entrance', inDirectionFloor: '1st Floor', outDirectionFloor: 'Out of office ' },
+  { partition: 'AR.Cordoba', door: 'LACA ARG 1st Floor Emergency Stairs', inDirectionFloor: '1st Floor', outDirectionFloor: 'Out of office ' },
+  { partition: 'AR.Cordoba', door: 'AR_MonteVideo_DR_1stFlrCSC IN/OUT DELETE', inDirectionFloor: '1st Floor', outDirectionFloor: '1st Floor' },
+  { partition: 'AR.Cordoba', door: 'LACA ARG 2nd Floor Main Entrance', inDirectionFloor: '2nd Floor', outDirectionFloor: 'Out of office ' },
+  { partition: 'AR.Cordoba', door: 'LACA ARG 2nd Floor Emergency Stairs', inDirectionFloor: '2nd Floor', outDirectionFloor: 'Out of office ' },
+  { partition: 'AR.Cordoba', door: 'LACA ARG 2nd Floor HR 2nd Entrance', inDirectionFloor: '2nd Floor', outDirectionFloor: '2nd Floor' },
+  { partition: 'AR.Cordoba', door: 'LACA ARG 2nd Floor IT Room', inDirectionFloor: '2nd Floor', outDirectionFloor: '2nd Floor' },
+  { partition: 'AR.Cordoba', door: 'LACA ARG 2nd Floor 1ST Entrance HR', inDirectionFloor: '2nd Floor', outDirectionFloor: '2nd Floor' },
+  { partition: 'AR.Cordoba', door: 'LACA ARG 3rd Floor Main Entrance', inDirectionFloor: '3rd Floor', outDirectionFloor: 'Out of office ' },
+  { partition: 'AR.Cordoba', door: 'LACA ARG 3rd Floor Emergency Stairs', inDirectionFloor: '3rd Floor', outDirectionFloor: 'Out of office ' },
+   { partition: 'PE.Lima', door: 'LACA PE 2nd West Floor Emergency', inDirectionFloor: '2nd Floor', outDirectionFloor: 'Out of office ' },
+  { partition: 'PE.Lima', door: 'LACA PE 2nd Floor Storage Room', inDirectionFloor: '2nd Floor', outDirectionFloor: '2nd Floor' },
+  { partition: 'BR.Sao Paulo', door: 'LACA BR 6TH IDF DOOR', inDirectionFloor: '6th Floor', outDirectionFloor: '6th Floor' },
+  { partition: 'BR.Sao Paulo', door: 'LACA BR 6TH FLOOR MAIN ENTRANCE DOOR', inDirectionFloor: '6th Floor', outDirectionFloor: 'Out of office ' },
+  { partition: 'BR.Sao Paulo', door: 'LACA BR 6TH FLOOR STORAGE DOOR', inDirectionFloor: '6th Floor', outDirectionFloor: '6th Floor' },
+];
+
+
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\utils\floorLookup.js
+
 // src/utils/floorLookup.js
 import doorMap from "../utils/doorMap"; // copy your existing doorMap JSON/JS here
 
@@ -19,9 +54,8 @@ export function lookupFloor(partition, door, direction) {
 
 
 
-
-
 // src/pages/PartitionDetail.jsx
+
 import React, { useEffect, useState, useMemo } from "react";
 import {
   Container,
@@ -45,7 +79,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { fetchLiveSummary, fetchHistory } from "../api/occupancy.service";
-import { lookupFloor } from "../utils/floorLookup";
+import { lookupFloor } from "../utils/doorMap";
 
 export default function PartitionDetail() {
   const { partition } = useParams();
@@ -234,271 +268,4 @@ export default function PartitionDetail() {
 
 
 
-
-
-
-
-
-
-
-AS per below Updatede files We are getting Responce like as belows
-
-Unmapped (Total 4)    ---------here Floor name is unmapped / expected out need to map Floor name 
-Emp ID	Name	Swipe Time	Type	Card #	Door
-W0019098	Andrada, Nestor	10:54:25 AM	Contractor	614137	LACA ARG MOLINETE 1 IN
-W0018199	Santa Maria, Jose	12:01:49 PM	Contractor	616986	LACA ARG 4th Floor Main Entrance
-W0026213	Padilla, Sol Daina	12:00:36 PM	Contractor	617927	LACA ARG 5th Floor Main Entrance
-0	Argentina, VIS_ARG_019 019	11:49:07 AM	Visitor	606117	LACA ARG MOLINETE 1 IN
-
-There is no table Formating for 
-
-also all Floors data are display in one table need to create new box for new Floor or building.
-
-if u want ti check Fllor map.js file kindly inform me then update Floor data carefully
-
-
-
-
-
-// src/pages/PartitionDetail.jsx
-
-import React, { useEffect, useState, useMemo } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  Grid,
-  CircularProgress
-} from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import LoadingSpinner from '../components/LoadingSpinner';
-
-import {
-  fetchLiveSummary,
-  fetchHistory
-} from '../api/occupancy.service';
-
-export default function PartitionDetail() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-
-  const [liveSummary, setLiveSummary] = useState(null);
-  const [history, setHistory] = useState(null);
-  const [historyLoading, setHistoryLoading] = useState(true);
-  const [details, setDetails] = useState([]);
-  const [lastUpdate, setLastUpdate] = useState('');
-
-  // live summary auto-refresh
-  useEffect(() => {
-    let timer;
-    const loadLive = async () => {
-      const json = await fetchLiveSummary();
-      setLiveSummary(json);
-      setDetails(
-        json.details.filter(
-          r => r.PartitionName2 === partition && r.Direction === 'InDirection'
-        )
-      );
-      setLastUpdate(new Date().toLocaleTimeString());
-    };
-    loadLive();
-    timer = setInterval(loadLive, 1000);
-    return () => clearInterval(timer);
-  }, [partition]);
-
-  // historical (only once)
-  useEffect(() => {
-    setHistoryLoading(true);
-    fetchHistory(partition).then(json => {
-      setHistory(json);
-      setHistoryLoading(false);
-    });
-  }, [partition]);
-
-  // build per‐floor map
-  const floorMap = useMemo(() => {
-    const m = {};
-    details.forEach(r => {
-      const f = (r.floor || '').trim() || 'Unmapped';
-      if (!m[f]) m[f] = [];
-      m[f].push(r);
-    });
-    return m;
-  }, [details]);
-
-  if (!liveSummary || !history) return <LoadingSpinner />;
-
-  const lastDay = history.summaryByDate.slice(-1)[0];
-  const partToday = lastDay.region;
-  const live = liveSummary.realtime[partition] || {
-    total: 0, Employee: 0, Contractor: 0, TempBadge: 0, floors: {}
-  };
-
-  return (
-    <>
-      <Header />
-      <Container maxWidth={false} disableGutters sx={{ px: 2, pt: 2, pb: 4 }}>
-        {/* Back + Title */}
-        <Box display="flex" alignItems="center" mb={2}>
-          <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
-          <Typography variant="h6" sx={{ ml: 2 }}>
-            {partition.replace('CR.Costa Rica Partition','Costa Rica')}
-          </Typography>
-        </Box>
-
-        {/* Summary Cards */}
-        <Box display="flex" gap={2} mb={4}>
-          <SummaryCard
-            title={`Today’s ${partition} Headcount`}
-            total={historyLoading ? 0 : partToday.total}
-            stats={[
-              {
-                label: 'Employees',
-                value: historyLoading
-                  ? <CircularProgress size={20}/>
-                  : partToday.Employee
-              },
-              {
-                label: 'Contractors',
-                value: historyLoading
-                  ? <CircularProgress size={20}/>
-                  : partToday.Contractor
-              },
-              {
-                label: 'Temp Badge',
-                value: historyLoading
-                  ? <CircularProgress size={20}/>
-                  : partToday.TempBadge
-              }
-            ]}
-            sx={{ flex: 1, height: 180 }}
-          />
-          <SummaryCard
-            title={`Live ${partition} Headcount`}
-            total={live.total}
-            stats={[
-              { label: 'Employees',   value: live.Employee },
-              { label: 'Contractors', value: live.Contractor },
-              { label: 'Temp Badge',  value: live.TempBadge }
-            ]}
-            sx={{ flex: 1, height: 180 }}
-          />
-        </Box>
-
-        {/* Floor‐wise Chart */}
-        <Box mb={4}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-            <Typography variant="h6">Live Floor Counts</Typography>
-            <Typography variant="body2" color="textSecondary">
-              Last updated: {lastUpdate}
-            </Typography>
-          </Box>
-          <ChartCard
-            title=""
-            data={Object.entries(live.floors).map(([floor, cnt]) => ({
-              name: floor.trim(),
-              value: cnt
-            }))}
-            chartHeight={260}
-          />
-        </Box>
-
-        {/* Floor Details: two per row */}
-        <Typography variant="h6" gutterBottom>Floor Details</Typography>
-        <Grid container spacing={2}>
-          {Object.entries(floorMap).map(([floor, emps]) => (
-            <Grid key={floor} item xs={12} md={6}>
-              <Box sx={{ border: '1px solid #FFC107', borderRadius: 2, p: 2, height: '100%' }}>
-                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                  {floor} (Total {emps.length})
-                </Typography>
-                <Box component="table" width="100%" sx={{ borderCollapse: 'collapse', mb: 1 }}>
-                  <Box component="thead">
-                    <Box component="tr">
-                      {['Emp ID','Name','Swipe Time','Type','Card #','Door'].map(h => (
-                        <Box
-                          key={h}
-                          component="th"
-                          sx={{ textAlign: 'left', py: 0.5, pr: 2, fontWeight: 'bold' }}
-                        >
-                          {h}
-                        </Box>
-                      ))}
-                    </Box>
-                  </Box>
-                  <Box component="tbody">
-                    {emps.slice(0,25).map((r,i) => (
-                      <Box key={i} component="tr">
-                        <Box component="td">{r.EmployeeID}</Box>
-                        <Box component="td">{r.ObjectName1}</Box>
-                        <Box component="td">{new Date(r.LocaleMessageTime).toLocaleTimeString()}</Box>
-                        <Box component="td">{r.PersonnelType}</Box>
-                        <Box component="td">{r.CardNumber}</Box>
-                        <Box component="td">{r.Door}</Box>
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
-                {emps.length > 25 && (
-                  <Button
-                    size="small"
-                    onClick={() =>
-                      navigate(
-                        `/partition/${encodeURIComponent(partition)}/floor/${encodeURIComponent(floor)}`
-                      )
-                    }
-                  >
-                    See more…
-                  </Button>
-                )}
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
-      <Footer />
-    </>
-  );
-}
-
-
-
-
-
-
-
-// src/components/DataTable.jsx
-
-import React from 'react';
-import {
-  Table, TableHead, TableBody, TableRow, TableCell, Paper, TableContainer
-} from '@mui/material';
-
-export default function DataTable({ columns, rows }) {
-  return (
-    <TableContainer component={Paper} sx={{ mt: 2 }}>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            {columns.map(c => <TableCell key={c.field}>{c.headerName}</TableCell>)}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {rows.map((row, i) => (
-            <TableRow key={i}>
-              {columns.map(c => (
-                <TableCell key={c.field}>{row[c.field]}</TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
-}
 
