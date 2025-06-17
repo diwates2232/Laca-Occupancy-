@@ -1,3 +1,41 @@
+// src/App.js (or wherever your <Routes> live)
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import PartitionDetail from "./pages/PartitionDetail";
+import PartitionDetailDetails from "./pages/PartitionDetailDetails";  // ← import here
+// … other imports …
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
++       {/* Overview page */}
+        <Route
+          path="/partition/:partition"
+          element={<PartitionDetail />}
+        />
+
++       {/* NEW: Details page */}
++       <Route
++         path="/partition/:partition/details"
++         element={<PartitionDetailDetails />}
++       />
+
+        {/* …any other routes… */}
+
+        {/* optional: fallback redirect */}
+        <Route path="*" element={<Navigate to="/partition/default" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+
+
+
+
+
+
 // src/pages/PartitionDetail.jsx
 import React, { useEffect, useState, useMemo } from "react";
 import {
