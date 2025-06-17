@@ -1,3 +1,26 @@
+//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\LoadingSpinner.jsx
+
+import React from 'react';
+import { CircularProgress, Box } from '@mui/material';
+
+export default function LoadingSpinner() {
+  return (
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      height="60vh"
+    >
+      <CircularProgress />
+    </Box>
+  );
+}
+
+
+
+
+
+
 
 --- src/components/Header.jsx
 +++ src/components/Header.jsx
