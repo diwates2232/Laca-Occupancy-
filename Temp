@@ -1,3 +1,115 @@
+// C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\ChartCard.jsx
+
+import React from 'react';
+import { Card, CardContent, Typography, Box } from '@mui/material';
+import {
+  AreaChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
+} from 'recharts';
+
+export default function ChartCard({
+  title,
+  data = [],
+  chartHeight = 250,
+  // Default to a single “Value” series if none provided
+  series = [
+    { dataKey: 'value', name: 'Value', stroke: '#FFC107', fillOpacity: 0.4 }
+  ],
+}) {
+  if (!Array.isArray(data) || data.length === 0) {
+    return (
+      <Card sx={{ mb: 2 }}>
+        <CardContent sx={{ textAlign: 'center' }}>
+          <Typography variant="h6">{title}</Typography>
+          <Typography variant="body2">No data to display.</Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card sx={{ mb: 2 }}>
+      <CardContent sx={{ textAlign: 'center' }}>
+        <Typography variant="h6" gutterBottom>
+          {title}
+        </Typography>
+        <Box sx={{ width: '100%', height: chartHeight }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={data}
+              margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+            >
+              {/* Per-series gradient definitions */}
+              <defs>
+                {series.map(s => (
+                  <linearGradient
+                    key={s.dataKey}
+                    id={`grad-${s.dataKey}`}
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop
+                      offset="5%"
+                      stopColor={s.stroke}
+                      stopOpacity={s.fillOpacity ?? 0.4}
+                    />
+                    <stop offset="95%" stopColor={s.stroke} stopOpacity={0} />
+                  </linearGradient>
+                ))}
+              </defs>
+
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="name" tick={{ fill: '#FFF', fontWeight: 600 }} />
+              <YAxis tick={{ fill: '#FFF', fontWeight: 600 }} />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#333' }}
+                itemStyle={{ color: '#FFF' }}
+              />
+              <Legend wrapperStyle={{ color: '#FFF' }} />
+
+              {series.map(s => (
+                <React.Fragment key={s.dataKey}>
+                  <Area
+                    type="monotone"
+                    dataKey={s.dataKey}
+                    name={s.name}
+                    stroke={s.stroke}
+                    fill={`url(#grad-${s.dataKey})`}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey={s.dataKey}
+                    stroke={s.stroke}
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
+                  />
+                </React.Fragment>
+              ))}
+            </AreaChart>
+          </ResponsiveContainer>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
+
 add all above updation in below file and give me fully updated files ,carefully then we move next step
 
 
