@@ -1,3 +1,54 @@
+diff --git a/src/pages/PartitionDetail.jsx b/src/pages/PartitionDetail.jsx
+index abc1234..def5678 100644
+--- a/src/pages/PartitionDetail.jsx
++++ b/src/pages/PartitionDetail.jsx
+@@ render() {
+-      <Box component="main" sx={{ pt: 1, pb: 1 }}>
+-        <Container maxWidth={false} disableGutters sx={{ px: 0 }}>
++      <Box component="main" sx={{ pt: 1, pb: 1 }}>
++        {/* full-width container, no horizontal gutters */}
++        <Container maxWidth={false} disableGutters>
+@@ Summary… */}
+-          <Box display="flex" gap={2} mb={2} sx={{ px: "20px" }}>
++          <Box display="flex" gap={2} mb={2} sx={{ px: "20px" }}>
+             {/* … */}
+@@ Chart… */}
+-          <Box mb={2} sx={{ px: "20px" }}>
++          <Box mb={2} sx={{ px: "20px" }}>
+             {/* … */}
+@@ Floor Details + Search */}
+-          <Box display="flex" alignItems="center" gap={2} mb={2} sx={{ px: "20px" }}>
++          <Box display="flex" alignItems="center" gap={2} mb={2} sx={{ px: "20px" }}>
+             <Typography variant="h6">Floor Details</Typography>
+             <TextField
+               size="small"
+@@ “2 per row” */}
+-          <Grid container sx={{ px: "20px" }} spacing={0}>
++          {/* grid covers full width, two items per row */}
++          <Grid container spacing={0} sx={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }}>
+             {displayed.map(([floor, emps]) => (
+-              <Grid key={floor} item xs={12} sm={6} md={6} sx={{ p: "20px" }}>
++              <Grid key={floor} item xs={12} sm={6} md={6}>
+                 <Box
+                   sx={{
+                     border: "1px solid #FFC107",
+                     borderRadius: 2,
+-                    p: 2,
++                    p: "20px",         // 20px padding inside
+                     height: "100%",
+                   }}
+                 >
+                   <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                     {floor} (Total {emps.length})
+                   </Typography>
+                   {/* …rest unchanged */}
+
+
+
+
+
+
+
 // src/pages/PartitionDetail.jsx
 import React, { useEffect, useState, useMemo } from "react";
 import {
