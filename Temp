@@ -1,3 +1,120 @@
+--- src/pages/PartitionDetail.jsx
++++ src/pages/PartitionDetail.jsx
+@@ return (
+   {/* Floor Details + Search */}
+   <Box display="flex" alignItems="center" gap={2} mb={2} sx={{ px: "20px" }}>
+     <Typography variant="h6">Floor Details</Typography>
+     <TextField
+       size="small"
+       placeholder="Search floor / emp…"
+       value={searchTerm}
+       onChange={e => setSearchTerm(e.target.value)}
+     />
+   </Box>
+
+-  {/* Edge-to-edge grid, 2 cards per row */}
+-  <Grid
+-    container
+-    spacing={0}
+-    sx={{
+-      width: "100vw",
+-      marginLeft: "calc(-50vw + 50%)",
+-    }}
+-  >
+-    {displayed.map(([floor, emps]) => (
+-      <Grid key={floor} item xs={12} sm={6} md={6}>
+-        <Box
+-          sx={{
+-            border: "1px solid #FFC107",
+-            borderRadius: 2,
+-            p: "20px",
+-            height: "100%",
+-          }}
+-        >
+-          … same as before …
+-        </Box>
+-      </Grid>
+-    ))}
+-  </Grid>
++  {/* Flex wrapper to get true edge-to-edge, two 50% cards per row */}
++  <Box
++    component="section"
++    sx={{
++      display: "flex",
++      flexWrap: "wrap",
++      width: "100%",     // full container width
++      margin: 0,
++      padding: 0,
++    }}
++  >
++    {displayed.map(([floor, emps]) => (
++      <Box
++        key={floor}
++        sx={{
++          width: "50%",     // exactly half the container
++          boxSizing: "border-box",
++          p: "20px",        // inner 20px padding
++        }}
++      >
++        <Box
++          sx={{
++            border: "1px solid #FFC107",
++            borderRadius: 2,
++            height: "100%",
++          }}
++        >
++          <Typography variant="subtitle1" fontWeight={600} gutterBottom>
++            {floor} (Total {emps.length})
++          </Typography>
++          <TableContainer component={Paper} variant="outlined" sx={{ mb: 1 }}>
++            <Table size="small">
++              <TableHead>
++                <TableRow>
++                  {["Emp ID","Name","Swipe Time","Type","Card","Door"].map(h => (
++                    <TableCell key={h} sx={{ fontWeight: "bold" }}>{h}</TableCell>
++                  ))}
++                </TableRow>
++              </TableHead>
++              <TableBody>
++                {emps.slice(0, 10).map((r, i) => {
++                  const term = searchTerm.trim().toLowerCase();
++                  const isMatch =
++                    term &&
++                    (r.ObjectName1.toLowerCase().includes(term) ||
++                     r.EmployeeID.toLowerCase().includes(term));
++                  return (
++                    <TableRow
++                      key={`${r.PersonGUID}-${i}`}
++                      sx={isMatch ? { backgroundColor: "rgba(255, 235, 59, 0.3)" } : {}}
++                    >
++                      <TableCell>{r.EmployeeID}</TableCell>
++                      <TableCell>{r.ObjectName1}</TableCell>
++                      <TableCell>{new Date(r.LocaleMessageTime).toLocaleTimeString()}</TableCell>
++                      <TableCell>{r.PersonnelType}</TableCell>
++                      <TableCell>{r.CardNumber}</TableCell>
++                      <TableCell>{r.Door}</TableCell>
++                    </TableRow>
++                  );
++                })}
++              </TableBody>
++            </Table>
++          </TableContainer>
++          <Button
++            size="small"
++            onClick={() =>
++              setExpandedFloor(expandedFloor === floor ? null : floor)
++            }
++          >
++            {expandedFloor === floor ? "Hide" : "See more…"}
++          </Button>
++        </Box>
++      </Box>
++    ))}
++  </Box>
+
+
+
+
 import React from 'react';
 import {
   Table, TableHead, TableBody, TableRow, TableCell, Paper, TableContainer
