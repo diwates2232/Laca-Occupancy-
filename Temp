@@ -1,3 +1,146 @@
+--- src/pages/PartitionDetailDetails.jsx
++++ src/pages/PartitionDetailDetails.jsx
+@@
+ import React, { useEffect, useState, useMemo } from "react";
++import LoadingSpinner from "../components/LoadingSpinner";
+ import {
+   Container,
+   Box,
+   Typography,
+   Button,
+   CircularProgress,
+   TextField,
+   TableContainer,
+@@
+ export default function PartitionDetailDetails() {
+   const { partition } = useParams();
+   const navigate = useNavigate();
+
+-  const [details, setDetails] = useState([]);
++  const [details, setDetails] = useState([]);
++  const [loading, setLoading] = useState(true);
+   const [lastUpdate, setLastUpdate] = useState("");
+   const [searchTerm, setSearchTerm] = useState("");
+   const [expandedFloor, setExpandedFloor] = useState(null);
+@@
+   // fetch just details
+   useEffect(() => {
+-    let timer;
+-    async function loadDetails() {
+-      const json = await fetchLiveSummary();
+-      const det = json.details
+-        .filter(r => r.PartitionName2 === partition && r.Direction === "InDirection")
+-        .map(r => ({
+-          ...r,
+-          floor: lookupFloor(r.PartitionName2, r.Door, r.Direction)
+-        }));
+-      setDetails(det);
+-      setLastUpdate(new Date().toLocaleTimeString());
+-    }
+-    loadDetails();
+-    timer = setInterval(loadDetails, 1000);
+-    return () => clearInterval(timer);
++    let timer;
++    async function loadDetails() {
++      setLoading(true);
++      const json = await fetchLiveSummary();
++      const det = json.details
++        .filter(r => r.PartitionName2 === partition && r.Direction === "InDirection")
++        .map(r => ({
++          ...r,
++          floor: lookupFloor(r.PartitionName2, r.Door, r.Direction)
++        }));
++      setDetails(det);
++      setLastUpdate(new Date().toLocaleTimeString());
++      setLoading(false);
++    }
++    loadDetails();
++    timer = setInterval(loadDetails, 1000);
++    return () => clearInterval(timer);
+   }, [partition]);
+@@
+-  if (!details.length) return <LoadingSpinner />;
++  // Always render header/etc—only the details section shows spinner
+@@
+   return (
+@@
+           {/* Floor Details + Search */}
+           <Box display="flex" alignItems="center" gap={2} mb={2} sx={{ px: "20px" }}>
+             <Typography variant="h6">Floor Details</Typography>
+             <Typography variant="body2" color="textSecondary">
+               Last updated: {lastUpdate}
+             </Typography>
+             <TextField
+               size="small"
+               placeholder="Search floor / emp…"
+               value={searchTerm}
+               onChange={e => setSearchTerm(e.target.value)}
+             />
+           </Box>
++
++          {loading ? (
++            // show spinner while new partition's details load
++            <Box sx={{ px: "20px", py: 4 }}>
++              <LoadingSpinner />
++            </Box>
++          ) : (
++            <>
++              {/* Edge-to-edge cards */}
++              <Box
++                component="section"
++                sx={{
++                  display: "flex",
++                  flexWrap: "wrap",
++                  width: "100%",
++                  margin: 0,
++                  padding: 0,
++                }}
++              >
++                {displayed.map(([floor, emps]) => (
++                  <Box
++                    key={floor}
++                    sx={{
++                      width: "50%",
++                      boxSizing: "border-box",
++                      p: "20px",
++                    }}
++                  >
++                    {/* … your card markup unchanged … */}
++                  </Box>
++                ))}
++              </Box>
++
++              {/* Expanded full-width table */}
++              {expandedFloor && (
++                <Box sx={{ px: "20px", mt: 2 }}>
++                  <Typography variant="h6" gutterBottom>
++                    {expandedFloor} — All Entries
++                  </Typography>
++                  <DataTable
++                    columns={columns}
++                    rows={floorMap[expandedFloor].map(r => ({
++                      ...r,
++                      LocaleMessageTime: new Date(r.LocaleMessageTime).toLocaleTimeString()
++                    }))}
++                  />
++                </Box>
++              )}
++            </>
++          )}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\LoadingSpinner.jsx
 
 import React from 'react';
