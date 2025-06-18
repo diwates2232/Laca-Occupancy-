@@ -1,4 +1,277 @@
- {
+// src/pages/History.jsx
+
+import React, { useEffect, useState, useMemo } from 'react';
+import {
+  Container,
+  Box,
+  Button,
+  Typography,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  Paper,
+  TextField
+} from '@mui/material';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { fetchHistory } from '../api/occupancy.service';
+
+export default function History() {
+  const [data, setData]               = useState(null);
+  const [loading, setLoading]         = useState(true);
+  const [pickedDate, setPickedDate]   = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+
+  // Fetch all data on mount
+  useEffect(() => {
+    setLoading(true);
+    fetchHistory()
+      .then(json => setData(json))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <LoadingSpinner />;
+  if (!data)    return null;
+
+  // Find the one summary entry for the picked date
+  const summaryEntry = useMemo(() => {
+    if (!pickedDate) return null;
+    const dateStr = format(pickedDate, 'yyyy-MM-dd');
+    return data.summaryByDate.find(r => r.date === dateStr) || null;
+  }, [data, pickedDate]);
+
+  // Build partition rows: split "CR.Costa Rica Partition" → [ "CR", "Costa Rica Partition" ]
+  const partitionRows = useMemo(() => {
+    if (!summaryEntry) return [];
+    const codeToCountry = {
+      AR: 'Argentina',
+      BR: 'Brazil',
+      CR: 'Costa Rica',
+      MX: 'Mexico',
+      PA: 'Panama',
+      PE: 'Peru'
+    };
+    return Object.entries(summaryEntry.partitions).map(([key, vals]) => {
+      const [code, city] = key.split('.');
+      return {
+        country: codeToCountry[code] || code,
+        city: city.trim(),
+        employee: vals.Employee || vals.EmployeeCount || 0,
+        contractor: vals.Contractor || vals.ContractorCount || 0,
+        total: vals.total || 0
+      };
+    });
+  }, [summaryEntry]);
+
+  // Build detail rows exactly matching the day
+  const detailRows = useMemo(() => {
+    if (!pickedDate) return [];
+    const dateStr = format(pickedDate, 'yyyy-MM-dd');
+    return data.details.filter(r =>
+      format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd') === dateStr
+    );
+  }, [data, pickedDate]);
+
+  const handleExport = () => {
+    const ws = XLSX.utils.json_to_sheet(
+      detailRows.map((r, i) => ({
+        Sr: i + 1,
+        Date: format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd'),
+        Time: format(new Date(r.LocaleMessageTime), 'HH:mm:ss'),
+        EmployeeID: r.EmployeeID,
+        Name: r.ObjectName1,
+        Door: r.Door,
+        Partition: r.PartitionName2
+      }))
+    );
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Details');
+    const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    saveAs(new Blob([buf]), `history_${format(pickedDate, 'yyyyMMdd')}.xlsx`);
+  };
+
+  return (
+    <>
+      <Header />
+
+      <Container maxWidth={false} disableGutters sx={{ pt: 2, pb: 4, px: '20px' }}>
+        {/* Date picker */}
+        <Box sx={{ mb: 3, px: '20px' }}>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DatePicker
+              label="Select date"
+              value={pickedDate}
+              onChange={newDate => {
+                setPickedDate(newDate);
+                setShowDetails(false);
+              }}
+              renderInput={params => <TextField fullWidth {...params} />}
+            />
+          </LocalizationProvider>
+        </Box>
+
+        {!pickedDate && (
+          <Typography variant="body1" color="textSecondary" sx={{ px: '20px' }}>
+            Please pick a date to view region summary.
+          </Typography>
+        )}
+
+        {/* Summary table */}
+        {pickedDate && summaryEntry && (
+          <Paper elevation={3} sx={{ mb: 4, overflowX: 'auto', px: '20px', py: 2 }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    align="center"
+                    sx={{
+                      fontWeight: 'bold',
+                      fontSize: 16,
+                      bgcolor: '#dddddd'
+                    }}
+                  >
+                    {format(pickedDate, 'EEEE, d MMMM, yyyy')}
+                  </TableCell>
+                </TableRow>
+                <TableRow sx={{ bgcolor: '#444444' }}>
+                  {['Country','City','Employee','Contractors','Total'].map(h => (
+                    <TableCell
+                      key={h}
+                      sx={{
+                        color: '#FFC107',
+                        fontWeight: 600,
+                        borderBottom: '2px solid #333',
+                        minWidth: h === 'City' ? 200 : 100
+                      }}
+                    >
+                      {h}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {partitionRows.map((row, i) => (
+                  <TableRow
+                    key={i}
+                    sx={{
+                      backgroundColor: i % 2 === 0 ? '#f9f9f9' : '#ffffff'
+                    }}
+                  >
+                    <TableCell>{row.country}</TableCell>
+                    <TableCell>{row.city}</TableCell>
+                    <TableCell align="right">{row.employee}</TableCell>
+                    <TableCell align="right">{row.contractor}</TableCell>
+                    <TableCell
+                      align="right"
+                      sx={{ backgroundColor: '#FFC107', fontWeight: 'bold' }}
+                    >
+                      {row.total}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                <TableRow sx={{ bgcolor: '#666666' }}>
+                  <TableCell colSpan={2} align="right" sx={{ color: '#fff', fontWeight: 600 }}>
+                    Total
+                  </TableCell>
+                  <TableCell align="right" sx={{ color: '#fff', fontWeight: 600 }}>
+                    {partitionRows.reduce((sum, r) => sum + r.employee, 0)}
+                  </TableCell>
+                  <TableCell align="right" sx={{ color: '#fff', fontWeight: 600 }}>
+                    {partitionRows.reduce((sum, r) => sum + r.contractor, 0)}
+                  </TableCell>
+                  <TableCell align="right" sx={{ color: '#fff', fontWeight: 600, bgcolor: '#333333' }}>
+                    {partitionRows.reduce((sum, r) => sum + r.total, 0)}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </Paper>
+        )}
+
+        {/* Details toggle & export */}
+        {pickedDate && summaryEntry && (
+          <Box sx={{ textAlign: 'center', mb: 3, px: '20px' }}>
+            <Button
+              variant="contained"
+              sx={{ bgcolor: '#FFC107', color: '#000' }}
+              onClick={() => setShowDetails(prev => !prev)}
+            >
+              {showDetails ? 'Hide Details' : 'See Details'}
+            </Button>
+            {showDetails && (
+              <Button
+                variant="outlined"
+                sx={{ ml: 2, borderColor: '#FFC107', color: '#FFC107' }}
+                onClick={handleExport}
+              >
+                Export to Excel
+              </Button>
+            )}
+          </Box>
+        )}
+
+        {/* Details table */}
+        {showDetails && (
+          <Paper elevation={1} sx={{ px: '20px', py: 2, mb: 4 }}>
+            {detailRows.length > 0 ? (
+              <Table>
+                <TableHead sx={{ bgcolor: '#000000' }}>
+                  <TableRow>
+                    {['Sr','Date','Time','Employee ID','Name','Door','Partition'].map(h => (
+                      <TableCell
+                        key={h}
+                        sx={{ color: '#FFC107', fontWeight: 600, borderBottom: '2px solid #333' }}
+                      >
+                        {h}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {detailRows.map((r,i) => (
+                    <TableRow key={r.PersonGUID}>
+                      <TableCell>{i+1}</TableCell>
+                      <TableCell>{format(new Date(r.LocaleMessageTime),'yyyy-MM-dd')}</TableCell>
+                      <TableCell>{format(new Date(r.LocaleMessageTime),'HH:mm:ss')}</TableCell>
+                      <TableCell>{r.EmployeeID}</TableCell>
+                      <TableCell>{r.ObjectName1}</TableCell>
+                      <TableCell>{r.Door}</TableCell>
+                      <TableCell>{r.PartitionName2}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <Typography variant="body2" color="textSecondary">
+                No swipe records found for this date.
+              </Typography>
+            )}
+          </Paper>
+        )}
+      </Container>
+
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+{
       "date": "2025-06-11",
       "day": "Wednesday",
       "region": {
