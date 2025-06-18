@@ -1,642 +1,71 @@
-// src/components/ChartCard.jsx
-import React, { useState } from 'react';
-import { Card, CardContent, Typography, Box, useTheme } from '@mui/material';
-import {
-  AreaChart,
-  Area,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Legend,
-  Brush,
-  PieChart,
-  Pie,
-  Cell,
-  LabelList,
-  ReferenceLine,
-} from 'recharts';
-import dayjs from 'dayjs';
-
-export default function ChartCard({
-  title,
-  data = [],
-  dataKey = 'value',
-  chartHeight = 350,
-  colors = { head: '#FFC107', cap: '#B0BEC5' },
-  animateDuration = 800,
-  showCrosshair = true,
-  timeFormat = 'HH:mm:ss',
-  // NEW prop: breakdown of personnel types
-  breakdown = { Employee: 0, Contractor: 0, TempBadge: 0 },
-}) {
-  const theme = useTheme();
-  const [hidden, setHidden] = useState({});
-  const [activeIndex, setActiveIndex] = useState(null);
-
-  // Build headcount series key
-  const headKey = data[0]?.Headcount != null ? 'Headcount' : dataKey;
-
-  // Prepare pie data
-  const pieData = [
-    { name: 'Employees', value: breakdown.Employee },
-    { name: 'Contractors', value: breakdown.Contractor },
-    { name: 'Temp Badge', value: breakdown.TempBadge },
-  ];
-  const pieColors = ['#4caf50', '#f44336', '#2196f3'];
-
-  // Current (last) value
-  const last = data[data.length - 1] || {};
-  const currentValue = last[headKey] ?? 0;
-
-  const handleLegendClick = o => {
-    setHidden(h => ({ ...h, [o.dataKey]: !h[o.dataKey] }));
-  };
-
-  if (!data.length) {
-    return (
-      <Card sx={{ mb: 2, background: theme.palette.background.paper }}>
-        <CardContent sx={{ textAlign: 'center' }}>
-          <Typography variant="h6">{title}</Typography>
-          <Typography variant="body2">No data to display.</Typography>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card sx={{ mb: 2, background: theme.palette.background.paper, position: 'relative' }}>
-      <CardContent>
-        {/* Title + current */}
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h6" sx={{ color: colors.head, fontWeight: 700 }}>
-            {title}
-          </Typography>
-          <Typography variant="subtitle1" sx={{ color: colors.head, fontWeight: 600 }}>
-            {currentValue}
-          </Typography>
-        </Box>
-
-        {/* INSET PIE CHART */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 16,
-            right: 16,
-            width: 100,
-            height: 100,
-            background: 'rgba(0,0,0,0.2)',
-            borderRadius: '50%',
-            p: 1,
-          }}
-        >
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={pieData}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={20}
-                outerRadius={35}
-                paddingAngle={2}
-              >
-                {pieData.map((entry, idx) => (
-                  <Cell key={idx} fill={pieColors[idx]} />
-                ))}
-              </Pie>
-              <LabelList
-                dataKey="name"
-                position="outside"
-                fill="#fff"
-                style={{ fontSize: 8 }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </Box>
-
-        {/* MAIN TIMELINE CHART */}
-        <Box sx={{ width: '100%', height: chartHeight, mt: 2 }}>
-          <ResponsiveContainer>
-            <AreaChart data={data} margin={{ top: 0, right: 30, left: 0, bottom: 20 }}>
-              <defs>
-                <linearGradient id="gradHead" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={colors.head} stopOpacity={0.5} />
-                  <stop offset="95%" stopColor={colors.head} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-
-              <CartesianGrid stroke="#444" strokeDasharray="3 3" />
-
-              {showCrosshair && activeIndex != null && data[activeIndex] && (
-                <ReferenceLine
-                  x={data[activeIndex].name}
-                  stroke={colors.head}
-                  strokeDasharray="3 3"
-                />
-              )}
-
-              <XAxis
-                dataKey="name"
-                tick={{ fill: '#EEE', fontSize: 12 }}
-                tickFormatter={t =>
-                  typeof t === 'number' ? dayjs(t).format(timeFormat) : t
-                }
-                padding={{ left: 10, right: 10 }}
-              />
-              <YAxis tick={{ fill: '#EEE', fontSize: 12 }} padding={{ top: 10, bottom: 0 }} />
-
-              <Tooltip
-                contentStyle={{ backgroundColor: '#222', border: `1px solid ${colors.head}` }}
-                labelStyle={{ color: colors.head, fontWeight: 600 }}
-                cursor={{ fill: 'rgba(255,255,255,0.1)' }}
-                isAnimationActive={false}
-                onMouseMove={o => setActiveIndex(o?.activeTooltipIndex)}
-              />
-
-              <Legend wrapperStyle={{ color: '#EEE', bottom: 0, left: 'center' }} onClick={handleLegendClick} />
-
-              {!hidden[headKey] && (
-                <Area
-                  type="monotone"
-                  dataKey={headKey}
-                  stroke={colors.head}
-                  fill="url(#gradHead)"
-                  strokeWidth={2}
-                  isAnimationActive
-                  animationDuration={animateDuration}
-                  dot={false}
-                />
-              )}
-
-              <Brush dataKey="name" height={30} stroke={colors.head} travellerWidth={10} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-}
-
-
-
-
-// src/pages/Dashboard.jsx
-...
-  {!loading && (
-    <ChartCard
-      chartHeight={360}
-      data={partitions.map(p => ({
-        name: p.name,
-        Headcount: p.total,
-      }))}
-      dataKey="Headcount"
-      colors={{ head: '#FFC107', cap: '#B0BEC5' }}
-+     // Pass in the live breakdown for Employees / Contractors / TempBadge
-+     breakdown={{
-+       Employee: realtimeEmp,
-+       Contractor: realtimeCont,
-+       TempBadge: partitions.reduce((sum,p)=>sum+p.TempBadge,0),
-+     }}
-    />
-  )}
-...
-
-
-
-
-
-
-
-
-C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\data\seatCapacities.js
-
-// src/data/seatCapacities.js
-const seatCapacities = {
-  "Costa Rica": 1244,
-  "Mexico": 100,
-  "Argentina": 250,
-  "Panama": 20,
-  "Peru": 70,
-  "Brazil": 80
-};
-
-export default seatCapacities;
-
-
-
-
-
-
-// src/pages/Dashboard.jsx
-
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  Skeleton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
-  Divider
-} from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+// src/components/Header.jsx
+import React from 'react';
+import { AppBar, Toolbar, Box, Typography, Select, MenuItem } from '@mui/material';
+import { useNavigate, useLocation } from 'react-router-dom';
+import WuLogo from '../assets/wu-logo.png';
+import LacaFlag from '../assets/laca-flag.png';
 import { partitionList } from '../services/occupancy.service';
 
-
-export default function Dashboard() {
-  const { data, loading, error } = useLiveOccupancy(1000);
-  const [lastUpdate, setLastUpdate] = useState('');
-  const [partition, setPartition] = useState('');
+export default function Header() {
   const navigate = useNavigate();
+  const loc = useLocation();
 
-  useEffect(() => {
-    if (data) setLastUpdate(new Date().toLocaleTimeString());
-  }, [data]);
 
-  if (error) {
-    return (
-      <Box width="100vw%" py={4}>
-        <Typography color="error" align="center">
-          Error loading live data
-        </Typography>
-      </Box>
-    );
+  // If path is /partition/:p(/suffix...), grab p and any suffix after it
+  const pathParts = loc.pathname.split('/');
+  let currentPartition = '';
+  let suffix = '';
+  if (pathParts[1] === 'partition' && pathParts[2]) {
+    currentPartition = decodeURIComponent(pathParts[2]);
+    // join any trailing segments as a suffix (e.g. "details" or "history/custom")
+    suffix = pathParts.slice(3).join('/');
   }
 
-  // Build and sort partitions
-  const regions = data?.realtime || {};
-  const partitions = partitionList
-    .map(name => {
-      const key = Object.keys(regions).find(k => k.includes(name));
-      const p = key ? regions[key] : {};
-      return {
-        name,
-        total: p.total || 0,
-        Employee: p.Employee || 0,
-        Contractor: p.Contractor || 0,
-        TempBadge: p.TempBadge || 0,
-        floors: p.floors || {}
-      };
-    })
-    .sort((a, b) => b.total - a.total);
-
-  // Totals
-  const todayTot   = data?.today?.total    ?? 0;
-  const todayEmp   = data?.today?.Employee ?? 0;
-  const todayCont  = data?.today?.Contractor ?? 0;
-  const realtimeTot  = partitions.reduce((sum, p) => sum + p.total, 0);
-  const realtimeEmp  = partitions.reduce((sum, p) => sum + p.Employee, 0);
-  const realtimeCont = partitions.reduce((sum, p) => sum + p.Contractor, 0);
 
   return (
-    <>
-      <Header />
+    <AppBar position="static" color="primary" sx={{ mb: 2 }}>
 
-      <Container
-        maxWidth={false}
-        disableGutters
-        sx={{
-          pt: 1,
-          pb: 2,
-          px: '20px',        // ← exactly 20px padding both sides
-        }}
-      >
-        {/* Top summary cards */}
-        <Box
-          display="flex"
-          alignItems="stretch"
-          sx={{ mb: 1, width: '100vw%' }}
-        >
-          <Box sx={{ flex: 1 }}>
-            <SummaryCard
-              title="Today’s Headcount"
-              total={todayTot}
-              stats={[
-                { label: 'Employees',   value: todayEmp },
-                { label: 'Contractors', value: todayCont }
-              ]}
-              sx={{ height: 190, border: '2px solid #FFC107' }}
-            />
-          </Box>
-
-          <Divider
-            // orientation="vertical"
-            flexItem
-            sx={{ mx: 1 }}
-          />
-
-          <Box sx={{ flex: 1 }}>
-            <SummaryCard
-              title="Realtime Headcount"
-              total={realtimeTot}
-              stats={[
-                { label: 'Employees',   value: realtimeEmp },
-                { label: 'Contractors', value: realtimeCont }
-              ]}
-              sx={{ height: 190, border: '2px solid #FFC107' }}
-            />
-          </Box>
+      <Toolbar sx={{ justifyContent: 'space-between' }}>
+        <Box display="flex" alignItems="center">
+          <Box component="img" src={WuLogo} alt="WU Logo" sx={{ height: 36, mr: 2 }} />
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+             Western Union – LACA
+            {currentPartition && <> • {currentPartition.replace('CR.Costa Rica Partition','Costa Rica')}</>}
+          </Typography>
         </Box>
+        <Box display="flex" alignItems="center">
+          <Select
+            size="small"
+            value={currentPartition}
+            displayEmpty
+  
 
-        {/* Partition cards */}
-        <Box mt={4} sx={{ width: '100vw%', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-          {loading ? (
-            <Skeleton variant="rectangular" width="100vw%" height={240} />
-          ) : (
-            partitions.map(p => (
-              <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
-                <SummaryCard
-                  title={p.name}
-                  total={p.total}
-                  stats={[
-                    { label: 'Employees',   value: p.Employee },
-                    { label: 'Contractors', value: p.Contractor },
-                    // only show TempBadge on Costa Rica
-                    ...(p.name === 'CR.Costa Rica Partition'
-                      ? [{ label: 'Temp Badge', value: p.TempBadge }]
-                      : [])
-                  ]}
-                  sx={{ width: '100vw%', border: '2px solid #FFC107' }}
-                />
-              </Box>
-            ))
-          )}
+          onChange={e => {
+            const p = e.target.value;
+            if (!p) {
+              // back to root
+              return navigate('/');
+            }
+            // build new path, preserving any suffix
+            const newBase = `/partition/${encodeURIComponent(p)}`;
+            const newPath = suffix
+              ? `${newBase}/${suffix}`
+              : newBase;
+            navigate(newPath);
+          }}
+
+
+
+            sx={{ bgcolor: 'background.paper', mr: 2 }}
+          >
+            <MenuItem value="">— Select Partition —</MenuItem>
+            {partitionList.map(p => (
+              <MenuItem key={p} value={p}>{p.replace('Partition','')}</MenuItem>
+            ))}
+          </Select>
+          <Box component="img" src={LacaFlag} alt="LACA Flag" sx={{ height: 30 }} />
         </Box>
-
-        {/* Live totals chart */}
-        <Box mt={4} sx={{ width: '100vw%' ,p:2, border: '2px solid #FFC107' }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" gutterBottom>
-              Live Totals by Partition
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-              Last updated: {lastUpdate}
-            </Typography>
-          </Box>
-
-          {loading ? (
-            <Skeleton variant="rectangular" width="100%" height={320} />
-          ) : (
-  <ChartCard
-    chartType="bar"                  // new prop
-    chartHeight={360}
-    data={partitions.map((p,i) => ({
-     name: p.name,
-      value: p.total,
-      fill: i % 2 === 0 ? '#FFC107' : '#B0BEC5'
-    }))}
-    dataKey="value"
-    colors={{ head: '#FFC107', cap: '#B0BEC5' }}
-    sx={{ border: '2px solid #FFC107' }}
-  />
-          )}
-        </Box>
-      </Container>
-
-      <footer style={{
-        backgroundColor: '#000000',
-        color: '#FFC107',
-        padding: '1.5rem 0',
-        textAlign: 'center',
-        marginTop: 0,
-        borderTop: '2px solid #FFC107',
-        fontSize: '0.95rem',
-        lineHeight: '1.6'
-      }}>
-        <div><strong>Global Security Operations Center</strong><br/>
-          Live HeadCount against Occupancy dashboard for Western Union — Real-time occupancy, floor activity, and personnel insights.
-        </div>
-        <div style={{ marginTop: '0.75rem' }}>
-          Contact us:&nbsp;
-          <a href="mailto:GSOC-GlobalSecurityOperationCenter.SharedMailbox@westernunion.com"
-             style={{ color: '#FFC107', textDecoration: 'underline' }}>
-            GSOC Mail
-          </a>&nbsp;|&nbsp;
-          Landline:&nbsp;<span style={{ color: '#FFC107' }}>+91-020-67632394</span>
-        </div>
-      </footer>
-    </>
+      </Toolbar>
+    </AppBar>
   );
 }
-
-
-
-
-
-
-
-// src/components/ChartCard.jsx
-import React, { useState } from 'react';
-import { Card, CardContent, Typography, Box } from '@mui/material';
-import {
-  AreaChart,
-  Area,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Legend,
-  Brush,
-  LabelList,
-  ReferenceLine,
-} from 'recharts';
-import dayjs from 'dayjs';
-
-export default function ChartCard({
-  title,
-  data = [],
-  dataKey = 'value',
-  chartHeight = 350,
-  colors = { head: '#FFC107', cap: '#B0BEC5' },
-  animateDuration = 800,
-  showCrosshair = true,
-  timeFormat = 'HH:mm:ss',
-}) {
-  const [hidden, setHidden] = useState({});
-  const [activeIndex, setActiveIndex] = useState(null);
-
-  if (!Array.isArray(data) || !data.length) {
-    return (
-      <Card sx={{ mb: 2 }}>
-        <CardContent sx={{ textAlign: 'center' }}>
-          <Typography variant="h6">{title}</Typography>
-          <Typography variant="body2">No data to display.</Typography>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const hasCapacity = data[0].Capacity != null;
-  const handleLegendClick = o => {
-    const { dataKey } = o;
-    setHidden(prev => ({ ...prev, [dataKey]: !prev[dataKey] }));
-  };
-
-  return (
-    <Card sx={{ mb: 2 }}>
-      <CardContent>
-        {/* Chart title */}
-        <Typography variant="h6" gutterBottom sx={{ color: colors.head }}>
-          {title}
-        </Typography>
-
-        {/* Chart container */}
-        <Box sx={{ width: '100%', height: chartHeight }}>
-          <ResponsiveContainer>
-            <AreaChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
-              <defs>
-                <linearGradient id="colorHead" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={colors.head} stopOpacity={0.4} />
-                  <stop offset="95%" stopColor={colors.head} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-
-              {/* Grid */}
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-
-              {/* Crosshair vertical line */}
-              {showCrosshair && activeIndex != null && data[activeIndex] && (
-                <ReferenceLine
-                  x={data[activeIndex].name}
-                  stroke={colors.head}
-                  strokeOpacity={0.5}
-                />
-              )}
-
-              <XAxis
-                dataKey="name"
-                tick={{ fill: '#FFF', fontWeight: 600 }}
-                tickFormatter={t => {
-                  // if timestamp-like, format; else just return
-                  return typeof t === 'number'
-                    ? dayjs(t).format(timeFormat)
-                    : t;
-                }}
-                label={{
-                  value: 'Time',
-                  position: 'insideBottomRight',
-                  offset: -10,
-                  fill: '#FFF',
-                  fontWeight: 600
-                }}
-              />
-
-              <YAxis
-                tick={{ fill: '#FFF', fontWeight: 600 }}
-                label={{
-                  value: 'Count',
-                  angle: -90,
-                  position: 'insideLeft',
-                  fill: '#FFF',
-                  fontWeight: 600
-                }}
-              />
-
-              {/* Tooltip & Legend */}
-              <Tooltip
-                contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}` }}
-                cursor={showCrosshair}
-                isAnimationActive={false}
-                onMouseMove={o => setActiveIndex(o && o.activeTooltipIndex)}
-                labelStyle={{ color: colors.head, fontWeight: 600 }}
-                formatter={(value, name) => {
-                  if (name === 'Headcount' && hasCapacity) {
-                    const cap = data.find(d => d.Headcount === value)?.Capacity || 0;
-                    const pct = cap ? ((value / cap) * 100).toFixed(1) : '0.0';
-                    return [`${value} (${pct}%)`, name];
-                  }
-                  return [value, name];
-                }}
-              />
-              <Legend wrapperStyle={{ color: '#FFF' }} onClick={handleLegendClick} />
-
-              {/* Brush for zooming/panning */}
-              <Brush
-                dataKey="name"
-                height={30}
-                stroke={colors.head}
-                travellerWidth={10}
-                updateId={data.length} // reset on data change
-              />
-
-              {/* Capacity area */}
-              {hasCapacity && !hidden.Capacity && (
-                <Area
-                  type="monotone"
-                  dataKey="Capacity"
-                  name="Capacity"
-                  stroke={colors.cap}
-                  fill={`${colors.cap}33`}
-                  dot={false}
-                >
-                  <LabelList
-                    dataKey="Capacity"
-                    position="top"
-                    style={{ fill: colors.cap, fontSize: 10, fontWeight: 600 }}
-                  />
-                </Area>
-              )}
-
-              {/* Headcount area */}
-              {!hidden.Headcount && (
-                <Area
-                  type="monotone"
-                  dataKey={hasCapacity ? 'Headcount' : dataKey}
-                  name={hasCapacity ? 'Headcount' : dataKey}
-                  stroke={colors.head}
-                  fill="url(#colorHead)"
-                  dot={false}
-                  isAnimationActive
-                  animationDuration={animateDuration}
-                >
-                  <LabelList
-                    dataKey={hasCapacity ? 'Headcount' : dataKey}
-                    position="top"
-                    style={{ fill: '#FFF', fontSize: 12, fontWeight: 600 }}
-                  />
-                </Area>
-              )}
-
-              {/* Overlay line for crisp “spark” */}
-              {!hidden.Headcount && (
-                <Line
-                  type="monotone"
-                  dataKey={hasCapacity ? 'Headcount' : dataKey}
-                  stroke={colors.head}
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive
-                  animationDuration={animateDuration}
-                  activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
-                />
-              )}
-            </AreaChart>
-          </ResponsiveContainer>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-}
-
-
-
-
-
-
-
-
-
-
