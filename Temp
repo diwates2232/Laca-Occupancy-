@@ -1,120 +1,148 @@
-{/* Details table */}
-{showDetails && (
-  <Box display="flex" justifyContent="center" mb={4}>
+Now Read Below section carefully and 
+Update need only 
+display date Picker and Summary table in same Row .
+Like 
+date picker  1px gap Summary table like 
+
+
+  return (
+    <>
+      <Header />
+
+      <Container maxWidth={false} disableGutters sx={{ pt: 2, pb: 4, px: '20px' }}>
+        {/* Date picker */}
+        <Box sx={{ mb: 3, px: '20px' }}>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DatePicker
+              label="Select date"
+              value={pickedDate}
+              onChange={newDate => {
+                setPickedDate(newDate);
+                setShowDetails(false);
+              }}
+              renderInput={params => <TextField fullWidth {...params} />}
+            />
+          </LocalizationProvider>
+        </Box>
+
+        {!pickedDate && (
+          <Typography variant="body1" color="textSecondary" sx={{ px: '20px' }}>
+            Please pick a date to view region summary.
+          </Typography>
+        )}
+
+
+{/* Summary table */}
+{pickedDate && summaryEntry && (
+  <Box display="flex" justifyContent="center" mt={4} mb={4}>
     <Paper
-      elevation={1}
+      elevation={3}
       sx={{
-        px: '20px',
+        width: '80%',
+        maxWidth: 900,
+        px: 4,
         py: 2,
-        width: '100%',
-        maxWidth: 1000,
-        border: '3px solid #000',       // outer black border
+        border: '3px solid #000', // outer thick border
         borderRadius: 2,
       }}
     >
-      {detailRows.length > 0 ? (
-        <Table sx={{ border: '2px solid #000', borderCollapse: 'collapse' }}>
-          <TableHead>
-            <TableRow sx={{ bgcolor: '#000' }}>
-              {['Sr','Date','Time','Employee ID','Name','Door','Partition'].map(h => (
-                <TableCell
-                  key={h}
-                  align="center"
-                  sx={{
-                    color: '#FFC107',
-                    fontWeight: 'bold',
-                    fontSize: 14,
-                    border: '2px solid #000',
-                  }}
-                >
-                  {h}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {detailRows.map((r, i) => (
-              <TableRow key={r.PersonGUID}>
-                <TableCell sx={{ border: '2px solid #000' }}>{i + 1}</TableCell>
-                <TableCell sx={{ border: '2px solid #000' }}>
-                  {format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd')}
-                </TableCell>
-                <TableCell sx={{ border: '2px solid #000' }}>
-                  {format(new Date(r.LocaleMessageTime), 'HH:mm:ss')}
-                </TableCell>
-                <TableCell sx={{ border: '2px solid #000' }}>{r.EmployeeID}</TableCell>
-                <TableCell sx={{ border: '2px solid #000' }}>{r.ObjectName1}</TableCell>
-                <TableCell sx={{ border: '2px solid #000' }}>{r.Door}</TableCell>
-                <TableCell sx={{ border: '2px solid #000' }}>{r.PartitionName2}</TableCell>
-              </TableRow>
+      <Table sx={{ border: '2px solid #000' }}>
+        <TableHead>
+          <TableRow>
+            <TableCell
+              colSpan={5}
+              align="center"
+              sx={{
+                fontWeight: 'bold',
+                fontSize: 16,
+                bgcolor: '#000000',
+                color: '#fff',
+                border: '2px solid #000',
+              }}
+            >
+              {format(pickedDate, 'EEEE, d MMMM, yyyy')}
+            </TableCell>
+          </TableRow>
+          <TableRow sx={{ bgcolor: '#FFC107' }}>
+            {['Country', 'City', 'Employee', 'Contractors', 'Total'].map((h) => (
+              <TableCell
+                key={h}
+                align={h === 'Country' || h === 'City' ? 'left' : 'right'}
+                sx={{
+                  color: '#000',
+                  fontWeight: 'bold',
+                  fontSize: 14,
+                  border: '2px solid #000',
+                }}
+              >
+                {h}
+              </TableCell>
             ))}
-          </TableBody>
-        </Table>
-      ) : (
-        <Typography
-          variant="body2"
-          sx={{
-            color: '#666',
-            textAlign: 'center',
-            mt: 2,
-            fontStyle: 'italic',
-          }}
-        >
-          No swipe records found for this date.
-        </Typography>
-      )}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {partitionRows.map((row, i) => (
+            <TableRow key={i}>
+              <TableCell sx={{ border: '2px solid #000' }}>{row.country}</TableCell>
+              <TableCell sx={{ border: '2px solid #000' }}>{row.city}</TableCell>
+              <TableCell align="right" sx={{ border: '2px solid #000' }}>
+                {row.employee}
+              </TableCell>
+              <TableCell align="right" sx={{ border: '2px solid #000' }}>
+                {row.contractor}
+              </TableCell>
+              <TableCell
+                align="right"
+                sx={{
+                  backgroundColor: '#FFC107',
+                  fontWeight: 'bold',
+                  border: '2px solid #000',
+                }}
+              >
+                {row.total}
+              </TableCell>
+            </TableRow>
+          ))}
+          <TableRow sx={{ bgcolor: '#666666' }}>
+            <TableCell
+              colSpan={2}
+              align="right"
+              sx={{
+                color: '#fff',
+                fontWeight: 'bold',
+                border: '2px solid #000',
+              }}
+            >
+              Total
+            </TableCell>
+            <TableCell
+              align="right"
+              sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}
+            >
+              {partitionRows.reduce((sum, r) => sum + r.employee, 0)}
+            </TableCell>
+            <TableCell
+              align="right"
+              sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}
+            >
+              {partitionRows.reduce((sum, r) => sum + r.contractor, 0)}
+            </TableCell>
+            <TableCell
+              align="right"
+              sx={{
+                color: '#fff',
+                fontWeight: 'bold',
+                bgcolor: '#333333',
+                border: '2px solid #000',
+              }}
+            >
+              {partitionRows.reduce((sum, r) => sum + r.total, 0)}
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
     </Paper>
   </Box>
 )}
 
 
-
-
-
-
-
-
-
-Now Read this section add here Formating add 20Px left right padding , also 
-also add all Borderds , thick boreders With Western Union theme Colours 
-and give me updated Section carefully
-
-{/* Details table */}
-        {showDetails && (
-          <Paper elevation={1} sx={{ px: '20px', py: 2, mb: 4 }}>
-            {detailRows.length > 0 ? (
-              <Table>
-                <TableHead sx={{ bgcolor: '#000000' }}>
-                  <TableRow>
-                    {['Sr','Date','Time','Employee ID','Name','Door','Partition'].map(h => (
-                      <TableCell
-                        key={h}
-                        sx={{ color: '#FFC107', fontWeight: 600, borderBottom: '2px solid #333' }}
-                      >
-                        {h}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {detailRows.map((r,i) => (
-                    <TableRow key={r.PersonGUID}>
-                      <TableCell>{i+1}</TableCell>
-                      <TableCell>{format(new Date(r.LocaleMessageTime),'yyyy-MM-dd')}</TableCell>
-                      <TableCell>{format(new Date(r.LocaleMessageTime),'HH:mm:ss')}</TableCell>
-                      <TableCell>{r.EmployeeID}</TableCell>
-                      <TableCell>{r.ObjectName1}</TableCell>
-                      <TableCell>{r.Door}</TableCell>
-                      <TableCell>{r.PartitionName2}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <Typography variant="body2" color="textSecondary">
-                No swipe records found for this date.
-              </Typography>
-            )}
-          </Paper>
-        )}
-      </Container>
