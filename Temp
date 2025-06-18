@@ -1,3 +1,167 @@
+--- ChartCard.jsx
++++ ChartCard.jsx
+@@
+ export default function ChartCard({
+   title,
+   data = [],
+   dataKey = 'value',
+   chartHeight = 350,
+   colors = { head: '#FFC107', cap: '#B0BEC5' },
++  animateDuration = 800,
++  showCrosshair = true,
++  timeFormat = 'HH:mm:ss',
+ }) {
+   const [hidden, setHidden] = useState({});
++  const [activeIndex, setActiveIndex] = useState(null);
+ 
+   if (!Array.isArray(data) || !data.length) {
+@@
+               <defs>
+                 <linearGradient id="colorHead" x1="0" y1="0" x2="0" y2="1">
+@@
+               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
++
++              {/* Crosshair vertical line */}
++              {showCrosshair && activeIndex != null && (
++                <ReferenceLine
++                  x={data[activeIndex].name}
++                  stroke={colors.head}
++                  strokeOpacity={0.5}
++                />
++              )}
+ 
+               <XAxis
+                 dataKey="name"
+-                tick={{ fill: '#FFF', fontWeight: 600 }}
++                tick={{ fill: '#FFF', fontWeight: 600 }}
++                domain={['auto', 'auto']}
++                type="category"
++                scale="time"
++                tickFormatter={t => dayjs(t).format(timeFormat)}
+                 label={{
+                   value: 'Time',
+                   position: 'insideBottomRight',
+                   offset: -10,
+                   fill: '#FFF',
+                   fontWeight: 600
+                 }}
+               />
+ 
+               <YAxis
+                 tick={{ fill: '#FFF', fontWeight: 600 }}
+                 label={{
+                   value: 'Count',
+                   angle: -90,
+                   position: 'insideLeft',
+                   fill: '#FFF',
+                   fontWeight: 600
+                 }}
+               />
+ 
+               {/* Tooltip & Legend */}
+               <Tooltip
+-                contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}` }}
++                contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}` }}
++                cursor={showCrosshair}
++                isAnimationActive={false}
++                onMouseMove={o => setActiveIndex(o && o.activeTooltipIndex)}
+                 labelStyle={{ color: colors.head, fontWeight: 600 }}
+                 formatter={(value, name) => {
+                   if (name === 'Headcount' && hasCapacity) {
+@@
+               <Legend wrapperStyle={{ color: '#FFF' }} onClick={handleLegendClick} />
+ 
+               {/* Brush for zooming/panning */}
+-              <Brush
+-                dataKey="name"
+-                height={30}
+-                stroke={colors.head}
+-                travellerWidth={10}
+-              />
++              <Brush
++                dataKey="name"
++                height={30}
++                stroke={colors.head}
++                travellerWidth={10}
++                updateId={data.length}     // reset on data change
++              />
+ 
+               {/* Capacity area */}
+               {hasCapacity && !hidden.Capacity && (
+@@
+               {/* Headcount area */}
+-              {!hidden.Headcount && (
+-                <Area
+-                  type="monotone"
+-                  dataKey={hasCapacity ? 'Headcount' : dataKey}
+-                  name={hasCapacity ? 'Headcount' : dataKey}
+-                  stroke={colors.head}
+-                  fill="url(#colorHead)"
+-                  dot={{ stroke: colors.head, strokeWidth: 2 }}
+-                >
+-                 <LabelList
+-                   dataKey={hasCapacity ? 'Headcount' : dataKey}
+-                   position="top"
+-                   style={{ fill: '#FFF', fontSize: 12, fontWeight: 600 }}
+-                 />
+-                </Area>
+-              )}
++              {!hidden.Headcount && (
++                <Area
++                  type="monotone"
++                  dataKey={hasCapacity ? 'Headcount' : dataKey}
++                  name={hasCapacity ? 'Headcount' : dataKey}
++                  stroke={colors.head}
++                  fill="url(#colorHead)"
++                  dot={false}
++                  isAnimationActive={true}
++                  animationDuration={animateDuration}
++                >
++                  <LabelList
++                    dataKey={hasCapacity ? 'Headcount' : dataKey}
++                    position="top"
++                    style={{ fill: '#FFF', fontSize: 12, fontWeight: 600 }}
++                  />
++                </Area>
++              )}
+ 
+               {/* Overlay line for crisp “spark” */}
+-              {!hidden.Headcount && (
+-                <Line
+-                  type="monotone"
+-                  dataKey={hasCapacity ? 'Headcount' : dataKey}
+-                  stroke={colors.head}
+-                  strokeWidth={2}
+-                  dot={false}
+-                  activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
+-                />
+-              )}
++              {!hidden.Headcount && (
++                <Line
++                  type="monotone"
++                  dataKey={hasCapacity ? 'Headcount' : dataKey}
++                  stroke={colors.head}
++                  strokeWidth={2}
++                  dot={false}
++                  isAnimationActive={true}
++                  animationDuration={animateDuration}
++                  activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
++                />
++              )}
+ 
+             </AreaChart>
+           </ResponsiveContainer>
+
+
+
+
+
+
+
+
+
+
+
 // src/components/ChartCard.jsx
 import React, { useState } from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
