@@ -1,3 +1,13 @@
+
+npm install @mui/x-date-pickers @date-io/date-fns date-fns xlsx file-saver
+
+
+
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+
+
+
+
 PS C:\Users\W0024618\Desktop\laca-occupancy-frontend> npm install @mui/x-date-pickers @mui/x-date-pickers/AdapterDateFns date-fns xlsx file-saver
 >>
 npm error code ENOENT
