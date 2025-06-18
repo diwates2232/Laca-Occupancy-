@@ -1,3 +1,239 @@
+// src/pages/History.jsx
+
+import React, { useEffect, useState, useMemo } from 'react';
+import {
+  Container,
+  Box,
+  Button,
+  Typography,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  Paper,
+  TextField
+} from '@mui/material';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { fetchHistory } from '../api/occupancy.service';
+
+export default function History() {
+  const [data, setData]               = useState(null);
+  const [loading, setLoading]         = useState(true);
+  const [pickedDate, setPickedDate]   = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+
+  // 1) Once data is in, build a strict list of summary rows for that date
+  const summaryRows = useMemo(() => {
+    if (!data || !pickedDate) return [];
+    const dateStr = format(pickedDate, 'yyyy-MM-dd');
+    return data.summaryByDate.filter(r => r.date === dateStr);
+  }, [data, pickedDate]);
+
+  // 2) And build detailRows by formatting LocaleMessageTime exactly
+  const detailRows = useMemo(() => {
+    if (!data || !pickedDate) return [];
+    const dateStr = format(pickedDate, 'yyyy-MM-dd');
+    return data.details.filter(r => {
+      const rowDate = format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd');
+      return rowDate === dateStr;
+    });
+  }, [data, pickedDate]);
+
+  // Fetch everything on mount
+  useEffect(() => {
+    setLoading(true);
+    fetchHistory()
+      .then(json => {
+        setData(json);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <LoadingSpinner />;
+  if (!data)    return null;
+
+  const handleExport = () => {
+    const ws = XLSX.utils.json_to_sheet(
+      detailRows.map((r, i) => ({
+        Sr: i + 1,
+        Date: format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd'),
+        Time: format(new Date(r.LocaleMessageTime), 'HH:mm:ss'),
+        EmployeeID: r.EmployeeID,
+        Name: r.ObjectName1,
+        Door: r.Door,
+        Partition: r.PartitionName2
+      }))
+    );
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Details');
+    const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    saveAs(new Blob([buf]), `history_${format(pickedDate, 'yyyyMMdd')}.xlsx`);
+  };
+
+  return (
+    <>
+      <Header />
+
+      <Container maxWidth={false} disableGutters sx={{ pt: 2, pb: 4, px: '20px' }}>
+        {/* Date selector */}
+        <Box sx={{ mb: 3 }}>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DatePicker
+              label="Select date"
+              value={pickedDate}
+              onChange={newDate => {
+                setPickedDate(newDate);
+                setShowDetails(false);
+              }}
+              renderInput={params => <TextField fullWidth {...params} />}
+            />
+          </LocalizationProvider>
+        </Box>
+
+        {!pickedDate && (
+          <Typography variant="body1" color="textSecondary">
+            Please pick a date to view region summary.
+          </Typography>
+        )}
+
+        {/* Summary table */}
+        {pickedDate && summaryRows.length > 0 && (
+          <Paper elevation={3} sx={{ mb: 4, overflowX: 'auto' }}>
+            <Table>
+              <TableHead sx={{ bgcolor: '#666', color: '#fff' }}>
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ fontWeight: 'bold', fontSize: 16, color: '#000', bgcolor: '#ccc' }}>
+                    {format(pickedDate, 'EEEE, d MMMM, yyyy')}
+                  </TableCell>
+                </TableRow>
+                <TableRow sx={{ bgcolor: '#444' }}>
+                  {['Country', 'City', 'Employee', 'Contractors', 'Total'].map(h => (
+                    <TableCell
+                      key={h}
+                      sx={{ color: '#FFC107', fontWeight: 600, minWidth: h === 'City' ? 200 : 100 }}
+                    >
+                      {h}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {summaryRows.map((r, i) => (
+                  <TableRow key={i} sx={{ backgroundColor: i % 2 ? '#f5f5f5' : '#e0e0e0' }}>
+                    <TableCell>{r.region.country}</TableCell>
+                    <TableCell>{r.region.city}</TableCell>
+                    <TableCell align="right">{r.region.employeeCount}</TableCell>
+                    <TableCell align="right">{r.region.contractorCount}</TableCell>
+                    <TableCell align="right" sx={{ backgroundColor: '#FFC107', fontWeight: 'bold' }}>
+                      {r.region.total}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {/* Grand total row */}
+                <TableRow sx={{ bgcolor: '#666' }}>
+                  <TableCell colSpan={2} align="right" sx={{ color: '#fff', fontWeight: 600 }}>
+                    Total
+                  </TableCell>
+                  <TableCell align="right" sx={{ color: '#fff', fontWeight: 600 }}>
+                    {summaryRows.reduce((sum, r) => sum + r.region.employeeCount, 0)}
+                  </TableCell>
+                  <TableCell align="right" sx={{ color: '#fff', fontWeight: 600 }}>
+                    {summaryRows.reduce((sum, r) => sum + r.region.contractorCount, 0)}
+                  </TableCell>
+                  <TableCell align="right" sx={{ color: '#fff', fontWeight: 600, bgcolor: '#333' }}>
+                    {summaryRows.reduce((sum, r) => sum + r.region.total, 0)}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </Paper>
+        )}
+
+        {/* See details button */}
+        {pickedDate && summaryRows.length > 0 && (
+          <Box sx={{ textAlign: 'center', mb: 3 }}>
+            <Button
+              variant="contained"
+              sx={{ bgcolor: '#FFC107', color: '#000' }}
+              onClick={() => setShowDetails(s => !s)}
+            >
+              {showDetails ? 'Hide Details' : 'See Details'}
+            </Button>
+            {showDetails && (
+              <Button
+                variant="outlined"
+                sx={{ ml: 2, borderColor: '#FFC107', color: '#FFC107' }}
+                onClick={handleExport}
+              >
+                Export to Excel
+              </Button>
+            )}
+          </Box>
+        )}
+
+        {/* Details table */}
+        {showDetails && (
+          <Paper elevation={1}>
+            {detailRows.length > 0 ? (
+              <Table>
+                <TableHead sx={{ bgcolor: '#000' }}>
+                  <TableRow>
+                    {['Sr', 'Date', 'Time', 'Employee ID', 'Name', 'Door', 'Partition'].map(h => (
+                      <TableCell key={h} sx={{ color: '#FFC107', fontWeight: 600 }}>
+                        {h}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {detailRows.map((r, i) => (
+                    <TableRow key={r.PersonGUID}>
+                      <TableCell>{i + 1}</TableCell>
+                      <TableCell>
+                        {format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd')}
+                      </TableCell>
+                      <TableCell>
+                        {format(new Date(r.LocaleMessageTime), 'HH:mm:ss')}
+                      </TableCell>
+                      <TableCell>{r.EmployeeID}</TableCell>
+                      <TableCell>{r.ObjectName1}</TableCell>
+                      <TableCell>{r.Door}</TableCell>
+                      <TableCell>{r.PartitionName2}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <Typography variant="body2" color="textSecondary" sx={{ p: 2 }}>
+                No swipe records found for this date.
+              </Typography>
+            )}
+          </Paper>
+        )}
+      </Container>
+
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
 Below Files Are Working perfect .
 But i have review sime issue in this file ,
 data is not exactly fetch for selected date Like i have select date 17 i got 3 to 5 entries from 18 th kindly solve this issue ,
