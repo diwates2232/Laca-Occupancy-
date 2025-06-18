@@ -1,3 +1,18 @@
+/src/assets/
+  wu-logo.png
+  laca-flag.png
+  /flags/
+    argentina.png
+    brazil.png
+    costa-rica.png
+    mexico.png
+    peru.png
+
+
+
+
+
+
 import React from 'react';
 import { AppBar, Toolbar, Box, Typography, Select, MenuItem } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
