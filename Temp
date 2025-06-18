@@ -1,3 +1,184 @@
+return (
+  <>
+    <Header />
+
+    <Container maxWidth={false} disableGutters sx={{ pt: 2, pb: 4 }}>
+      {/* Controls row: Date picker + Summary table */}
+      {pickedDate && summaryEntry ? (
+        <Box
+          display="flex"
+          alignItems="flex-start"
+          sx={{ px: '20px', mb: 2, gap: '10px' }}  // increased gap to 10px, reduced bottom margin
+        >
+          {/* Date picker */}
+          <Box sx={{ flex: '0 0 200px' }}>
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DatePicker
+                label="Select date"
+                value={pickedDate}
+                onChange={newDate => {
+                  setPickedDate(newDate);
+                  setShowDetails(false);
+                }}
+                renderInput={params => <TextField fullWidth {...params} />}
+              />
+            </LocalizationProvider>
+          </Box>
+
+          {/* Summary table */}
+          <Paper
+            elevation={3}
+            sx={{
+              flex: 1,
+              px: 4,
+              py: 2,
+              width: '80%',
+              maxWidth: 900,           // preserved
+              border: '3px solid #000',
+              borderRadius: 2,
+            }}
+          >
+            <Table sx={{ border: '2px solid #000' }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    align="center"
+                    sx={{
+                      fontWeight: 'bold',
+                      fontSize: 16,
+                      bgcolor: '#000',
+                      color: '#fff',
+                      border: '2px solid #000',
+                    }}
+                  >
+                    {format(pickedDate, 'EEEE, d MMMM, yyyy')}
+                  </TableCell>
+                </TableRow>
+                <TableRow sx={{ bgcolor: '#FFC107' }}>
+                  {['Country','City','Employee','Contractors','Total'].map(h => (
+                    <TableCell
+                      key={h}
+                      align={h==='Country'||h==='City'?'left':'right'}
+                      sx={{
+                        color: '#000',
+                        fontWeight: 'bold',
+                        fontSize: 14,
+                        border: '2px solid #000',
+                      }}
+                    >
+                      {h}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {partitionRows.map((row,i) => (
+                  <TableRow key={i}>
+                    <TableCell sx={{ border: '2px solid #000' }}>{row.country}</TableCell>
+                    <TableCell sx={{ border: '2px solid #000' }}>{row.city}</TableCell>
+                    <TableCell align="right" sx={{ border: '2px solid #000' }}>
+                      {row.employee}
+                    </TableCell>
+                    <TableCell align="right" sx={{ border: '2px solid #000' }}>
+                      {row.contractor}
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      sx={{
+                        backgroundColor: '#FFC107',
+                        fontWeight: 'bold',
+                        border: '2px solid #000',
+                      }}
+                    >
+                      {row.total}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                <TableRow sx={{ bgcolor: '#666' }}>
+                  <TableCell
+                    colSpan={2}
+                    align="right"
+                    sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}
+                  >
+                    Total
+                  </TableCell>
+                  <TableCell align="right" sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
+                    {partitionRows.reduce((sum, r) => sum + r.employee, 0)}
+                  </TableCell>
+                  <TableCell align="right" sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
+                    {partitionRows.reduce((sum, r) => sum + r.contractor, 0)}
+                  </TableCell>
+                  <TableCell
+                    align="right"
+                    sx={{
+                      color: '#fff',
+                      fontWeight: 'bold',
+                      bgcolor: '#333',
+                      border: '2px solid #000',
+                    }}
+                  >
+                    {partitionRows.reduce((sum, r) => sum + r.total, 0)}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </Paper>
+        </Box>
+      ) : (
+        <Box sx={{ px: '20px', mb: 3 }}>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DatePicker
+              label="Select date"
+              value={pickedDate}
+              onChange={newDate => {
+                setPickedDate(newDate);
+                setShowDetails(false);
+              }}
+              renderInput={params => <TextField fullWidth {...params} />}
+            />
+          </LocalizationProvider>
+          {!pickedDate && (
+            <Typography variant="body1" color="textSecondary" sx={{ mt: 2 }}>
+              Please pick a date to view region summary.
+            </Typography>
+          )}
+        </Box>
+      )}
+
+      {/* Details toggle & export – centered below summary */}
+      {pickedDate && summaryEntry && (
+        <Box sx={{ textAlign: 'center', mb: 4, px: '20px' }}>
+          <Button
+            variant="contained"
+            sx={{ bgcolor: '#FFC107', color: '#000' }}
+            onClick={() => setShowDetails(s => !s)}
+          >
+            {showDetails ? 'Hide Details' : 'See Details'}
+          </Button>
+          {showDetails && (
+            <Button
+              variant="outlined"
+              sx={{ ml: 2, borderColor: '#FFC107', color: '#FFC107' }}
+              onClick={handleExport}
+            >
+              Export to Excel
+            </Button>
+          )}
+        </Box>
+      )}
+
+      {/* ...rest of your component (Details table, etc.) */}
+    </Container>
+  </>
+);
+
+
+
+
+
+
+
 Now wrap a Hide and see deatails toggle exact below the summary table in center align
 also dont change maxwidth , 
 and imcrease gap between date picker and summary card around 10 px 
