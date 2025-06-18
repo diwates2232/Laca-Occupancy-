@@ -1,3 +1,215 @@
+// src/components/ChartCard.jsx
+import React, { useState } from 'react';
+import { Card, CardContent, Typography, Box, useTheme } from '@mui/material';
+import {
+  AreaChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
+  Brush,
+  PieChart,
+  Pie,
+  Cell,
+  LabelList,
+  ReferenceLine,
+} from 'recharts';
+import dayjs from 'dayjs';
+
+export default function ChartCard({
+  title,
+  data = [],
+  dataKey = 'value',
+  chartHeight = 350,
+  colors = { head: '#FFC107', cap: '#B0BEC5' },
+  animateDuration = 800,
+  showCrosshair = true,
+  timeFormat = 'HH:mm:ss',
+  // NEW prop: breakdown of personnel types
+  breakdown = { Employee: 0, Contractor: 0, TempBadge: 0 },
+}) {
+  const theme = useTheme();
+  const [hidden, setHidden] = useState({});
+  const [activeIndex, setActiveIndex] = useState(null);
+
+  // Build headcount series key
+  const headKey = data[0]?.Headcount != null ? 'Headcount' : dataKey;
+
+  // Prepare pie data
+  const pieData = [
+    { name: 'Employees', value: breakdown.Employee },
+    { name: 'Contractors', value: breakdown.Contractor },
+    { name: 'Temp Badge', value: breakdown.TempBadge },
+  ];
+  const pieColors = ['#4caf50', '#f44336', '#2196f3'];
+
+  // Current (last) value
+  const last = data[data.length - 1] || {};
+  const currentValue = last[headKey] ?? 0;
+
+  const handleLegendClick = o => {
+    setHidden(h => ({ ...h, [o.dataKey]: !h[o.dataKey] }));
+  };
+
+  if (!data.length) {
+    return (
+      <Card sx={{ mb: 2, background: theme.palette.background.paper }}>
+        <CardContent sx={{ textAlign: 'center' }}>
+          <Typography variant="h6">{title}</Typography>
+          <Typography variant="body2">No data to display.</Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card sx={{ mb: 2, background: theme.palette.background.paper, position: 'relative' }}>
+      <CardContent>
+        {/* Title + current */}
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Typography variant="h6" sx={{ color: colors.head, fontWeight: 700 }}>
+            {title}
+          </Typography>
+          <Typography variant="subtitle1" sx={{ color: colors.head, fontWeight: 600 }}>
+            {currentValue}
+          </Typography>
+        </Box>
+
+        {/* INSET PIE CHART */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            width: 100,
+            height: 100,
+            background: 'rgba(0,0,0,0.2)',
+            borderRadius: '50%',
+            p: 1,
+          }}
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={pieData}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={20}
+                outerRadius={35}
+                paddingAngle={2}
+              >
+                {pieData.map((entry, idx) => (
+                  <Cell key={idx} fill={pieColors[idx]} />
+                ))}
+              </Pie>
+              <LabelList
+                dataKey="name"
+                position="outside"
+                fill="#fff"
+                style={{ fontSize: 8 }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </Box>
+
+        {/* MAIN TIMELINE CHART */}
+        <Box sx={{ width: '100%', height: chartHeight, mt: 2 }}>
+          <ResponsiveContainer>
+            <AreaChart data={data} margin={{ top: 0, right: 30, left: 0, bottom: 20 }}>
+              <defs>
+                <linearGradient id="gradHead" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={colors.head} stopOpacity={0.5} />
+                  <stop offset="95%" stopColor={colors.head} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+
+              <CartesianGrid stroke="#444" strokeDasharray="3 3" />
+
+              {showCrosshair && activeIndex != null && data[activeIndex] && (
+                <ReferenceLine
+                  x={data[activeIndex].name}
+                  stroke={colors.head}
+                  strokeDasharray="3 3"
+                />
+              )}
+
+              <XAxis
+                dataKey="name"
+                tick={{ fill: '#EEE', fontSize: 12 }}
+                tickFormatter={t =>
+                  typeof t === 'number' ? dayjs(t).format(timeFormat) : t
+                }
+                padding={{ left: 10, right: 10 }}
+              />
+              <YAxis tick={{ fill: '#EEE', fontSize: 12 }} padding={{ top: 10, bottom: 0 }} />
+
+              <Tooltip
+                contentStyle={{ backgroundColor: '#222', border: `1px solid ${colors.head}` }}
+                labelStyle={{ color: colors.head, fontWeight: 600 }}
+                cursor={{ fill: 'rgba(255,255,255,0.1)' }}
+                isAnimationActive={false}
+                onMouseMove={o => setActiveIndex(o?.activeTooltipIndex)}
+              />
+
+              <Legend wrapperStyle={{ color: '#EEE', bottom: 0, left: 'center' }} onClick={handleLegendClick} />
+
+              {!hidden[headKey] && (
+                <Area
+                  type="monotone"
+                  dataKey={headKey}
+                  stroke={colors.head}
+                  fill="url(#gradHead)"
+                  strokeWidth={2}
+                  isAnimationActive
+                  animationDuration={animateDuration}
+                  dot={false}
+                />
+              )}
+
+              <Brush dataKey="name" height={30} stroke={colors.head} travellerWidth={10} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+// src/pages/Dashboard.jsx
+...
+  {!loading && (
+    <ChartCard
+      chartHeight={360}
+      data={partitions.map(p => ({
+        name: p.name,
+        Headcount: p.total,
+      }))}
+      dataKey="Headcount"
+      colors={{ head: '#FFC107', cap: '#B0BEC5' }}
++     // Pass in the live breakdown for Employees / Contractors / TempBadge
++     breakdown={{
++       Employee: realtimeEmp,
++       Contractor: realtimeCont,
++       TempBadge: partitions.reduce((sum,p)=>sum+p.TempBadge,0),
++     }}
+    />
+  )}
+...
+
+
+
+
+
+
+
+
 C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\data\seatCapacities.js
 
 // src/data/seatCapacities.js
