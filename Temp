@@ -1,5 +1,211 @@
 // src/components/ChartCard.jsx
 import React, { useState } from 'react';
+import { Card, CardContent, Typography, Box, useTheme } from '@mui/material';
+import {
+  AreaChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
+  Brush,
+  LabelList,
+  ReferenceLine,
+} from 'recharts';
+import dayjs from 'dayjs';
+
+export default function ChartCard({
+  title,
+  data = [],
+  dataKey = 'value',
+  chartHeight = 350,
+  colors = { head: '#FFC107', cap: '#B0BEC5' },
+  animateDuration = 800,
+  showCrosshair = true,
+  timeFormat = 'HH:mm:ss',
+}) {
+  const theme = useTheme();
+  const [hidden, setHidden] = useState({});
+  const [activeIndex, setActiveIndex] = useState(null);
+
+  if (!Array.isArray(data) || !data.length) {
+    return (
+      <Card sx={{ mb: 2, background: theme.palette.background.paper }}>
+        <CardContent sx={{ textAlign: 'center' }}>
+          <Typography variant="h6">{title}</Typography>
+          <Typography variant="body2">No data to display.</Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const hasCapacity = data[0].Capacity != null;
+  const headKey = hasCapacity ? 'Headcount' : dataKey;
+
+  const handleLegendClick = o => {
+    const { dataKey: key } = o;
+    setHidden(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  return (
+    <Card sx={{ mb: 2, background: theme.palette.background.paper }}>
+      <CardContent>
+        {/* Title */}
+        <Typography
+          variant="h6"
+          gutterBottom
+          sx={{ color: colors.head, fontWeight: 700 }}
+        >
+          {title}
+        </Typography>
+
+        {/* Chart */}
+        <Box sx={{ width: '100%', height: chartHeight, background: '#1A1A1A', p: 1, borderRadius: 1 }}>
+          <ResponsiveContainer>
+            <AreaChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+              {/* Gradient for headcount */}
+              <defs>
+                <linearGradient id="gradHead" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={colors.head} stopOpacity={0.5}/>
+                  <stop offset="95%" stopColor={colors.head} stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+
+              <CartesianGrid stroke="#444" strokeDasharray="3 3" />
+
+              {/* Crosshair */}
+              {showCrosshair && activeIndex != null && data[activeIndex] && (
+                <ReferenceLine
+                  x={data[activeIndex].name}
+                  stroke={colors.head}
+                  strokeDasharray="3 3"
+                />
+              )}
+
+              <XAxis
+                dataKey="name"
+                axisLine={{ stroke: '#666' }}
+                tickLine={false}
+                tick={{ fill: '#EEE', fontSize: 12 }}
+                tickFormatter={t => (typeof t==='number'? dayjs(t).format(timeFormat) : t)}
+                padding={{ left: 10, right: 10 }}
+              />
+              <YAxis
+                axisLine={{ stroke: '#666' }}
+                tickLine={false}
+                tick={{ fill: '#EEE', fontSize: 12 }}
+                padding={{ top: 10, bottom: 0 }}
+              />
+
+              <Tooltip
+                contentStyle={{ backgroundColor: '#222', border: `1px solid ${colors.head}` }}
+                labelStyle={{ color: colors.head, fontWeight: 600 }}
+                itemStyle={{ color: '#FFF' }}
+                cursor={{ fill: 'rgba(255,255,255,0.1)' }}
+                isAnimationActive={false}
+                onMouseMove={o => setActiveIndex(o && o.activeTooltipIndex)}
+                formatter={(val, name) => {
+                  if (name === 'Headcount' && hasCapacity) {
+                    const cap = data.find(d=>d.Headcount===val)?.Capacity||0;
+                    const pct = cap ? ((val/cap)*100).toFixed(1) : '0.0';
+                    return [`${val} (${pct}%)`, name];
+                  }
+                  return [val, name];
+                }}
+              />
+
+              <Legend
+                wrapperStyle={{ color: '#EEE', bottom: 0, left: 'center' }}
+                onClick={handleLegendClick}
+              />
+
+              {/* Main headcount area */}
+              {!hidden[headKey] && (
+                <Area
+                  type="monotone"
+                  dataKey={headKey}
+                  stroke={colors.head}
+                  fill="url(#gradHead)"
+                  strokeWidth={2}
+                  isAnimationActive
+                  animationDuration={animateDuration}
+                  dot={false}
+                />
+              )}
+
+              {/* Capacity area */}
+              {hasCapacity && !hidden.Capacity && (
+                <Area
+                  type="monotone"
+                  dataKey="Capacity"
+                  stroke={colors.cap}
+                  fill="rgba(176,190,197,0.2)"
+                  strokeDasharray="5 5"
+                  isAnimationActive
+                  animationDuration={animateDuration}
+                  dot={false}
+                />
+              )}
+
+              {/* Overlay line */}
+              {!hidden[headKey] && (
+                <Line
+                  type="monotone"
+                  dataKey={headKey}
+                  stroke={colors.head}
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive
+                  animationDuration={animateDuration}
+                  activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
+                />
+              )}
+
+              {/* Brush with mini preview */}
+              <Brush
+                dataKey="name"
+                height={40}
+                stroke={colors.head}
+                travellerWidth={12}
+                updateId={data.length}
+              >
+                <AreaChart data={data}>
+                  <defs>
+                    <linearGradient id="miniGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={colors.head} stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor={colors.head} stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <Area
+                    type="monotone"
+                    dataKey={headKey}
+                    stroke={colors.head}
+                    fill="url(#miniGrad)"
+                    strokeWidth={1}
+                    dot={false}
+                  />
+                </AreaChart>
+              </Brush>
+            </AreaChart>
+          </ResponsiveContainer>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
+
+
+// src/components/ChartCard.jsx
+import React, { useState } from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import {
   AreaChart,
