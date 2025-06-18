@@ -1,168 +1,12 @@
--
+Read below file carefully and solve the issue , and give me fully updated files
 
-import dayjs from 'dayjs';
-
-
--- ChartCard.jsx
-+++ ChartCard.jsx
-@@
- export default function ChartCard({
-   title,
-   data = [],
-   dataKey = 'value',
-   chartHeight = 350,
-   colors = { head: '#FFC107', cap: '#B0BEC5' },
-+  animateDuration = 800,
-+  showCrosshair = true,
-+  timeFormat = 'HH:mm:ss',
- }) {
-   const [hidden, setHidden] = useState({});
-+  const [activeIndex, setActiveIndex] = useState(null);
- 
-   if (!Array.isArray(data) || !data.length) {
-@@
-               <defs>
-                 <linearGradient id="colorHead" x1="0" y1="0" x2="0" y2="1">
-@@
-               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-+
-+              {/* Crosshair vertical line */}
-+              {showCrosshair && activeIndex != null && (
-+                <ReferenceLine
-+                  x={data[activeIndex].name}
-+                  stroke={colors.head}
-+                  strokeOpacity={0.5}
-+                />
-+              )}
- 
-               <XAxis
-                 dataKey="name"
--                tick={{ fill: '#FFF', fontWeight: 600 }}
-+                tick={{ fill: '#FFF', fontWeight: 600 }}
-+                domain={['auto', 'auto']}
-+                type="category"
-+                scale="time"
-+                tickFormatter={t => dayjs(t).format(timeFormat)}
-                 label={{
-                   value: 'Time',
-                   position: 'insideBottomRight',
-                   offset: -10,
-                   fill: '#FFF',
-                   fontWeight: 600
-                 }}
-               />
- 
-               <YAxis
-                 tick={{ fill: '#FFF', fontWeight: 600 }}
-                 label={{
-                   value: 'Count',
-                   angle: -90,
-                   position: 'insideLeft',
-                   fill: '#FFF',
-                   fontWeight: 600
-                 }}
-               />
- 
-               {/* Tooltip & Legend */}
-               <Tooltip
--                contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}` }}
-+                contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}` }}
-+                cursor={showCrosshair}
-+                isAnimationActive={false}
-+                onMouseMove={o => setActiveIndex(o && o.activeTooltipIndex)}
-                 labelStyle={{ color: colors.head, fontWeight: 600 }}
-                 formatter={(value, name) => {
-                   if (name === 'Headcount' && hasCapacity) {
-@@
-               <Legend wrapperStyle={{ color: '#FFF' }} onClick={handleLegendClick} />
- 
-               {/* Brush for zooming/panning */}
--              <Brush
--                dataKey="name"
--                height={30}
--                stroke={colors.head}
--                travellerWidth={10}
--              />
-+              <Brush
-+                dataKey="name"
-+                height={30}
-+                stroke={colors.head}
-+                travellerWidth={10}
-+                updateId={data.length}     // reset on data change
-+              />
- 
-               {/* Capacity area */}
-               {hasCapacity && !hidden.Capacity && (
-@@
-               {/* Headcount area */}
--              {!hidden.Headcount && (
--                <Area
--                  type="monotone"
--                  dataKey={hasCapacity ? 'Headcount' : dataKey}
--                  name={hasCapacity ? 'Headcount' : dataKey}
--                  stroke={colors.head}
--                  fill="url(#colorHead)"
--                  dot={{ stroke: colors.head, strokeWidth: 2 }}
--                >
--                 <LabelList
--                   dataKey={hasCapacity ? 'Headcount' : dataKey}
--                   position="top"
--                   style={{ fill: '#FFF', fontSize: 12, fontWeight: 600 }}
--                 />
--                </Area>
--              )}
-+              {!hidden.Headcount && (
-+                <Area
-+                  type="monotone"
-+                  dataKey={hasCapacity ? 'Headcount' : dataKey}
-+                  name={hasCapacity ? 'Headcount' : dataKey}
-+                  stroke={colors.head}
-+                  fill="url(#colorHead)"
-+                  dot={false}
-+                  isAnimationActive={true}
-+                  animationDuration={animateDuration}
-+                >
-+                  <LabelList
-+                    dataKey={hasCapacity ? 'Headcount' : dataKey}
-+                    position="top"
-+                    style={{ fill: '#FFF', fontSize: 12, fontWeight: 600 }}
-+                  />
-+                </Area>
-+              )}
- 
-               {/* Overlay line for crisp “spark” */}
--              {!hidden.Headcount && (
--                <Line
--                  type="monotone"
--                  dataKey={hasCapacity ? 'Headcount' : dataKey}
--                  stroke={colors.head}
--                  strokeWidth={2}
--                  dot={false}
--                  activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
--                />
--              )}
-+              {!hidden.Headcount && (
-+                <Line
-+                  type="monotone"
-+                  dataKey={hasCapacity ? 'Headcount' : dataKey}
-+                  stroke={colors.head}
-+                  strokeWidth={2}
-+                  dot={false}
-+                  isAnimationActive={true}
-+                  animationDuration={animateDuration}
-+                  activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
-+                />
-+              )}
- 
-             </AreaChart>
-           </ResponsiveContainer>
-
-
-
-
-
-
-
+Received NaN for the `x` attribute. If this is expected, cast the value to a string.
+validateProperty @ react-dom-client.development.js:2986Understand this error
+react-dom-client.development.js:2986 Received NaN for the `width` attribute. If this is expected, cast the value to a string.
+validateProperty @ react-dom-client.development.js:2986Understand this error
+react-dom-client.development.js:1120 Error: <rect> attribute x: Expected length, "NaN".
+setValueForAttribute @ react-dom-client.development.js:1120Understand this error
+react-dom-client.development.js:1135 Error: <rect> attribute width: Expected length, "NaN".
 
 
 
@@ -170,6 +14,7 @@ import dayjs from 'dayjs';
 // src/components/ChartCard.jsx
 import React, { useState } from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
+
 import {
   AreaChart,
   Area,
@@ -183,15 +28,19 @@ import {
   Brush,
  LabelList,
 } from 'recharts';
-
+import dayjs from 'dayjs';
 export default function ChartCard({
   title,
   data = [],
   dataKey = 'value',
   chartHeight = 350,
   colors = { head: '#FFC107', cap: '#B0BEC5' },
+    animateDuration = 800,
+  showCrosshair = true,
+  timeFormat = 'HH:mm:ss',
 }) {
   const [hidden, setHidden] = useState({});
+   const [activeIndex, setActiveIndex] = useState(null);
 
   if (!Array.isArray(data) || !data.length) {
     return (
@@ -232,9 +81,26 @@ export default function ChartCard({
               {/* Grid and axes */}
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
 
+              +
+              {/* Crosshair vertical line */}
+              {showCrosshair && activeIndex != null && (
+                <ReferenceLine
+                  x={data[activeIndex].name}
+                  stroke={colors.head}
+                  strokeOpacity={0.5}
+                />
+              )}
+
               <XAxis
                 dataKey="name"
+                // tick={{ fill: '#FFF', fontWeight: 600 }}
+
                 tick={{ fill: '#FFF', fontWeight: 600 }}
+                domain={['auto', 'auto']}
+                type="category"
+                scale="time"
+                tickFormatter={t => dayjs(t).format(timeFormat)}
+         
                label={{
                  value: 'Time',
                  position: 'insideBottomRight',
@@ -257,7 +123,15 @@ export default function ChartCard({
 
               {/* Tooltip & Legend */}
               <Tooltip
+                // contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}` }}
+
                 contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}` }}
+                cursor={showCrosshair}
+                isAnimationActive={false}
+                onMouseMove={o => setActiveIndex(o && o.activeTooltipIndex)}
+
+
+
                 labelStyle={{ color: colors.head, fontWeight: 600 }}
                 formatter={(value, name) => {
                   if (name === 'Headcount' && hasCapacity) {
@@ -271,12 +145,23 @@ export default function ChartCard({
               <Legend wrapperStyle={{ color: '#FFF' }} onClick={handleLegendClick} />
 
               {/* Brush for zooming/panning */}
+              {/* <Brush
+                dataKey="name"
+                height={30}
+                stroke={colors.head}
+                travellerWidth={10}
+              /> */}
+
               <Brush
                 dataKey="name"
                 height={30}
                 stroke={colors.head}
                 travellerWidth={10}
+                updateId={data.length}     // reset on data change
               />
+
+
+
 
               {/* Capacity area */}
               {hasCapacity && !hidden.Capacity && (
@@ -297,7 +182,7 @@ export default function ChartCard({
               )}
 
               {/* Headcount area */}
-              {!hidden.Headcount && (
+              {/* {!hidden.Headcount && (
                 <Area
                   type="monotone"
                   dataKey={hasCapacity ? 'Headcount' : dataKey}
@@ -312,10 +197,32 @@ export default function ChartCard({
                    style={{ fill: '#FFF', fontSize: 12, fontWeight: 600 }}
                  />
                 </Area>
+              )} */}
+
+              {!hidden.Headcount && (
+                <Area
+                  type="monotone"
+                  dataKey={hasCapacity ? 'Headcount' : dataKey}
+                  name={hasCapacity ? 'Headcount' : dataKey}
+                  stroke={colors.head}
+                  fill="url(#colorHead)"
+                  dot={false}
+                  isAnimationActive={true}
+                  animationDuration={animateDuration}
+                >
+                  <LabelList
+                    dataKey={hasCapacity ? 'Headcount' : dataKey}
+                    position="top"
+                    style={{ fill: '#FFF', fontSize: 12, fontWeight: 600 }}
+                  />
+                </Area>
               )}
 
+
+
+
               {/* Overlay line for crisp “spark” */}
-              {!hidden.Headcount && (
+              {/* {!hidden.Headcount && (
                 <Line
                   type="monotone"
                   dataKey={hasCapacity ? 'Headcount' : dataKey}
@@ -324,7 +231,23 @@ export default function ChartCard({
                   dot={false}
                   activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
                 />
+              )} */}
+
+              {!hidden.Headcount && (
+                <Line
+                  type="monotone"
+                  dataKey={hasCapacity ? 'Headcount' : dataKey}
+                  stroke={colors.head}
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={true}
+                 animationDuration={animateDuration}
+                  activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
+                />
               )}
+
+
+
             </AreaChart>
           </ResponsiveContainer>
         </Box>
@@ -332,217 +255,3 @@ export default function ChartCard({
     </Card>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-// src/pages/Dashboard.jsx
-
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  Skeleton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
-  Divider
-} from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import SummaryCard from '../components/SummaryCard';
-import ChartCard from '../components/ChartCard';
-import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
-import { partitionList } from '../services/occupancy.service';
-
-export default function Dashboard() {
-  const { data, loading, error } = useLiveOccupancy(1000);
-  const [lastUpdate, setLastUpdate] = useState('');
-  const [partition, setPartition] = useState('');
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (data) setLastUpdate(new Date().toLocaleTimeString());
-  }, [data]);
-
-  if (error) {
-    return (
-      <Box width="100vw%" py={4}>
-        <Typography color="error" align="center">
-          Error loading live data
-        </Typography>
-      </Box>
-    );
-  }
-
-  // Build and sort partitions
-  const regions = data?.realtime || {};
-  const partitions = partitionList
-    .map(name => {
-      const key = Object.keys(regions).find(k => k.includes(name));
-      const p = key ? regions[key] : {};
-      return {
-        name,
-        total: p.total || 0,
-        Employee: p.Employee || 0,
-        Contractor: p.Contractor || 0,
-        TempBadge: p.TempBadge || 0,
-        floors: p.floors || {}
-      };
-    })
-    .sort((a, b) => b.total - a.total);
-
-  // Totals
-  const todayTot   = data?.today?.total    ?? 0;
-  const todayEmp   = data?.today?.Employee ?? 0;
-  const todayCont  = data?.today?.Contractor ?? 0;
-  const realtimeTot  = partitions.reduce((sum, p) => sum + p.total, 0);
-  const realtimeEmp  = partitions.reduce((sum, p) => sum + p.Employee, 0);
-  const realtimeCont = partitions.reduce((sum, p) => sum + p.Contractor, 0);
-
-  return (
-    <>
-      <Header />
-
-      <Container
-        maxWidth={false}
-        disableGutters
-        sx={{
-          pt: 1,
-          pb: 2,
-          px: '20px',        // ← exactly 20px padding both sides
-        }}
-      >
-        {/* Top summary cards */}
-        <Box
-          display="flex"
-          alignItems="stretch"
-          sx={{ mb: 1, width: '100vw%' }}
-        >
-          <Box sx={{ flex: 1 }}>
-            <SummaryCard
-              title="Today’s Headcount"
-              total={todayTot}
-              stats={[
-                { label: 'Employees',   value: todayEmp },
-                { label: 'Contractors', value: todayCont }
-              ]}
-              sx={{ height: 190, border: '2px solid #FFC107' }}
-            />
-          </Box>
-
-          <Divider
-            // orientation="vertical"
-            flexItem
-            sx={{ mx: 1 }}
-          />
-
-          <Box sx={{ flex: 1 }}>
-            <SummaryCard
-              title="Realtime Headcount"
-              total={realtimeTot}
-              stats={[
-                { label: 'Employees',   value: realtimeEmp },
-                { label: 'Contractors', value: realtimeCont }
-              ]}
-              sx={{ height: 190, border: '2px solid #FFC107' }}
-            />
-          </Box>
-        </Box>
-
-        {/* Partition cards */}
-        <Box mt={4} sx={{ width: '100vw%', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-          {loading ? (
-            <Skeleton variant="rectangular" width="100vw%" height={240} />
-          ) : (
-            partitions.map(p => (
-              <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
-                <SummaryCard
-                  title={p.name}
-                  total={p.total}
-                  stats={[
-                    { label: 'Employees',   value: p.Employee },
-                    { label: 'Contractors', value: p.Contractor },
-                    // only show TempBadge on Costa Rica
-                    ...(p.name === 'CR.Costa Rica Partition'
-                      ? [{ label: 'Temp Badge', value: p.TempBadge }]
-                      : [])
-                  ]}
-                  sx={{ width: '100vw%', border: '2px solid #FFC107' }}
-                />
-              </Box>
-            ))
-          )}
-        </Box>
-
-        {/* Live totals chart */}
-        <Box mt={4} sx={{ width: '100vw%' ,p:2, border: '2px solid #FFC107' }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" gutterBottom>
-              Live Totals by Partition
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-              Last updated: {lastUpdate}
-            </Typography>
-          </Box>
-
-          {loading ? (
-            <Skeleton variant="rectangular" width="100%" height={320} />
-          ) : (
-  <ChartCard
-    chartType="bar"                  // new prop
-    chartHeight={360}
-    data={partitions.map((p,i) => ({
-     name: p.name,
-      value: p.total,
-      fill: i % 2 === 0 ? '#FFC107' : '#B0BEC5'
-    }))}
-    dataKey="value"
-    colors={{ head: '#FFC107', cap: '#B0BEC5' }}
-    sx={{ border: '2px solid #FFC107' }}
-  />
-          )}
-        </Box>
-      </Container>
-
-      <footer style={{
-        backgroundColor: '#000000',
-        color: '#FFC107',
-        padding: '1.5rem 0',
-        textAlign: 'center',
-        marginTop: 0,
-        borderTop: '2px solid #FFC107',
-        fontSize: '0.95rem',
-        lineHeight: '1.6'
-      }}>
-        <div><strong>Global Security Operations Center</strong><br/>
-          Live HeadCount against Occupancy dashboard for Western Union — Real-time occupancy, floor activity, and personnel insights.
-        </div>
-        <div style={{ marginTop: '0.75rem' }}>
-          Contact us:&nbsp;
-          <a href="mailto:GSOC-GlobalSecurityOperationCenter.SharedMailbox@westernunion.com"
-             style={{ color: '#FFC107', textDecoration: 'underline' }}>
-            GSOC Mail
-          </a>&nbsp;|&nbsp;
-          Landline:&nbsp;<span style={{ color: '#FFC107' }}>+91-020-67632394</span>
-        </div>
-      </footer>
-    </>
-  );
-}
-
-
-
