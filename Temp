@@ -1,3 +1,80 @@
+{/* Details table */}
+{showDetails && (
+  <Box display="flex" justifyContent="center" mb={4}>
+    <Paper
+      elevation={1}
+      sx={{
+        px: '20px',
+        py: 2,
+        width: '100%',
+        maxWidth: 1000,
+        border: '3px solid #000',       // outer black border
+        borderRadius: 2,
+      }}
+    >
+      {detailRows.length > 0 ? (
+        <Table sx={{ border: '2px solid #000', borderCollapse: 'collapse' }}>
+          <TableHead>
+            <TableRow sx={{ bgcolor: '#000' }}>
+              {['Sr','Date','Time','Employee ID','Name','Door','Partition'].map(h => (
+                <TableCell
+                  key={h}
+                  align="center"
+                  sx={{
+                    color: '#FFC107',
+                    fontWeight: 'bold',
+                    fontSize: 14,
+                    border: '2px solid #000',
+                  }}
+                >
+                  {h}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {detailRows.map((r, i) => (
+              <TableRow key={r.PersonGUID}>
+                <TableCell sx={{ border: '2px solid #000' }}>{i + 1}</TableCell>
+                <TableCell sx={{ border: '2px solid #000' }}>
+                  {format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd')}
+                </TableCell>
+                <TableCell sx={{ border: '2px solid #000' }}>
+                  {format(new Date(r.LocaleMessageTime), 'HH:mm:ss')}
+                </TableCell>
+                <TableCell sx={{ border: '2px solid #000' }}>{r.EmployeeID}</TableCell>
+                <TableCell sx={{ border: '2px solid #000' }}>{r.ObjectName1}</TableCell>
+                <TableCell sx={{ border: '2px solid #000' }}>{r.Door}</TableCell>
+                <TableCell sx={{ border: '2px solid #000' }}>{r.PartitionName2}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      ) : (
+        <Typography
+          variant="body2"
+          sx={{
+            color: '#666',
+            textAlign: 'center',
+            mt: 2,
+            fontStyle: 'italic',
+          }}
+        >
+          No swipe records found for this date.
+        </Typography>
+      )}
+    </Paper>
+  </Box>
+)}
+
+
+
+
+
+
+
+
+
 Now Read this section add here Formating add 20Px left right padding , also 
 also add all Borderds , thick boreders With Western Union theme Colours 
 and give me updated Section carefully
