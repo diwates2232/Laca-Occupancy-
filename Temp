@@ -1,3 +1,64 @@
+--- src/components/ChartCard.jsx
++++ src/components/ChartCard.jsx
+@@ export default function ChartCard({
+   const headKey = hasCapacity ? 'Headcount' : dataKey;
+
++  // Build summary: for each distinct x (e.g. partition or floor name), show its latest value
++  // If multiple series, data may contain multiple names; here data is an array of { name, value }
++  // So we take the last point for each name in the current data slice
++  const summaryMap = {};
++  data.forEach(point => {
++    summaryMap[point.name] = point[headKey];
++  });
++  const summaryLabels = Object.entries(summaryMap).map(
++    ([nm, val]) => `${nm}: ${val}`
++  );
+ 
+   const handleLegendClick = o => {
+@@
+-      {/* Title */}
+-      <Box display="flex" alignItems="baseline" justifyContent="space-between" mb={1}>
+-        <Typography variant="h6" sx={{ color: colors.head, fontWeight: 700 }}>
+-          {title}
+-        </Typography>
+-        {/* Current value display */}
+-        <Typography variant="subtitle1" sx={{ color: colors.head, fontWeight: 600 }}>
+-          Current: {currentValue}
+-        </Typography>
+-      </Box>
++      {/* Title + current value */}
++      <Box display="flex" alignItems="baseline" justifyContent="space-between" mb={1}>
++        <Typography variant="h6" sx={{ color: colors.head, fontWeight: 700 }}>
++          {title}
++        </Typography>
++        <Typography variant="subtitle1" sx={{ color: colors.head, fontWeight: 600 }}>
++          Current: {currentValue}
++        </Typography>
++      </Box>
++
++      {/* Summary labels for each series name */}
++      <Box display="flex" flexWrap="wrap" gap={2} mb={2}>
++        {summaryLabels.map((label, idx) => (
++          <Typography
++            key={idx}
++            variant="body2"
++            sx={{ color: colors.cap, fontWeight: 600 }}
++          >
++            {label}
++          </Typography>
++        ))}
++      </Box>
+ 
+       {/* Chart */}
+       <Box sx={{ width: '100%', height: chartHeight, background: '#1A1A1A', p: 1, borderRadius: 1 }}>
+
+
+
+
+
+
+
+
 // src/components/ChartCard.jsx
 import React, { useState } from 'react';
 import { Card, CardContent, Typography, Box, useTheme } from '@mui/material';
