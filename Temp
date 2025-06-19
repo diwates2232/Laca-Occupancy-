@@ -1,549 +1,470 @@
-return (
-  <>
-    <Header />
+// controllers/denverInOutInconsistencyController.js
 
-    <Container maxWidth={false} disableGutters sx={{ pt: 2, pb: 4 }}>
-      {/* Controls row: Date picker + Summary column */}
-      {pickedDate && summaryEntry ? (
-        <Box
-          display="flex"
-          alignItems="flex-start"
-          sx={{ px: '20px', mb: 2, gap: '10px' }}  // 10px gap
-        >
-          {/* Date picker */}
-          <Box sx={{ flex: '0 0 200px' }}>
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <DatePicker
-                label="Select date"
-                value={pickedDate}
-                onChange={newDate => {
-                  setPickedDate(newDate);
-                  setShowDetails(false);
-                }}
-                renderInput={params => <TextField fullWidth {...params} />}
-              />
-            </LocalizationProvider>
-          </Box>
+const { DateTime }       = require('luxon');
+const { denver }         = require('../config/siteConfig');
+const sql                = require('mssql');
+const normalizeKey       = require('../data/normalizeKey');
+const doorFloorMap       = require('../data/denverDoorFloorMap');
+const { monitoredDoors } = require('../data/strictDoorList');
 
-          {/* Summary + toggle column */}
-          <Box
-            sx={{
-              flex: 1,
-              maxWidth: 900,         // preserved
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 2,
-            }}
-          >
-            {/* Summary table */}
-            <Paper
-              elevation={3}
-              sx={{
-                px: 6,                // extra horizontal padding
-                py: 3,                // extra vertical padding
-                border: '3px solid #000',
-                borderRadius: 2,
-              }}
-            >
-              <Table sx={{ border: '2px solid #000' }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      align="center"
-                      sx={{
-                        fontWeight: 'bold',
-                        fontSize: 16,
-                        bgcolor: '#000',
-                        color: '#fff',
-                        border: '2px solid #000',
-                      }}
-                    >
-                      {format(pickedDate, 'EEEE, d MMMM, yyyy')}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow sx={{ bgcolor: '#FFC107' }}>
-                    {['Country','City','Employee','Contractors','Total'].map(h => (
-                      <TableCell
-                        key={h}
-                        align={h==='Country'||h==='City'?'left':'right'}
-                        sx={{
-                          color: '#000',
-                          fontWeight: 'bold',
-                          fontSize: 14,
-                          border: '2px solid #000',
-                        }}
-                      >
-                        {h}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {partitionRows.map((row,i) => (
-                    <TableRow key={i}>
-                      <TableCell sx={{ border: '2px solid #000' }}>{row.country}</TableCell>
-                      <TableCell sx={{ border: '2px solid #000' }}>{row.city}</TableCell>
-                      <TableCell align="right" sx={{ border: '2px solid #000' }}>
-                        {row.employee}
-                      </TableCell>
-                      <TableCell align="right" sx={{ border: '2px solid #000' }}>
-                        {row.contractor}
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{
-                          backgroundColor: '#FFC107',
-                          fontWeight: 'bold',
-                          border: '2px solid #000',
-                        }}
-                      >
-                        {row.total}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  <TableRow sx={{ bgcolor: '#666' }}>
-                    <TableCell
-                      colSpan={2}
-                      align="right"
-                      sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}
-                    >
-                      Total
-                    </TableCell>
-                    <TableCell align="right" sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
-                      {partitionRows.reduce((sum, r) => sum + r.employee, 0)}
-                    </TableCell>
-                    <TableCell align="right" sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
-                      {partitionRows.reduce((sum, r) => sum + r.contractor, 0)}
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{
-                        color: '#fff',
-                        fontWeight: 'bold',
-                        bgcolor: '#333',
-                        border: '2px solid #000',
-                      }}
-                    >
-                      {partitionRows.reduce((sum, r) => sum + r.total, 0)}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </Paper>
+const warnedKeys = new Set();
 
-            {/* Toggle & Export centered under the summary card */}
-            <Box display="flex" justifyContent="center" sx={{ mt: 1 }}>
-              <Button
-                variant="contained"
-                sx={{ bgcolor: '#FFC107', color: '#000' }}
-                onClick={() => setShowDetails(s => !s)}
-              >
-                {showDetails ? 'Hide Details' : 'See Details'}
-              </Button>
-              {showDetails && (
-                <Button
-                  variant="outlined"
-                  sx={{ ml: 2, borderColor: '#FFC107', color: '#FFC107' }}
-                  onClick={handleExport}
-                >
-                  Export to Excel
-                </Button>
-              )}
-            </Box>
-          </Box>
-        </Box>
-      ) : (
-        <Box sx={{ px: '20px', mb: 3 }}>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <DatePicker
-              label="Select date"
-              value={pickedDate}
-              onChange={newDate => {
-                setPickedDate(newDate);
-                setShowDetails(false);
-              }}
-              renderInput={params => <TextField fullWidth {...params} />}
-            />
-          </LocalizationProvider>
-          {!pickedDate && (
-            <Typography variant="body1" color="textSecondary" sx={{ mt: 2 }}>
-              Please pick a date to view region summary.
-            </Typography>
-          )}
-        </Box>
-      )}
-
-      {/* ...rest of your component (Details table, etc.) */}
-    </Container>
-  </>
+// Build a Set of normalized door___direction keys (strict doors only)
+const normalizedMonitoredKeys = new Set(
+  Object.entries(monitoredDoors).map(
+    ([door, dir]) => normalizeKey(door, dir)
+  )
 );
 
+/** Strip any trailing “_HH:MM:SS” from a door name **/
+function stripTimeSuffix(doorRaw) {
+  return doorRaw.replace(/_[0-9]{2}:[0-9]{2}:[0-9]{2}$/, '').trim();
+}
+
+/**
+ * Determine floor label by regex.
+ * Falls back to doorFloorMap if necessary.
+ */
+function extractFloor(rawDoor) {
+  const noTime = stripTimeSuffix(rawDoor);
+  const m = noTime.match(/HQ\.\s*(\d{1,2})\b/);
+  if (m) {
+    return `Floor ${m[1]}`;
+  }
+  // fallback: attempt to map via doorFloorMap
+  const keyIn  = normalizeKey(noTime, 'InDirection');
+  const keyOut = normalizeKey(noTime, 'OutDirection');
+  if (doorFloorMap[keyIn])  return doorFloorMap[keyIn];
+  if (doorFloorMap[keyOut]) return doorFloorMap[keyOut];
+  if (!warnedKeys.has(noTime)) {
+    console.warn(`⛔ Unmapped door for floor extraction: "${noTime}"`);
+    warnedKeys.add(noTime);
+  }
+  return 'Unknown Floor';
+}
+
+/**
+  Fetch all swipe events from Jan 1, 2025 up to now.
+ * Returns an array of records with fields:
+ *   LocaleMessageTime (Date),
+ *   Dateonly (YYYY-MM-DD string),
+ *   Swipe_Time (HH:mm:ss string),
+ *   EmployeeID (string),
+ *   PersonGUID (string),
+ *   ObjectName1 (employee name),
+ *   PersonnelType (string),
+ *   CardNumber (string),
+ *   AdmitCode (string),
+ *   Direction ('InDirection' or 'OutDirection'),
+ *   Door (string).
+ */
+async function fetchHistoricalEvents() {
+  const pool = await denver.poolPromise;
+  const req  = pool.request();
+
+  // Start from January 1, 2025 at midnight (America/Denver)
+  const since = DateTime.fromObject(
+    { year: 2025, month: 1, day: 1, hour: 0, minute: 0, second: 0 },
+    { zone: 'America/Denver' }
+  ).toJSDate();
+
+
+    // Up to (but not including) today at midnight (America/Denver)
+  const until = DateTime.now()
+    .setZone('America/Denver')
+    .startOf('day')
+    .toJSDate();
+
+
+  req.input('since', sql.DateTime2, since);
+  req.input('until', sql.DateTime2, until);
+
+  const { recordset } = await req.query(`
+    WITH CombinedQuery AS (
+      SELECT
+        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
+        t1.ObjectName1,
+        CASE
+          WHEN t3.Name IN ('Contractor','Terminated Contractor') THEN t2.Text12
+          ELSE CAST(t2.Int1 AS NVARCHAR)
+        END AS EmployeeID,
+        t1.ObjectIdentity1 AS PersonGUID,
+        t3.Name AS PersonnelType,
+        COALESCE(
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]' ,'varchar(50)'),
+          sc.value
+        ) AS CardNumber,
+        t5a.value AS AdmitCode,
+        t5d.value AS Direction,
+        t1.ObjectName2 AS Door
+      FROM ACVSUJournal_00010027.dbo.ACVSUJournalLog t1
+      LEFT JOIN ACVSCore.Access.Personnel     t2 ON t1.ObjectIdentity1 = t2.GUID
+      LEFT JOIN ACVSCore.Access.PersonnelType t3 ON t2.PersonnelTypeId  = t3.ObjectID
+      LEFT JOIN ACVSUJournal_00010027.dbo.ACVSUJournalLogxmlShred t5a
+        ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
+      LEFT JOIN ACVSUJournal_00010027.dbo.ACVSUJournalLogxmlShred t5d
+        ON t1.XmlGUID = t5d.GUID AND t5d.Name = 'Direction'
+      LEFT JOIN ACVSUJournal_00010027.dbo.ACVSUJournalLogxml t_xml
+        ON t1.XmlGUID = t_xml.GUID
+      LEFT JOIN (
+        SELECT GUID, value
+        FROM ACVSUJournal_00010027.dbo.ACVSUJournalLogxmlShred
+        WHERE Name IN ('Card','CHUID')
+      ) sc ON t1.XmlGUID = sc.GUID
+      WHERE
+        t1.MessageType   = 'CardAdmitted'
+        AND t1.ObjectName2 LIKE '%HQ%'
+        AND DATEADD(MINUTE, t1.MessageLocaleOffset, t1.MessageUTC) >= @since
+          AND DATEADD(MINUTE, t1.MessageLocaleOffset, t1.MessageUTC) <  @until
+    )
+    SELECT
+      LocaleMessageTime,
+      CONVERT(VARCHAR(10), LocaleMessageTime, 23) AS Dateonly,
+      CONVERT(VARCHAR(8),  LocaleMessageTime, 108) AS Swipe_Time,
+      EmployeeID, PersonGUID, ObjectName1, PersonnelType,
+      CardNumber, AdmitCode, Direction, Door
+    FROM CombinedQuery
+    ORDER BY LocaleMessageTime ASC;
+  `);
+
+  return recordset;
+}
+
+/**
+ * Compute in/out inconsistency metrics, adding:
+ *   - dailyFloorStats: [
+ *       {
+ *         date,
+ *         month,
+ *         floor,
+ *         inCount,
+ *         outCount,
+ *         totalPersons,
+ *         inconsistentCount,
+ *         inconsistencyPercentage,
+ *         instances: [
+ *           { employeeId, name, personnelType }
+ *         ]
+ *       }
+ *     ]
+ *   - floorInconsistency: [
+ *       { floor, totalPersonDays, inconsistentPersonDays, inconsistencyPercentage }
+ *     ]
+ *   - employeeInconsistency: [
+ *       { employeeId, totalDays, inconsistentDays, inconsistencyPercentage }
+ *     ]
+ *
+ * Only strict‐door events (per monitoredDoors) are considered.
+ */
+function computeInOutInconsistency(events) {
+  // STEP A: Build per‐person‐day‐floor buckets
+  // Key: `${personId}__${date}__${floor}`
+  const bucketMap = new Map();
+
+  events.forEach(evt => {
+    const dateOnly   = evt.Dateonly;           // 'YYYY-MM-DD'
+    const direction  = evt.Direction.trim();    // 'InDirection' or 'OutDirection'
+    const rawDoor    = evt.Door.trim();
+    const doorNoTime = stripTimeSuffix(rawDoor);
+    const normKey    = normalizeKey(doorNoTime, direction);
+
+    if (!normalizedMonitoredKeys.has(normKey)) return;
+
+    const personId = evt.PersonGUID || evt.EmployeeID || evt.CardNumber;
+    if (!personId) return;
+
+    const name          = evt.ObjectName1 || null;
+    const personnelType = evt.PersonnelType || null;
+    const floor         = extractFloor(doorNoTime);
+    const groupKey      = `${personId}__${dateOnly}__${floor}`;
+
+    if (!bucketMap.has(groupKey)) {
+      bucketMap.set(groupKey, {
+        personId,
+        name,
+        personnelType,
+        dateOnly,
+        floor,
+        firstInTime: null,
+        lastOutTime: null
+      });
+    }
+
+    const bucket    = bucketMap.get(groupKey);
+    const swipeTime = DateTime.fromFormat(evt.Swipe_Time, 'HH:mm:ss');
+
+    if (direction === 'InDirection') {
+      if (!bucket.firstInTime || swipeTime < bucket.firstInTime) {
+        bucket.firstInTime = swipeTime;
+      }
+    } else if (direction === 'OutDirection') {
+      if (!bucket.lastOutTime || swipeTime > bucket.lastOutTime) {
+        bucket.lastOutTime = swipeTime;
+      }
+    }
+  });
+
+  // STEP B: Aggregate per date‐floor for dailyFloorStats
+  // Key: `${dateOnly}__${floor}`
+  const dateFloorMap = new Map();
+
+  bucketMap.forEach(bucket => {
+    const { personId, name, personnelType, dateOnly, floor, firstInTime, lastOutTime } = bucket;
+    const dfKey = `${dateOnly}__${floor}`;
+
+    if (!dateFloorMap.has(dfKey)) {
+      dateFloorMap.set(dfKey, {
+        date: dateOnly,
+        month: DateTime.fromISO(dateOnly).toFormat('LLLL'),
+        floor,
+        totalPersons: 0,
+        inCount: 0,
+        outCount: 0,
+        inconsistentCount: 0,
+        instances: []
+      });
+    }
+
+    const stats = dateFloorMap.get(dfKey);
+    stats.totalPersons += 1;
+
+    const hasIn  = Boolean(firstInTime);
+    const hasOut = Boolean(lastOutTime);
+    if (hasIn)  stats.inCount += 1;
+    if (hasOut) stats.outCount += 1;
+
+    if (!(hasIn && hasOut)) {
+      stats.inconsistentCount += 1;
+      stats.instances.push({
+        employeeId: personId,
+        name,
+        personnelType
+      });
+    }
+  });
+
+  // After populating, compute inconsistencyPercentage for each date‐floor
+  const dailyFloorStats = [];
+  dateFloorMap.forEach(stats => {
+    const { totalPersons, inconsistentCount } = stats;
+    const pct = totalPersons > 0 ? (inconsistentCount / totalPersons) * 100 : 0;
+    dailyFloorStats.push({
+      date: stats.date,
+      month: stats.month,
+      floor: stats.floor,
+      inCount: stats.inCount,
+      outCount: stats.outCount,
+      totalPersons: stats.totalPersons,
+      inconsistentCount: stats.inconsistentCount,
+      inconsistencyPercentage: parseFloat(pct.toFixed(2)),
+      instances: stats.instances
+    });
+  });
+
+  // STEP C: Floor‐level aggregated over entire period
+  const floorAgg = new Map();
+  bucketMap.forEach(bucket => {
+    const { dateOnly, floor, firstInTime, lastOutTime } = bucket;
+    const isInconsistent = !(firstInTime && lastOutTime);
+
+    if (!floorAgg.has(floor)) {
+      floorAgg.set(floor, {
+        totalPersonDays: 0,
+        inconsistentPersonDays: 0
+      });
+    }
+    const fAgg = floorAgg.get(floor);
+    fAgg.totalPersonDays += 1;
+    if (isInconsistent) {
+      fAgg.inconsistentPersonDays += 1;
+    }
+  });
+
+  const floorInconsistency = [];
+  floorAgg.forEach((vals, floor) => {
+    const { totalPersonDays, inconsistentPersonDays } = vals;
+    const pct =
+      totalPersonDays > 0
+        ? (inconsistentPersonDays / totalPersonDays) * 100
+        : 0;
+    floorInconsistency.push({
+      floor,
+      totalPersonDays,
+      inconsistentPersonDays,
+      inconsistencyPercentage: parseFloat(pct.toFixed(2))
+    });
+  });
+
+  // STEP D: Employee‐level aggregated over entire period
+  const empAgg = new Map();
+  bucketMap.forEach(bucket => {
+    const { personId, dateOnly, firstInTime, lastOutTime } = bucket;
+    const isInconsistent = !(firstInTime && lastOutTime);
+
+    if (!empAgg.has(personId)) {
+      empAgg.set(personId, {
+        totalDaysSet: new Set(),
+        inconsistentDaysSet: new Set()
+      });
+    }
+    const eAgg = empAgg.get(personId);
+    eAgg.totalDaysSet.add(dateOnly);
+    if (isInconsistent) {
+      eAgg.inconsistentDaysSet.add(dateOnly);
+    }
+  });
+
+  const employeeInconsistency = [];
+  empAgg.forEach((vals, personId) => {
+    const totalDays = vals.totalDaysSet.size;
+    const inconsistentDays = vals.inconsistentDaysSet.size;
+    const pct =
+      totalDays > 0 ? (inconsistentDays / totalDays) * 100 : 0;
+    employeeInconsistency.push({
+      employeeId: personId,
+      totalDays,
+      inconsistentDays,
+      inconsistencyPercentage: parseFloat(pct.toFixed(2))
+    });
+  });
+
+  return {
+    asOf: new Date().toISOString(),
+    dailyFloorStats,
+    floorInconsistency,
+    employeeInconsistency
+  };
+}
+
+/**
+ * Controller endpoint: GET /api/denver/inout-inconsistency
+ *
+ * Fetches all strict-door swipe events from Jan 1, 2025 to now,
+ * computes:
+ *   1. dailyFloorStats (by date + floor)
+ *   2. floorInconsistency (overall per floor)
+ *   3. employeeInconsistency (overall per employee)
+ * and returns a JSON payload.
+ */
+exports.getDenverInOutInconsistency = async (req, res) => {
+  try {
+    await denver.poolPromise;
+    const events = await fetchHistoricalEvents();
+    const result = computeInOutInconsistency(events);
+    res.status(200).json(result);
+  } catch (err) {
+    console.error('Error computing in/out inconsistency:', err);
+    res.status(500).json({
+      error: 'Failed to compute in/out inconsistency'
+    });
+  }
+};
 
 
 
 
 
 
-return (
-  <>
-    <Header />
+// config/siteConfig.js
+const { sql, getPool } = require('./db');
 
-    <Container maxWidth={false} disableGutters sx={{ pt: 2, pb: 4 }}>
-      {/* Controls row: Date picker + Summary table */}
-      {pickedDate && summaryEntry ? (
-        <Box
-          display="flex"
-          alignItems="flex-start"
-          sx={{ px: '20px', mb: 2, gap: '10px' }}  // increased gap to 10px, reduced bottom margin
-        >
-          {/* Date picker */}
-          <Box sx={{ flex: '0 0 200px' }}>
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <DatePicker
-                label="Select date"
-                value={pickedDate}
-                onChange={newDate => {
-                  setPickedDate(newDate);
-                  setShowDetails(false);
-                }}
-                renderInput={params => <TextField fullWidth {...params} />}
-              />
-            </LocalizationProvider>
-          </Box>
+// Pune uses the shared getPool():
+const punePoolPromise = getPool();
 
-          {/* Summary table */}
-          <Paper
-            elevation={3}
-            sx={{
-              flex: 1,
-              px: 4,
-              py: 2,
-              width: '80%',
-              maxWidth: 900,           // preserved
-              border: '3px solid #000',
-              borderRadius: 2,
-            }}
-          >
-            <Table sx={{ border: '2px solid #000' }}>
-              <TableHead>
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    align="center"
-                    sx={{
-                      fontWeight: 'bold',
-                      fontSize: 16,
-                      bgcolor: '#000',
-                      color: '#fff',
-                      border: '2px solid #000',
-                    }}
-                  >
-                    {format(pickedDate, 'EEEE, d MMMM, yyyy')}
-                  </TableCell>
-                </TableRow>
-                <TableRow sx={{ bgcolor: '#FFC107' }}>
-                  {['Country','City','Employee','Contractors','Total'].map(h => (
-                    <TableCell
-                      key={h}
-                      align={h==='Country'||h==='City'?'left':'right'}
-                      sx={{
-                        color: '#000',
-                        fontWeight: 'bold',
-                        fontSize: 14,
-                        border: '2px solid #000',
-                      }}
-                    >
-                      {h}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {partitionRows.map((row,i) => (
-                  <TableRow key={i}>
-                    <TableCell sx={{ border: '2px solid #000' }}>{row.country}</TableCell>
-                    <TableCell sx={{ border: '2px solid #000' }}>{row.city}</TableCell>
-                    <TableCell align="right" sx={{ border: '2px solid #000' }}>
-                      {row.employee}
-                    </TableCell>
-                    <TableCell align="right" sx={{ border: '2px solid #000' }}>
-                      {row.contractor}
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{
-                        backgroundColor: '#FFC107',
-                        fontWeight: 'bold',
-                        border: '2px solid #000',
-                      }}
-                    >
-                      {row.total}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                <TableRow sx={{ bgcolor: '#666' }}>
-                  <TableCell
-                    colSpan={2}
-                    align="right"
-                    sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}
-                  >
-                    Total
-                  </TableCell>
-                  <TableCell align="right" sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
-                    {partitionRows.reduce((sum, r) => sum + r.employee, 0)}
-                  </TableCell>
-                  <TableCell align="right" sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
-                    {partitionRows.reduce((sum, r) => sum + r.contractor, 0)}
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    sx={{
-                      color: '#fff',
-                      fontWeight: 'bold',
-                      bgcolor: '#333',
-                      border: '2px solid #000',
-                    }}
-                  >
-                    {partitionRows.reduce((sum, r) => sum + r.total, 0)}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </Paper>
-        </Box>
-      ) : (
-        <Box sx={{ px: '20px', mb: 3 }}>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <DatePicker
-              label="Select date"
-              value={pickedDate}
-              onChange={newDate => {
-                setPickedDate(newDate);
-                setShowDetails(false);
-              }}
-              renderInput={params => <TextField fullWidth {...params} />}
-            />
-          </LocalizationProvider>
-          {!pickedDate && (
-            <Typography variant="body1" color="textSecondary" sx={{ mt: 2 }}>
-              Please pick a date to view region summary.
-            </Typography>
-          )}
-        </Box>
-      )}
+// Denver pool configuration
+const denverConfig = {
+  user:     'GSOC_Test',
+  password: 'Westerngsoc@2025',
+  server:   'SRVWUDEN0891V',
+  database: 'ACVSUJournal_00010028',
+  options: {
+    encrypt:               true,
+    trustServerCertificate: true
+  },
+  pool: {
+    max:                  5,
+    min:                  0,
 
-      {/* Details toggle & export – centered below summary */}
-      {pickedDate && summaryEntry && (
-        <Box sx={{ textAlign: 'center', mb: 4, px: '20px' }}>
-          <Button
-            variant="contained"
-            sx={{ bgcolor: '#FFC107', color: '#000' }}
-            onClick={() => setShowDetails(s => !s)}
-          >
-            {showDetails ? 'Hide Details' : 'See Details'}
-          </Button>
-          {showDetails && (
-            <Button
-              variant="outlined"
-              sx={{ ml: 2, borderColor: '#FFC107', color: '#FFC107' }}
-              onClick={handleExport}
-            >
-              Export to Excel
-            </Button>
-          )}
-        </Box>
-      )}
+    // Make these extremely large so that Tarn will never time us out
+    idleTimeoutMillis:    2147483647,
+    acquireTimeoutMillis: 2147483647
+  },
+  connectionTimeout: 30000,  // 30 seconds to establish
+  requestTimeout:    0       // no timeout on individual queries
+};
 
-      {/* ...rest of your component (Details table, etc.) */}
-    </Container>
-  </>
-);
+let denverPoolPromise = null;
 
+async function getDenverPool(attempts = 3) {
+  // If a pool promise is already in-flight (or resolved), return it.
+  if (denverPoolPromise) {
+    return denverPoolPromise;
+  }
 
+  denverPoolPromise = (async () => {
+    const pool = new sql.ConnectionPool(denverConfig);
 
+    // If this pool ever errors, reset the promise so that
+    // next time we can try to re-connect.
+    pool.on('error', err => {
+      console.error('❌ Denver MSSQL pool error:', err);
+      denverPoolPromise = null;
+    });
 
+    try {
+      await pool.connect();
+      console.log('✅ Denver MSSQL pool connected');
+      return pool;
+    } catch (err) {
+      console.error('❌ Denver pool connection failed:', err);
+      denverPoolPromise = null;
 
+      if (attempts > 0) {
+        console.log(`⏳ Retrying Denver pool connect (${attempts} left)…`);
+        await new Promise(res => setTimeout(res, 3000));
+        return getDenverPool(attempts - 1);
+      }
 
+      // If all retries fail, re­throw so that calling code can catch it.
+      throw err;
+    }
+  })().catch(err => {
+    // Catch any unhandled rejection here so it never propagates
+    // out of the immediate getDenverPool() call.
+    console.error('❌ Denver pool promise ultimately failed:', err);
+    denverPoolPromise = null;
+    return null;
+  });
 
-Now wrap a Hide and see deatails toggle exact below the summary table in center align
-also dont change maxwidth , 
-and imcrease gap between date picker and summary card around 10 px 
-and give ,e updated files carefully
+  return denverPoolPromise;
+}
 
+// Every 5 minutes, ping Denver so it never goes idle.
+// If ping fails, reset the poolPromise (so next request will re-connect).
+setInterval(async () => {
+  try {
+    const pool = await getDenverPool();
+    if (pool) {
+      await pool.request().query('SELECT 1');
+      // console.log('🔄 Denver keep-alive succeeded');
+    }
+  } catch (err) {
+    console.error('⚠️ Denver keep-alive failed, resetting poolPromise:', err);
+    denverPoolPromise = null;
+  }
+}, 5 * 60 * 1000);
 
-return (
-  <>
-    <Header />
+module.exports = {
+  pune: {
+    name:        'Pune',
+    poolPromise: punePoolPromise,
+    sql
+  },
+  denver: {
+    name:        'Denver',
+    poolPromise: getDenverPool(),
+    sql
+  }
+};
 
-    <Container maxWidth={false} disableGutters sx={{ pt: 2, pb: 4 }}>
-      {/* Controls row: Date picker + Summary table */}
-      {pickedDate && summaryEntry ? (
-        <Box
-          display="flex"
-          alignItems="flex-start"
-          sx={{ px: '20px', mb: 4, gap: '1px' }}
-        >
-          {/* Date picker */}
-          <Box sx={{ flex: '0 0 200px' }}>
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <DatePicker
-                label="Select date"
-                value={pickedDate}
-                onChange={newDate => {
-                  setPickedDate(newDate);
-                  setShowDetails(false);
-                }}
-                renderInput={params => <TextField fullWidth {...params} />}
-              />
-            </LocalizationProvider>
-          </Box>
-
-          {/* Summary table */}
-
-          <Paper
-            elevation={3}
-            sx={{
-              flex: 1,
-              px: 4,
-              py: 2,
-
-            width: '80%',
-            maxWidth: 900,
-        
-              border: '3px solid #000',
-              borderRadius: 2,
-            }}
-          >
-            <Table sx={{ border: '2px solid #000' }}>
-              <TableHead>
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    align="center"
-                    sx={{
-                      fontWeight: 'bold',
-                      fontSize: 16,
-                      bgcolor: '#000',
-                      color: '#fff',
-                      border: '2px solid #000',
-                    }}
-                  >
-                    {format(pickedDate, 'EEEE, d MMMM, yyyy')}
-                  </TableCell>
-                </TableRow>
-                <TableRow sx={{ bgcolor: '#FFC107' }}>
-                  {['Country','City','Employee','Contractors','Total'].map(h => (
-                    <TableCell
-                      key={h}
-                      align={h==='Country'||h==='City'?'left':'right'}
-                      sx={{
-                        color: '#000',
-                        fontWeight: 'bold',
-                        fontSize: 14,
-                        border: '2px solid #000',
-                      }}
-                    >
-                      {h}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {partitionRows.map((row,i) => (
-                  <TableRow key={i}>
-                    <TableCell sx={{ border: '2px solid #000' }}>{row.country}</TableCell>
-                    <TableCell sx={{ border: '2px solid #000' }}>{row.city}</TableCell>
-                    <TableCell align="right" sx={{ border: '2px solid #000' }}>
-                      {row.employee}
-                    </TableCell>
-                    <TableCell align="right" sx={{ border: '2px solid #000' }}>
-                      {row.contractor}
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{
-                        backgroundColor: '#FFC107',
-                        fontWeight: 'bold',
-                        border: '2px solid #000',
-                      }}
-                    >
-                      {row.total}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                <TableRow sx={{ bgcolor: '#666' }}>
-                  <TableCell
-                    colSpan={2}
-                    align="right"
-                    sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}
-                  >
-                    Total
-                  </TableCell>
-                  <TableCell align="right" sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
-                    {partitionRows.reduce((sum, r) => sum + r.employee, 0)}
-                  </TableCell>
-                  <TableCell align="right" sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
-                    {partitionRows.reduce((sum, r) => sum + r.contractor, 0)}
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    sx={{
-                      color: '#fff',
-                      fontWeight: 'bold',
-                      bgcolor: '#333',
-                      border: '2px solid #000',
-                    }}
-                  >
-                    {partitionRows.reduce((sum, r) => sum + r.total, 0)}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </Paper>
-        </Box>
-      ) : (
-        <Box sx={{ px: '20px', mb: 3 }}>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <DatePicker
-              label="Select date"
-              value={pickedDate}
-              onChange={newDate => {
-                setPickedDate(newDate);
-                setShowDetails(false);
-              }}
-              renderInput={params => <TextField fullWidth {...params} />}
-            />
-          </LocalizationProvider>
-          {!pickedDate && (
-            <Typography variant="body1" color="textSecondary" sx={{ mt: 2 }}>
-              Please pick a date to view region summary.
-            </Typography>
-          )}
-        </Box>
-      )}
-
-
-
-        {/* Details toggle & export */}
-        {pickedDate && summaryEntry && (
-          <Box sx={{ textAlign: 'center', mb: 3, px: '20px' }}>
-            <Button
-              variant="contained"
-              sx={{ bgcolor: '#FFC107', color: '#000' }}
-              onClick={() => setShowDetails(s => !s)}
-            >
-              {showDetails ? 'Hide Details' : 'See Details'}
-            </Button>
-            {showDetails && (
-              <Button
-                variant="outlined"
-                sx={{ ml: 2, borderColor: '#FFC107', color: '#FFC107' }}
-                onClick={handleExport}
-              >
-                Export to Excel
-              </Button>
-            )}
-          </Box>
-        )}
 
