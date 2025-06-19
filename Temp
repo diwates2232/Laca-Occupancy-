@@ -1,3 +1,42 @@
+// src/components/Header.jsx
+
+  const loc = useLocation();
+  
+  // Split the current path into segments.
+  const parts = loc.pathname.split('/').filter(Boolean);
+- const isPartitionPath = parts[0] === 'partition' && parts[1];
++ const isPartitionPath = parts[0] === 'partition' && Boolean(parts[1]);
+
+  const currentPartition = isPartitionPath
+    ? decodeURIComponent(parts[1])
+    : '';
+  
+- // Any remaining segments after /partition/:partition
+- const suffixSegments = isPartitionPath ? parts.slice(2) : [];
++ // Capture any “sub-page” suffix — either after partition OR standalone `/history`
++ const suffixSegments = isPartitionPath
++   ? parts.slice(2)               // e.g. ['history'] when on /partition/.../history
++   : parts[0] === 'history'       // if just "/history"
++     ? ['history']
++     : [];
+
+  const handlePartitionChange = newPartition => {
+    if (!newPartition) {
+      return navigate('/');
+    }
+    const base = `/partition/${encodeURIComponent(newPartition)}`;
+    const full = suffixSegments.length
+      ? `${base}/${suffixSegments.join('/')}`
+      : base;
+    navigate(full);
+  };
+
+
+
+
+
+
+
 // src/routes/AppRoutes.jsx
 
 import React from 'react';
