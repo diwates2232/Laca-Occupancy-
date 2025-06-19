@@ -1,219 +1,149 @@
---- a/src/components/SummaryCard.jsx
-+++ b/src/components/SummaryCard.jsx
-@@
--import React from 'react';
--import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
-+import React from 'react';
-+import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
+// src/components/Header.jsx
 
--export default function SummaryCard({ title, total, stats, sx = {} }) {
-+export default function SummaryCard({ title, total, stats, icon, sx = {} }) {
-   return (
-     <Card variant="outlined" sx={{ px: 2, py: 1, ...sx }}>
-       <CardContent sx={{ textAlign: 'center' }}>
--        <Typography variant="subtitle1" gutterBottom>
--          {title}
--        </Typography>
-+        {/* Icon + Title */}
-+        <Box display="flex" justifyContent="center" alignItems="center" mb={1}>
-+          {icon && (
-+            <Box component="span" sx={{ mr: 1, fontSize: 32, color: 'primary.main' }}>
-+              {icon}
-+            </Box>
-+          )}
-+          <Typography variant="subtitle1" gutterBottom>
-+            {title}
-+          </Typography>
-+        </Box>
-
-         {total != null && (
-           <Box display="flex" justifyContent="center" alignItems="baseline" mb={1}>
-             <Typography variant="h4" sx={{ mr: 1 }}>
-               {total}
-             </Typography>
-             {/* <Typography variant="caption">Total</Typography> */}
-           </Box>
-         )}
-         <Grid container spacing={1} justifyContent="center">
-           {stats.map(({ label, value }) => (
-             <Grid key={label} item xs={6}>
-               <Typography variant="caption">{label}</Typography>
-               <Typography variant="h6">{value}</Typography>
-             </Grid>
-           ))}
-         </Grid>
-       </CardContent>
-     </Card>
-   );
- }
-
-
-
-
-
-
-
-
---- a/src/pages/Dashboard.jsx
-+++ b/src/pages/Dashboard.jsx
-@@
- import React, { useEffect, useState } from 'react';
- import {
-   Container,
-   Box,
-   Typography,
-   Skeleton,
-   FormControl,
-   InputLabel,
-   Select,
-   MenuItem,
-   Button,
-   Divider
- } from '@mui/material';
-+import TodayIcon from '@mui/icons-material/Today';
-+import SyncIcon from '@mui/icons-material/Sync';
-+import ApartmentIcon from '@mui/icons-material/Apartment';
-+import BusinessIcon from '@mui/icons-material/Business';
-
- import { useNavigate } from 'react-router-dom';
-
- import Header from '../components/Header';
- import Footer from '../components/Footer';
- import SummaryCard from '../components/SummaryCard';
- import ChartCard from '../components/ChartCard';
-@@
-       <Box
-         display="flex"
-         alignItems="stretch"
-         sx={{ mb: 1, width: '100vw%' }}
-       >
-         <Box sx={{ flex: 1 }}>
--          <SummaryCard
--            title="Today’s Headcount"
-+          <SummaryCard
-+            title="Today’s Headcount"
-             total={todayTot}
-             stats={[
-               { label: 'Employees',   value: todayEmp },
-               { label: 'Contractors', value: todayCont }
-             ]}
--            sx={{ height: 190, border: '2px solid #FFC107' }}
-+            icon={<TodayIcon />}
-+            sx={{ height: 190, border: '2px solid #FFC107' }}
-           />
-         </Box>
-
-         <Divider
-           // orientation="vertical"
-           flexItem
-           sx={{ mx: 1 }}
-         />
-
-         <Box sx={{ flex: 1 }}>
--          <SummaryCard
--            title="Realtime Headcount"
-+          <SummaryCard
-+            title="Realtime Headcount"
-             total={realtimeTot}
-             stats={[
-               { label: 'Employees',   value: realtimeEmp },
-               { label: 'Contractors', value: realtimeCont }
-             ]}
--            sx={{ height: 190, border: '2px solid #FFC107' }}
-+            icon={<SyncIcon />}
-+            sx={{ height: 190, border: '2px solid #FFC107' }}
-           />
-         </Box>
-       </Box>
-
-       {/* Partition cards */}
-       <Box mt={4} sx={{ width: '100vw%', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-         {loading ? (
-           <Skeleton variant="rectangular" width="100vw%" height={240} />
-         ) : (
--            partitions.map(p => (
--              <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
--                <SummaryCard
--                  title={p.name}
--                  total={p.total}
--                  stats={[
--                    { label: 'Employees',   value: p.Employee },
--                    { label: 'Contractors', value: p.Contractor },
--                    // only show TempBadge on Costa Rica
--                    ...(p.name === 'CR.Costa Rica Partition'
--                      ? [{ label: 'Temp Badge', value: p.TempBadge }]
--                      : [])
--                  ]}
--                  sx={{ width: '100vw%', border: '2px solid #FFC107' }}
--                />
--              </Box>
--            ))
-+            partitions.map(p => (
-+              <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
-+                <SummaryCard
-+                  title={p.name}
-+                  icon={<ApartmentIcon />}
-+                  total={p.total}
-+                  stats={[
-+                    { label: 'Employees',   value: p.Employee },
-+                    { label: 'Contractors', value: p.Contractor },
-+                    // only show TempBadge on Costa Rica
-+                    ...(p.name === 'CR.Costa Rica Partition'
-+                      ? [{ label: 'Temp Badge', value: p.TempBadge }]
-+                      : [])
-+                  ]}
-+                  sx={{ width: '100vw%', border: '2px solid #FFC107' }}
-+                />
-+              </Box>
-+            ))
-         )}
-       </Box>
-
-
-
-
-
-
-
-
-
-Read below both files carefully and help to add standerds and colourful icons for each cards ,
-dont make unnecaessary changes so help me step by step to improve ui designing part
-add standerd icons and give me updated files carefully
-read each file line by line and give me updated file carefully
-
-//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\SummaryCard.jsx
 import React from 'react';
-import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
+import {
+  AppBar,
+  Toolbar,
+  Box,
+  Typography,
+  Select,
+  MenuItem,
+  IconButton
+} from '@mui/material';
+import { useNavigate, useLocation } from 'react-router-dom';
 
-export default function SummaryCard({ title, total, stats, sx = {} }) {
+import HomeIcon    from '@mui/icons-material/Home';
+import HistoryIcon from '@mui/icons-material/History';
+import ListAltIcon from '@mui/icons-material/ListAlt';
+
+import WuLogo from '../assets/wu-logo.png';
+import CostaRicaFlag from '../assets/flags/costa-rica.png';
+import ArgentinaFlag  from '../assets/flags/argentina.png';
+import MexicoFlag     from '../assets/flags/mexico.png';
+import PeruFlag       from '../assets/flags/peru.png';
+import BrazilFlag     from '../assets/flags/brazil.png';
+import PanamaFlag     from '../assets/flags/panama.png';
+import LacaFlag       from '../assets/laca-flag.png';
+import { partitionList } from '../services/occupancy.service';
+
+export default function Header() {
+  const navigate = useNavigate();
+  const loc = useLocation();
+
+  const parts = loc.pathname.split('/').filter(Boolean);
+  const isPartitionPath = parts[0] === 'partition' && Boolean(parts[1]);
+  const currentPartition = isPartitionPath ? decodeURIComponent(parts[1]) : '';
+  const suffixSegments = isPartitionPath
+    ? parts.slice(2)
+    : parts[0] === 'history'
+      ? ['history']
+      : [];
+
+  const flagMap = {
+    'CR.Costa Rica Partition': CostaRicaFlag,
+    'AR.Cordoba':               ArgentinaFlag,
+    'MX.Mexico City':           MexicoFlag,
+    'PE.Lima':                  PeruFlag,
+    'BR.Sao Paulo':             BrazilFlag,
+    'PA.Panama City':           PanamaFlag,
+  };
+  const selectedFlag = flagMap[currentPartition] || LacaFlag;
+
+  const makePartitionPath = (suffix) => {
+    const base = `/partition/${encodeURIComponent(currentPartition)}`;
+    return suffix ? `${base}/${suffix}` : base;
+  };
+
+  const handlePartitionChange = (newPartition) => {
+    if (!newPartition) return navigate('/');
+    const base = `/partition/${encodeURIComponent(newPartition)}`;
+    const full = suffixSegments.length
+      ? `${base}/${suffixSegments.join('/')}`
+      : base;
+    navigate(full);
+  };
+
   return (
-    <Card variant="outlined" sx={{ px: 2, py: 1, ...sx }}>
-      <CardContent sx={{ textAlign: 'center' }}>
-        <Typography variant="subtitle1" gutterBottom>
-          {title}
-        </Typography>
-        {total != null && (
-          <Box display="flex" justifyContent="center" alignItems="baseline" mb={1}>
-            <Typography variant="h4" sx={{ mr: 1 }}>
-              {total}
-            </Typography>
-            {/* <Typography variant="caption">Total</Typography> */}
-          
-          </Box>
-        )}
-        <Grid container spacing={1} justifyContent="center">
-          {stats.map(({ label, value }) => (
-            <Grid key={label} item xs={6}>
-              <Typography variant="caption">{label}</Typography>
-              <Typography variant="h6">{value}</Typography>
-            </Grid>
-          ))}
-        </Grid>
-      </CardContent>
-    </Card>
+    <AppBar position="static" color="primary" sx={{ mb: 2 }}>
+      <Toolbar sx={{ justifyContent: 'space-between' }}>
+
+        {/* Left side: Logo, Title, Navigation Icons */}
+        <Box display="flex" alignItems="center" sx={{ flexGrow: 1 }}>
+          <Box component="img" src={WuLogo} alt="WU Logo" sx={{ height: 36, mr: 2 }} />
+
+          <Typography variant="h6" sx={{ fontWeight: 600, mr: 3 }}>
+            Western Union – LACA
+            {currentPartition && (
+              <> • {currentPartition.replace('CR.Costa Rica Partition','Costa Rica')}</>
+            )}
+          </Typography>
+
+          {/* Dashboard Icon (green) */}
+          <IconButton
+            size="large"
+            color="inherit"
+            onClick={() => {
+              const target = currentPartition
+                ? `/partition/${encodeURIComponent(currentPartition)}`
+                : '/';
+              navigate(target);
+            }}
+          >
+            <HomeIcon sx={{ color: '#4caf50' }} />
+          </IconButton>
+
+          {/* History Icon (orange) */}
+          <IconButton
+            size="large"
+            color="inherit"
+            onClick={() => {
+              const target = currentPartition
+                ? makePartitionPath('history')
+                : '/history';
+              navigate(target);
+            }}
+          >
+            <HistoryIcon sx={{ color: '#F88379' }} />
+          </IconButton>
+
+          {/* Details Icon (blue) */}
+          {currentPartition && (
+            <IconButton
+              size="large"
+              color="inherit"
+              onClick={() => navigate(makePartitionPath('details'))}
+            >
+              <ListAltIcon sx={{ color: '#2196f3' }} />
+            </IconButton>
+          )}
+        </Box>
+
+        {/* Right side: Partition selector + Flag */}
+        <Box display="flex" alignItems="center">
+          <Select
+            size="small"
+            value={currentPartition}
+            displayEmpty
+            onChange={e => handlePartitionChange(e.target.value)}
+            sx={{ bgcolor: 'background.paper', mr: 2 }}
+          >
+            <MenuItem value="">— Select Partition —</MenuItem>
+            {partitionList.map(p => (
+              <MenuItem key={p} value={p}>
+                {p.replace('Partition', '')}
+              </MenuItem>
+            ))}
+          </Select>
+          <Box component="img" src={selectedFlag} alt="Flag" sx={{ height: 50 }} />
+        </Box>
+      </Toolbar>
+    </AppBar>
   );
 }
+
+
+
+
 
 
 // src/pages/Dashboard.jsx
@@ -231,6 +161,12 @@ import {
   Button,
   Divider
 } from '@mui/material';
+import TodayIcon from '@mui/icons-material/Today';
+import SyncIcon from '@mui/icons-material/Sync';
+import ApartmentIcon from '@mui/icons-material/Apartment';
+import BusinessIcon from '@mui/icons-material/Business';
+
+
 import { useNavigate } from 'react-router-dom';
 
 import Header from '../components/Header';
@@ -313,7 +249,9 @@ export default function Dashboard() {
                 { label: 'Employees',   value: todayEmp },
                 { label: 'Contractors', value: todayCont }
               ]}
-              sx={{ height: 190, border: '2px solid #FFC107' }}
+              // sx={{ height: 190, border: '2px solid #FFC107' }}
+                          icon={<TodayIcon />}
+            sx={{ height: 190, border: '2px solid #FFC107' }}
             />
           </Box>
 
@@ -331,7 +269,11 @@ export default function Dashboard() {
                 { label: 'Employees',   value: realtimeEmp },
                 { label: 'Contractors', value: realtimeCont }
               ]}
-              sx={{ height: 190, border: '2px solid #FFC107' }}
+              // sx={{ height: 190, border: '2px solid #FFC107' }}
+
+           icon={<SyncIcon />}
+            sx={{ height: 190, border: '2px solid #FFC107' }}
+
             />
           </Box>
         </Box>
@@ -341,10 +283,28 @@ export default function Dashboard() {
           {loading ? (
             <Skeleton variant="rectangular" width="100vw%" height={240} />
           ) : (
+            // partitions.map(p => (
+            //   <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+            //     <SummaryCard
+            //       title={p.name}
+            //       total={p.total}
+            //       stats={[
+            //         { label: 'Employees',   value: p.Employee },
+            //         { label: 'Contractors', value: p.Contractor },
+            //         // only show TempBadge on Costa Rica
+            //         ...(p.name === 'CR.Costa Rica Partition'
+            //           ? [{ label: 'Temp Badge', value: p.TempBadge }]
+            //           : [])
+            //       ]}
+            //       sx={{ width: '100vw%', border: '2px solid #FFC107' }}
+            //     />
+            //   </Box>
+
             partitions.map(p => (
               <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
                 <SummaryCard
                   title={p.name}
+                  icon={<ApartmentIcon />}
                   total={p.total}
                   stats={[
                     { label: 'Employees',   value: p.Employee },
@@ -358,8 +318,10 @@ export default function Dashboard() {
                 />
               </Box>
             ))
-          )}
-        </Box>
+         )}
+       </Box>
+
+
 
         {/* Live totals chart */}
         <Box mt={4} sx={{ width: '100vw%' ,p:2, border: '2px solid #FFC107' }}>
@@ -431,126 +393,36 @@ export default function Dashboard() {
 
 
 
-// src/theme/westernUnionTheme.js
-import { createTheme } from '@mui/material/styles';
 
-const westernUnionTheme = createTheme({
-  palette: {
-    mode: 'dark',
-    background: {
-      default: '#000000',
-      paper:   '#1c1c1c'
-    },
-    primary: {
-      main: '#FFC107',
-      contrastText: '#000000'
-    },
-    secondary: {
-      main: '#FFFFFF',
-      contrastText: '#000000'
-    },
-    text: {
-      primary:   '#FFFFFF',
-      secondary: 'rgba(255,255,255,0.7)'
-    },
-    divider: 'rgba(255,255,255,0.2)'
-  },
-
-  typography: {
-    fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-    // Card titles
-    subtitle1: { fontWeight: 500, color: '#FFC107' },
-    // Totals (variant h4 in SummaryCard)
-    h4: { color: '#FFC107', fontWeight: 'bold' },
-    // Stat values (variant h6)
-    h6: { color: '#FFC107', fontWeight: 600 },
-    // Stat labels (variant caption)
-    caption: { color: '#FFC107', fontWeight: 500 },
-
-    // You can leave other variants untouched
-    body1:   { color: '#FFFFFF' },
-    body2:   { color: 'rgba(255,255,255,0.7)' }
-  },
-
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        html: {
-          height: '100%'
-        },
-        body: {
-          margin: 0,
-          padding: 0,
-          height: '100%',
-          background: 'linear-gradient(135deg, #000000 30%, #2c0000 60%, #000000 100%)',
-          backgroundAttachment: 'fixed',
-          backgroundRepeat: 'no-repeat',
-          backgroundSize: 'cover',
-          animation: 'gradientSpin 20s ease infinite',
-          overflowX: 'hidden'
-        },
-        '@keyframes gradientSpin': {
-          '0%':   { backgroundPosition: '0% 50%' },
-          '50%':  { backgroundPosition: '100% 50%' },
-          '100%': { backgroundPosition: '0% 50%' }
-        }
-      }
-    },
-
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-          borderRadius: 4
-        },
-        contained: {
-          backgroundColor: '#FFC107',
-          color: '#000000',
-          '&:hover': {
-            backgroundColor: '#e6ac00'
-          }
-        }
-      }
-    },
-
-    MuiDivider: {
-      styleOverrides: {
-        root: {
-          backgroundColor: 'rgba(255,255,255,0.2)'
-        }
-      }
-    },
-
-    MuiTooltip: {
-      styleOverrides: {
-        tooltip: {
-          backgroundColor: '#333',
-          color: '#FFF'
-        }
-      }
-    }
-
-    // Note: We no longer override MuiCard so your SummaryCard and ChartCard
-    // backgrounds, borders and hover effects come from their own `sx` props.
-  }
-});
-
-export default westernUnionTheme;
 
 
 
 
 //C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\SummaryCard.jsx
+
 import React from 'react';
 import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
 
-export default function SummaryCard({ title, total, stats, sx = {} }) {
+export default function SummaryCard({ title, total, stats, icon, sx = {} }) {
+
   return (
     <Card variant="outlined" sx={{ px: 2, py: 1, ...sx }}>
       <CardContent sx={{ textAlign: 'center' }}>
-        <Typography variant="subtitle1" gutterBottom>
-          {title}
-        </Typography>
+     
+             {/* Icon + Title */}
+        <Box display="flex" justifyContent="center" alignItems="center" mb={1}>
+          {icon && (
+            <Box component="span" sx={{ mr: 1, fontSize: 32, color: 'primary.main' }}>
+              {icon}
+            </Box>
+          )}
+          <Typography variant="subtitle1" gutterBottom>
+            {title}
+          </Typography>
+        </Box>
+
+     
+     
         {total != null && (
           <Box display="flex" justifyContent="center" alignItems="baseline" mb={1}>
             <Typography variant="h4" sx={{ mr: 1 }}>
