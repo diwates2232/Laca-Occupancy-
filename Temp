@@ -1,3 +1,150 @@
+// inside your pickedDate && summaryEntry render-block:
+
+// 1) Determine which columns to show:
+const isFiltered = Boolean(filterCode);
+const isCostaRica = filterCode === 'CR';
+
+// 2) Build headers array:
+const baseMetrics = ['Employee', 'Contractor'];
+const extraMetrics = isCostaRica ? ['Temp Badge'] : [];
+const metricColumns = [...baseMetrics, ...extraMetrics, 'Total'];
+
+const summaryHeaders = isFiltered
+  ? metricColumns
+  : ['Country', 'City', ...metricColumns];
+
+// 3) Render the Paper/Table:
+<Paper elevation={3} sx={{ px: 4, py: 3, border: '3px solid #000', borderRadius: 2 }}>
+  <Table sx={{ border: '2px solid #000' }}>
+    <TableHead>
+      <TableRow>
+        {/* Title spans all visible columns */}
+        <TableCell
+          colSpan={summaryHeaders.length}
+          align="center"
+          sx={{
+            fontWeight: 'bold',
+            fontSize: 16,
+            bgcolor: '#000',
+            color: '#fff',
+            border: '2px solid #000',
+          }}
+        >
+          {format(pickedDate, 'EEEE, d MMMM, yyyy')}
+        </TableCell>
+      </TableRow>
+      <TableRow sx={{ bgcolor: '#FFC107' }}>
+        {summaryHeaders.map(h => (
+          <TableCell
+            key={h}
+            align={['Country','City'].includes(h) ? 'left' : 'right'}
+            sx={{
+              color: '#000',
+              fontWeight: 'bold',
+              fontSize: 14,
+              border: '2px solid #000',
+            }}
+          >
+            {h}
+          </TableCell>
+        ))}
+      </TableRow>
+    </TableHead>
+
+    <TableBody>
+      {/* summaryEntry.partitions is an object; when filtered, there's only one key */}
+      {Object.entries(summaryEntry.partitions)
+        // if filtered, keep only that one partition
+        .filter(([key]) => !filterCode || key.startsWith(filterCode + '.'))
+        .map(([key, vals]) => {
+          // extract just the numbers you need
+          const rowValues = summaryHeaders.map(col => {
+            switch (col) {
+              case 'Country':
+                return key.split('.')[0];    // or map via codeToCountry if you prefer
+              case 'City':
+                return key.split('.')[1].replace('Partition','').trim();
+              case 'Employee':
+                return vals.Employee ?? vals.EmployeeCount ?? 0;
+              case 'Contractor':
+                return vals.Contractor ?? vals.ContractorCount ?? 0;
+              case 'Temp Badge':
+                return vals.TempBadge ?? 0;
+              case 'Total':
+                return vals.total ?? 0;
+              default:
+                return '';
+            }
+          });
+
+          return (
+            <TableRow key={key}>
+              {rowValues.map((value, i) => (
+                <TableCell
+                  key={i}
+                  align={i < summaryHeaders.indexOf('Total') ? 'right' : 'right'}
+                  sx={{
+                    backgroundColor: summaryHeaders[i] === 'Total' ? '#FFC107' : undefined,
+                    fontWeight: summaryHeaders[i] === 'Total' ? 'bold' : undefined,
+                    border: '2px solid #000',
+                  }}
+                >
+                  {value}
+                </TableCell>
+              ))}
+            </TableRow>
+          );
+        })
+      }
+
+      {/* Grand total row */}
+      <TableRow sx={{ bgcolor: '#666' }}>
+        <TableCell
+          colSpan={isFiltered ? summaryHeaders.length - 1 : 2}
+          align="right"
+          sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}
+        >
+          Total
+        </TableCell>
+        {/* sum up each metric column */}
+        {metricColumns.map((col, idx) => {
+          const sum = Object.entries(summaryEntry.partitions)
+            .filter(([key]) => !filterCode || key.startsWith(filterCode + '.'))
+            .reduce((acc, [, vals]) => {
+              switch (col) {
+                case 'Employee':     return acc + (vals.Employee ?? vals.EmployeeCount ?? 0);
+                case 'Contractor':   return acc + (vals.Contractor ?? vals.ContractorCount ?? 0);
+                case 'Temp Badge':   return acc + (vals.TempBadge ?? 0);
+                case 'Total':        return acc + (vals.total ?? 0);
+                default:             return acc;
+              }
+            }, 0);
+
+          return (
+            <TableCell
+              key={col}
+              align="right"
+              sx={{
+                color: '#fff',
+                fontWeight: 'bold',
+                bgcolor: col === 'Total' ? '#333' : undefined,
+                border: '2px solid #000',
+              }}
+            >
+              {sum}
+            </TableCell>
+          );
+        })}
+      </TableRow>
+    </TableBody>
+  </Table>
+</Paper>
+
+
+
+
+
+
 //C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\Header.jsx
 
 
