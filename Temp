@@ -1,217 +1,87 @@
---- a/src/components/SummaryCard.jsx
-+++ b/src/components/SummaryCard.jsx
-@@ export default function SummaryCard({ title, total, stats, icon, sx = {} }) {
--        {/* Icon + Title */}
-+        {/* Icon + Title */}
-         <Box display="flex" justifyContent="center" alignItems="center" mb={1}>
-           {icon && (
-             <Box component="span" sx={{ mr: 1, fontSize: 32, color: 'primary.main' }}>
-               {icon}
-             </Box>
-           )}
--          <Typography variant="subtitle1" gutterBottom>
-+          <Typography
-+            variant="subtitle1"
-+            gutterBottom
-+            sx={ titleColor ? { color: titleColor } : {} }
-+          >
-             {title}
-           </Typography>
-         </Box>
-@@
-         {total != null && (
-           <Box display="flex" justifyContent="center" alignItems="baseline" mb={1}>
--            <Typography variant="h4" sx={{ mr: 1 }}>
-+            <Typography
-+              variant="h4"
-+              sx={{
-+                mr: 1,
-+                ...(totalColor ? { color: totalColor } : {})
-+              }}
-+            >
-               {total}
-             </Typography>
-           </Box>
-@@
-         <Grid container spacing={1} justifyContent="center">
-           {stats.map(({ label, value }, idx) => (
-             <Grid key={label} item xs={6}>
--              <Typography variant="caption">{label}</Typography>
--              <Typography variant="h6">{value}</Typography>
-+              <Typography
-+                variant="caption"
-+                sx={ statColors && statColors[idx]
-+                  ? { color: statColors[idx] }
-+                  : {} }
-+              >
-+                {label}
-+              </Typography>
-+              <Typography
-+                variant="h6"
-+                sx={ statColors && statColors[idx]
-+                  ? { color: statColors[idx] }
-+                  : {} }
-+              >
-+                {value}
-+              </Typography>
-             </Grid>
-           ))}
-         </Grid>
+When i update below files Colours are updated only for Title and total 
+remenainig colours are not update check and update it carefully
 
 
+//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\SummaryCard.jsx
+import React from 'react';
+import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
 
+export default function SummaryCard({ title, total, stats, icon, titleColor,totalColor,statColors,idx,sx = {} }) {
 
+  return (
+    <Card variant="outlined" sx={{ px: 2, py: 1, ...sx }}>
+      <CardContent sx={{ textAlign: 'center' }}>
+     
+             {/* Icon + Title */}
+        <Box display="flex" justifyContent="center" alignItems="center" mb={1}>
+          {icon && (
+            <Box component="span" sx={{ mr: 1, fontSize: 32, color: 'primary.main' }}>
+              {icon}
+            </Box>
+          )}
+          {/* <Typography variant="subtitle1" gutterBottom> */}
 
+          <Typography
+            variant="subtitle1"
+            gutterBottom
+            sx={ titleColor ? { color: titleColor } : {} }
+          >
 
+            {title}
+          </Typography>
+        </Box>
 
---- a/src/pages/Dashboard.jsx
-+++ b/src/pages/Dashboard.jsx
-@@
-   return (
-@@
-         {/* Partition cards */}
-         <Box mt={4} sx={{ width: '100vw%', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-           {loading ? (
-             <Skeleton variant="rectangular" width="100vw%" height={220} />
-           ) : (
--            (() => {
-+            (() => {
-               // map of flags and primary colors for each partition
-               const flagMap = {
-@@
-               };
--              const colorMap = {
--                'CR.Costa Rica Partition': '#CE1126', // Costa Rica red
--                'AR.Cordoba':               '#75AADB', // Argentina light blue
--                'MX.Mexico City':           '#006847', // Mexico green
--                'PE.Lima':                  '#D91023', // Peru red
--                'BR.Sao Paulo':             '#009C3B', // Brazil green
--                'PA.Panama City':           '#0033A0', // Panama blue
--              };
-+              // full palette arrays per flag: [title, total, stat1, stat2, stat3?]
-+              const colorsMap = {
-+                'CR.Costa Rica Partition': [
-+                  '#CE1126', // title (red)
-+                  '#003893', // total (blue)
-+                  '#FFFFFF', // Employees (white)
-+                  '#003893', // Contractors (blue)
-+                  '#FFFFFF'  // TempBadge (white)
-+                ],
-+                'AR.Cordoba': [
-+                  '#75AADB', // title (light blue)
-+                  '#FFFFFF', // total (white)
-+                  '#F6B40E', // Employees (sun yellow)
-+                  '#FFFFFF'  // Contractors (white)
-+                ],
-+                'MX.Mexico City': [
-+                  '#006847', // title (green)
-+                  '#FFFFFF', // total (white)
-+                  '#CE1126', // Employees (red)
-+                  '#FFFFFF'  // Contractors (white)
-+                ],
-+                'PE.Lima': [
-+                  '#D91023', // title (red)
-+                  '#FFFFFF', // total (white)
-+                  '#D91023', // Employees (red)
-+                  '#FFFFFF'  // Contractors (white)
-+                ],
-+                'BR.Sao Paulo': [
-+                  '#009C3B', // title (green)
-+                  '#FDDC00', // total (yellow)
-+                  '#3E4095', // Employees (blue)
-+                  '#FDDC00'  // Contractors (yellow)
-+                ],
-+                'PA.Panama City': [
-+                  '#0033A0', // title (blue)
-+                  '#FFFFFF', // total (white)
-+                  '#CE1126', // Employees (red)
-+                  '#FFFFFF'  // Contractors (white)
-+                ]
-+              };
- 
-               return partitions.map(p => {
--                const flagSrc = flagMap[p.name] || '';
--                const borderColor = colorMap[p.name] || '#FFC107';
-+                const flagSrc = flagMap[p.name] || '';
-+                const colors = colorsMap[p.name] || ['#FFC107', '#FFC107'];
-+                const [ titleC, totalC, ...statCs ] = colors;
-                 return (
-                   <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
-                     <SummaryCard
-                       title={p.name}
--                      icon={
--                        flagSrc && (
--                          <Box
--                            component="img"
--                            src={flagSrc}
--                            alt={`${p.name} flag`}
--                            sx={{ width: 60, height: 40 }}
--                          />
--                        )
--                      }
-+                      icon={
-+                        flagSrc && (
-+                          <Box
-+                            component="img"
-+                            src={flagSrc}
-+                            alt={`${p.name} flag`}
-+                            sx={{
-+                              width: 60,
-+                              height: 40,
-+                              border: '1px solid #000'  // 1px border
-+                            }}
-+                          />
-+                        )
-+                      }
-                       total={p.total}
-                       stats={[
-                         { label: 'Employees',   value: p.Employee },
-                         { label: 'Contractors', value: p.Contractor },
-                         ...(p.name === 'CR.Costa Rica Partition'
-                           ? [{ label: 'Temp Badge', value: p.TempBadge }]
-                           : [])
-                       ]}
-+                      // pass our new color props
-+                      titleColor={titleC}
-+                      totalColor={totalC}
-+                      statColors={statCs}
-                       sx={{
-                         width: '100vw%',
--                        border: `3px solid ${borderColor}`
-+                        border: `2px solid ${titleC}`
-                       }}
-                     />
-                   </Box>
-                 );
-               });
-             })()
-           )}
-         </Box>
+     
+     
+        {total != null && (
+          <Box display="flex" justifyContent="center" alignItems="baseline" mb={1}>
+            {/* <Typography variant="h4" sx={{ mr: 1 }}> */}
 
+            <Typography
+              variant="h4"
+              sx={{
+                mr: 1,
+                ...(totalColor ? { color: totalColor } : {})
+              }}
+            >
 
+              {total}
+            </Typography>
+            {/* <Typography variant="caption">Total</Typography> */}
+          
+          </Box>
+        )}
+        <Grid container spacing={1} justifyContent="center">
+          {stats.map(({ label, value }) => (
+            <Grid key={label} item xs={6}>
 
+              {/* <Typography variant="caption">{label}</Typography> */}
+              {/* <Typography variant="h6">{value}</Typography> */}
 
+              <Typography
+                variant="caption"
+                sx={ statColors && statColors[idx]
+                  ? { color: statColors[idx] }
+                  : {} }
+              >
+                {label}
+              </Typography>
+              <Typography
+                variant="h6"
+                sx={ statColors && statColors[idx]
+                  ? { color: statColors[idx] }
+                  : {} }
+              >
+                {value}
+              </Typography>
 
-
-
-
-
-
-
-Now below files looks very good ,dont make unnecessary changes
-1)add 1 px border for each flag,
-2)curreently cards display data using Western union colours only 
-i think use flag Colours to display data like 
-
-CR.Costa Rica Partition --- flag include 3 to four colours use main Colour to display Partation name 
-0 ------use 2nd colour for this 
-Employees----- use colours for this 
-0-----usr another here only colours included in flag 
-Contractors-----same for here
-0
-Temp Badge
-0
-
+            </Grid>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+}
 
 
 // src/pages/Dashboard.jsx
@@ -370,32 +240,82 @@ export default function Dashboard() {
                 'BR.Sao Paulo':             BrazilFlag,
                 'PA.Panama City':           PanamaFlag,
               };
-              const colorMap = {
-                'CR.Costa Rica Partition': '#CE1126', // Costa Rica red
-                'AR.Cordoba':               '#75AADB', // Argentina light blue
-                'MX.Mexico City':           '#006847', // Mexico green
-                'PE.Lima':                  '#D91023', // Peru red
-                'BR.Sao Paulo':             '#009C3B', // Brazil green
-                'PA.Panama City':           '#0033A0', // Panama blue
+
+
+              // full palette arrays per flag: [title, total, stat1, stat2, stat3?]
+              const colorsMap = {
+                'CR.Costa Rica Partition': [
+                  '#CE1126', // title (red)
+                  '#003893', // total (blue)
+                  '#FFFFFF', // Employees (white)
+                  '#003893', // Contractors (blue)
+                  '#FFFFFF'  // TempBadge (white)
+                ],
+               'AR.Cordoba': [
+                  '#75AADB', // title (light blue)
+                  '#FFFFFF', // total (white)
+                  '#F6B40E', // Employees (sun yellow)
+                  '#FFFFFF'  // Contractors (white)
+                ],
+                'MX.Mexico City': [
+                  '#006847', // title (green)
+                  '#FFFFFF', // total (white)
+                  '#CE1126', // Employees (red)
+                  '#FFFFFF'  // Contractors (white)
+                ],
+                'PE.Lima': [
+                  '#D91023', // title (red)
+                  '#FFFFFF', // total (white)
+                  '#D91023', // Employees (red)
+                  '#FFFFFF'  // Contractors (white)
+                ],
+                'BR.Sao Paulo': [
+                  '#009C3B', // title (green)
+                  '#FDDC00', // total (yellow)
+                  '#3E4095', // Employees (blue)
+                  '#FDDC00'  // Contractors (yellow)
+                ],
+                'PA.Panama City': [
+                  '#0033A0', // title (blue)
+                  '#FFFFFF', // total (white)
+                  '#CE1126', // Employees (red)
+                  '#FFFFFF'  // Contractors (white)
+                ]
               };
 
+
+
+
+
               return partitions.map(p => {
+  
+
                 const flagSrc = flagMap[p.name] || '';
-                const borderColor = colorMap[p.name] || '#FFC107';
+                const colors = colorsMap[p.name] || ['#FFC107', '#FFC107'];
+                const [ titleC, totalC, ...statCs ] = colors;
+
+
                 return (
                   <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
                     <SummaryCard
                       title={p.name}
+                    
                       icon={
                         flagSrc && (
                           <Box
                             component="img"
                             src={flagSrc}
                             alt={`${p.name} flag`}
-                            sx={{ width: 60, height: 40 }}
+                            sx={{
+                              width: 50,
+                              height: 30,
+                              border: '1px solid #fff'  // 1px border
+                            }}
                           />
                         )
                       }
+
+
                       total={p.total}
                       stats={[
                         { label: 'Employees',   value: p.Employee },
@@ -404,9 +324,17 @@ export default function Dashboard() {
                           ? [{ label: 'Temp Badge', value: p.TempBadge }]
                           : [])
                       ]}
-                      sx={{
+
+                      // pass our new color props
+                      titleColor={titleC}
+                      totalColor={totalC}
+                      statColors={statCs}
+
+
+                    sx={{
                         width: '100vw%',
-                        border: `3px solid ${borderColor}`
+                        // border: `3px solid ${borderColor}`
+                           border: `3px solid ${titleC}`
                       }}
                     />
                   </Box>
@@ -483,8 +411,6 @@ export default function Dashboard() {
     </>
   );
 }
-
-
 
 
 
@@ -596,4 +522,6 @@ const westernUnionTheme = createTheme({
 });
 
 export default westernUnionTheme;
+
+
 
