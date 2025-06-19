@@ -1,3 +1,47 @@
+// src/routes/AppRoutes.jsx
+
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Dashboard                from '../pages/Dashboard';
+import RealtimeDetails          from '../pages/RealtimeDetails';
+import History                  from '../pages/History';
+import PartitionDetail          from '../pages/PartitionDetail';
+import PartitionDetailDetails   from '../pages/PartitionDetailDetails';
+
+export default function AppRoutes() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Home dashboard */}
+        <Route path="/" element={<Dashboard />} />
+
+        {/* History (global) */}
+        <Route path="/history" element={<History />} />
+
+        {/* Partition‐scoped history */}
+        <Route path="/partition/:partition/history" element={<History />} />
+
+        {/* Real-time details */}
+        <Route path="/realtime/:partition" element={<RealtimeDetails />} />
+
+        {/* Partition overview */}
+        <Route path="/partition/:partition" element={<PartitionDetail />} />
+
+        {/* Partition details sub-page */}
+        <Route path="/partition/:partition/details" element={<PartitionDetailDetails />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+
+
+
+
+
+
+
+
 Now navigate Correct so check all files crefully and update it strickly
 
 // src/components/Header.jsx
