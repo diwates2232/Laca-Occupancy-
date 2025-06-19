@@ -1,3 +1,170 @@
+--- a/src/pages/Dashboard.jsx
++++ b/src/pages/Dashboard.jsx
+@@
+ import React, { useEffect, useState } from 'react';
+ import {
+   Container,
+   Box,
+   Typography,
+   Skeleton,
+   Divider
+ } from '@mui/material';
+-import TodayIcon from '@mui/icons-material/Today';
+-import SyncIcon from '@mui/icons-material/Sync';
+-import ApartmentIcon from '@mui/icons-material/Apartment';
+-import BusinessIcon from '@mui/icons-material/Business';
++import TodayIcon  from '@mui/icons-material/Today';
++import SyncIcon   from '@mui/icons-material/Sync';
++
++// Flags
++import CostaRicaFlag  from '../assets/flags/costa-rica.png';
++import ArgentinaFlag  from '../assets/flags/argentina.png';
++import MexicoFlag     from '../assets/flags/mexico.png';
++import PeruFlag       from '../assets/flags/peru.png';
++import BrazilFlag     from '../assets/flags/brazil.png';
++import PanamaFlag     from '../assets/flags/panama.png';
+ 
+ import { useNavigate } from 'react-router-dom';
+ 
+ import Header from '../components/Header';
+ import Footer from '../components/Footer';
+ import SummaryCard from '../components/SummaryCard';
+ import ChartCard from '../components/ChartCard';
+ import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+ import { partitionList } from '../services/occupancy.service';
+@@
+   return (
+     <>
+       <Header />
+@@
+         {/* Top summary cards */}
+         <Box display="flex" alignItems="stretch" sx={{ mb: 1, width: '100vw%' }}>
+           <Box sx={{ flex: 1 }}>
+             <SummaryCard
+               title="Today’s Headcount"
+               icon={<TodayIcon />}
+               total={todayTot}
+               stats={[
+                 { label: 'Employees',   value: todayEmp },
+                 { label: 'Contractors', value: todayCont }
+               ]}
+               sx={{ height: 190, border: '2px solid #FFC107' }}
+             />
+           </Box>
+ 
+           <Divider flexItem sx={{ mx: 1 }} />
+ 
+           <Box sx={{ flex: 1 }}>
+             <SummaryCard
+               title="Realtime Headcount"
+               icon={<SyncIcon />}
+               total={realtimeTot}
+               stats={[
+                 { label: 'Employees',   value: realtimeEmp },
+                 { label: 'Contractors', value: realtimeCont }
+               ]}
+               sx={{ height: 190, border: '2px solid #FFC107' }}
+             />
+           </Box>
+         </Box>
+ 
+         {/* Partition cards */}
+         <Box
+           mt={4}
+           sx={{
+             width: '100vw%',
+             display: 'flex',
+             flexWrap: 'wrap',
+             gap: 1
+           }}
+         >
+           {loading ? (
+             <Skeleton variant="rectangular" width="100vw%" height={240} />
+           ) : (
+-            partitions.map(p => (
+-              <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+-                <SummaryCard
+-                  title={p.name}
+-                  icon={<ApartmentIcon />}
+-                  total={p.total}
+-                  stats={[
+-                    { label: 'Employees',   value: p.Employee },
+-                    { label: 'Contractors', value: p.Contractor },
+-                    ...(p.name === 'CR.Costa Rica Partition'
+-                      ? [{ label: 'Temp Badge', value: p.TempBadge }]
+-                      : [])
+-                  ]}
+-                  sx={{ width: '100vw%', border: '2px solid #FFC107' }}
+-                />
+-              </Box>
+-            ))
++            (() => {
++              // map of flags and primary colors for each partition
++              const flagMap = {
++                'CR.Costa Rica Partition': CostaRicaFlag,
++                'AR.Cordoba':               ArgentinaFlag,
++                'MX.Mexico City':           MexicoFlag,
++                'PE.Lima':                  PeruFlag,
++                'BR.Sao Paulo':             BrazilFlag,
++                'PA.Panama City':           PanamaFlag,
++              };
++              const colorMap = {
++                'CR.Costa Rica Partition': '#CE1126', // Costa Rica red
++                'AR.Cordoba':               '#75AADB', // Argentina light blue
++                'MX.Mexico City':           '#006847', // Mexico green
++                'PE.Lima':                  '#D91023', // Peru red
++                'BR.Sao Paulo':             '#009C3B', // Brazil green
++                'PA.Panama City':           '#0033A0', // Panama blue
++              };
++
++              return partitions.map(p => {
++                const flagSrc = flagMap[p.name] || '';
++                const borderColor = colorMap[p.name] || '#FFC107';
++                return (
++                  <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
++                    <SummaryCard
++                      title={p.name}
++                      icon={
++                        flagSrc && (
++                          <Box
++                            component="img"
++                            src={flagSrc}
++                            alt={`${p.name} flag`}
++                            sx={{ width: 32, height: 32 }}
++                          />
++                        )
++                      }
++                      total={p.total}
++                      stats={[
++                        { label: 'Employees',   value: p.Employee },
++                        { label: 'Contractors', value: p.Contractor },
++                        ...(p.name === 'CR.Costa Rica Partition'
++                          ? [{ label: 'Temp Badge', value: p.TempBadge }]
++                          : [])
++                      ]}
++                      sx={{
++                        width: '100vw%',
++                        border: `2px solid ${borderColor}`
++                      }}
++                    />
++                  </Box>
++                );
++              });
++            })()
+           )}
+         </Box>
+
+
+
+
+
+
+
+
+
+
+
+
 // src/components/Header.jsx
 
 import React from 'react';
