@@ -1,3 +1,10 @@
+<Route path="/history" element={<History />} />
+<Route path="/partition/:partition/history" element={<History />} />
+
+
+
+
+
 // src/pages/History.jsx
 
 import React, { useEffect, useState, useMemo } from 'react';
