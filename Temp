@@ -1,3 +1,42 @@
+async function withRetry(fn, retries = 2) {
+  let lastErr;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if ((err.code === 'ECONNRESET' || err.code === 'ESOCKET') && i < retries) {
+        console.warn(`🔁 Retrying due to ${err.code} (${i + 1}/${retries})`);
+        await new Promise(res => setTimeout(res, 1000));
+        continue;
+      }
+      break;
+    }
+  }
+  throw lastErr;
+}
+
+exports.getDenverInOutInconsistency = async (req, res) => {
+  try {
+    const events = await withRetry(fetchHistoricalEvents, 3);
+    const result = computeInOutInconsistency(events);
+    res.status(200).json(result);
+  } catch (err) {
+    console.error('❌ Error computing in/out inconsistency:', err);
+    res.status(500).json({
+      error: 'Failed to compute in/out inconsistency'
+    });
+  }
+};
+
+
+
+
+
+
+
+
+
 // controllers/denverInOutInconsistencyController.js
 
 const { DateTime }       = require('luxon');
