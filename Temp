@@ -1,5 +1,89 @@
 --- a/src/components/SummaryCard.jsx
 +++ b/src/components/SummaryCard.jsx
+@@ // Icon + Title
+-          <Typography
+-            variant="subtitle1"
+-            gutterBottom
+-            sx={titleColor ? { color: titleColor } : {}}
+-          >
++          <Typography
++            variant="subtitle1"
++            gutterBottom
++            sx={{
++              ...(titleColor ? { color: titleColor } : {}),
++              border: '1px solid #fff',
++              px: 0.5,
++              py: 0.25
++            }}
++          >
+             {title}
+           </Typography>
+@@ // Total
+-            <Typography
+-              variant="h4"
+-              sx={{
+-                mr: 1,
+-                ...(totalColor ? { color: totalColor } : {})
+-              }}
+-            >
++            <Typography
++              variant="h4"
++              sx={{
++                mr: 1,
++                ...(totalColor ? { color: totalColor } : {}),
++                border: '1px solid #fff',
++                px: 0.5,
++                py: 0.25
++              }}
++            >
+               {total}
+             </Typography>
+@@ // Stats
+-              <Typography
+-                variant="caption"
+-                sx={ statColors && statColors[idx]
+-                  ? { color: statColors[idx] }
+-                  : {} }
+-              >
++              <Typography
++                variant="caption"
++                sx={{
++                  ...(statColors && statColors[idx] ? { color: statColors[idx] } : {}),
++                  border: '1px solid #fff',
++                  px: 0.5,
++                  py: 0.25
++                }}
++              >
+                 {label}
+               </Typography>
+-              <Typography
+-                variant="h6"
+-                sx={ statColors && statColors[idx]
+-                  ? { color: statColors[idx] }
+-                  : {} }
+-              >
++              <Typography
++                variant="h6"
++                sx={{
++                  ...(statColors && statColors[idx] ? { color: statColors[idx] } : {}),
++                  border: '1px solid #fff',
++                  px: 0.5,
++                  py: 0.25
++                }}
++              >
+                 {value}
+               </Typography>
+
+
+
+
+
+
+
+
+
+--- a/src/components/SummaryCard.jsx
++++ b/src/components/SummaryCard.jsx
 @@
 -export default function SummaryCard({ title, total, stats, icon, titleColor,totalColor,statColors,idx,sx = {} }) {
 +export default function SummaryCard({
