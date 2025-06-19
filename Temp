@@ -6,6 +6,252 @@ import {
   Box,
   Typography,
   Skeleton,
+  Divider,
+  Grow
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import AccessTimeIcon    from '@mui/icons-material/AccessTime';
+import LocationOnIcon    from '@mui/icons-material/LocationOn';
+
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import SummaryCard from '../components/SummaryCard';
+import ChartCard   from '../components/ChartCard';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+import { partitionList }    from '../services/occupancy.service';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+  const [partition, setPartition]   = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) {
+    return (
+      <Box width="100vw" py={4}>
+        <Typography color="error" align="center">
+          Error loading live data
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Build partitions array
+  const regions = data?.realtime || {};
+  const partitions = partitionList
+    .map(name => {
+      const key = Object.keys(regions).find(k => k.includes(name));
+      const p = key ? regions[key] : {};
+      return {
+        name,
+        total:      p.total       || 0,
+        Employee:   p.Employee    || 0,
+        Contractor: p.Contractor  || 0,
+        TempBadge:  p.TempBadge   || 0,
+      };
+    })
+    .sort((a,b) => b.total - a.total);
+
+  const todayTot   = data?.today?.total      ?? 0;
+  const todayEmp   = data?.today?.Employee   ?? 0;
+  const todayCont  = data?.today?.Contractor ?? 0;
+  const realtimeTot  = partitions.reduce((s, p) => s + p.total, 0);
+  const realtimeEmp  = partitions.reduce((s, p) => s + p.Employee, 0);
+  const realtimeCont = partitions.reduce((s, p) => s + p.Contractor, 0);
+
+  // Shared hover/animation style
+  const cardWrapperSx = {
+    position: 'relative',
+    cursor: 'pointer',
+    transition: 'transform 0.2s, box-shadow 0.2s',
+    '&:hover': {
+      transform: 'scale(1.03)',
+      boxShadow: 6,
+    },
+  };
+
+  // Keyframes for count pop-in
+  const countAnimation = {
+    '@keyframes popIn': {
+      '0%':   { transform: 'scale(0.5)', opacity: 0 },
+      '100%': { transform: 'scale(1)',   opacity: 1 },
+    },
+  };
+
+  return (
+    <>
+      <Header />
+
+      <Container
+        maxWidth={false}
+        disableGutters
+        sx={{ pt: 1, pb: 2, px: '20px' }}
+      >
+        {/* Top summary cards */}
+        <Box display="flex" alignItems="stretch" sx={{ mb: 1, width: '100vw' }}>
+          <Grow in={!loading} timeout={500}>
+            <Box sx={{ ...cardWrapperSx, flex: 1 }}>
+              <CalendarTodayIcon sx={{ position: 'absolute', top: 16, left: 16, color: '#FFC107', fontSize: 32 }} />
+              <SummaryCard
+                title="Today’s Headcount"
+                total={todayTot}
+                stats={[
+                  { label: 'Employees',   value: todayEmp },
+                  { label: 'Contractors', value: todayCont }
+                ]}
+                sx={{
+                  height: 190,
+                  border: '2px solid #FFC107',
+                  pt: 6,
+                  ...countAnimation
+                }}
+                // animate total
+                totalSx={{
+                  animation: 'popIn 0.6s ease-out'
+                }}
+              />
+            </Box>
+          </Grow>
+
+          <Divider flexItem sx={{ mx: 1, backgroundColor: 'rgba(255,193,7,0.5)' }} />
+
+          <Grow in={!loading} timeout={800}>
+            <Box sx={{ ...cardWrapperSx, flex: 1 }}>
+              <AccessTimeIcon sx={{ position: 'absolute', top: 16, left: 16, color: '#4caf50', fontSize: 32 }} />
+              <SummaryCard
+                title="Realtime Headcount"
+                total={realtimeTot}
+                stats={[
+                  { label: 'Employees',   value: realtimeEmp },
+                  { label: 'Contractors', value: realtimeCont }
+                ]}
+                sx={{
+                  height: 190,
+                  border: '2px solid #FFC107',
+                  pt: 6,
+                  ...countAnimation
+                }}
+                totalSx={{
+                  animation: 'popIn 0.6s ease-out 0.2s'
+                }}
+              />
+            </Box>
+          </Grow>
+        </Box>
+
+        {/* Partition cards */}
+        <Box mt={4} sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, width: '100vw' }}>
+          {loading ? (
+            <Skeleton variant="rectangular" width="100vw" height={240} />
+          ) : (
+            partitions.map((p, i) => (
+              <Grow in={!loading} timeout={1000 + i * 100} key={p.name}>
+                <Box
+                  sx={{
+                    ...cardWrapperSx,
+                    flex: '1 1 calc(16.66% - 8px)',
+                    position: 'relative'
+                  }}
+                  onClick={() => navigate(`/partition/${encodeURIComponent(p.name)}/history`)}
+                >
+                  <LocationOnIcon
+                    sx={{
+                      position: 'absolute',
+                      top: 16,
+                      left: 16,
+                      color: p.name.includes('Costa Rica') ? '#ff5722' : '#03a9f4',
+                      fontSize: 28
+                    }}
+                  />
+                  <SummaryCard
+                    title={p.name.replace('Partition','').trim()}
+                    total={p.total}
+                    stats={[
+                      { label: 'Employees',   value: p.Employee },
+                      { label: 'Contractors', value: p.Contractor },
+                      ...(p.name === 'CR.Costa Rica Partition'
+                        ? [{ label: 'Temp Badge', value: p.TempBadge }]
+                        : [])
+                    ]}
+                    sx={{
+                      width: '100%',
+                      border: '2px solid #FFC107',
+                      pt: 6,
+                      ...countAnimation
+                    }}
+                    totalSx={{
+                      animation: 'popIn 0.6s ease-out 0.4s'
+                    }}
+                  />
+                </Box>
+              </Grow>
+            ))
+          )}
+        </Box>
+
+        {/* Live totals chart */}
+        <Grow in={!loading} timeout={1400}>
+          <Box mt={4} sx={{ width: '100vw', p: 2, border: '2px solid #FFC107' }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Typography variant="h6" gutterBottom>
+                Live Totals by Partition
+              </Typography>
+              <Button
+                startIcon={<AccessTimeIcon />}
+                size="small"
+                sx={{ color: '#FFC107', textTransform: 'none' }}
+                onClick={() => setLastUpdate(new Date().toLocaleTimeString())}
+              >
+                {lastUpdate}
+              </Button>
+            </Box>
+            {!loading && (
+              <ChartCard
+                chartType="bar"
+                chartHeight={360}
+                data={partitions.map((p,i) => ({
+                  name: p.name.replace('Partition','').trim(),
+                  value: p.total,
+                  fill: i % 2 === 0 ? '#FFC107' : '#B0BEC5'
+                }))}
+                dataKey="value"
+                colors={{ head: '#FFC107', cap: '#B0BEC5' }}
+                breakdown={{
+                  Employee: realtimeEmp,
+                  Contractor: realtimeCont,
+                  TempBadge: partitions.reduce((sum,p)=>sum+p.TempBadge,0),
+                }}
+                sx={{ border: '2px solid #FFC107' }}
+              />
+            )}
+          </Box>
+        </Grow>
+      </Container>
+
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+// src/pages/Dashboard.jsx
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Typography,
+  Skeleton,
   FormControl,
   InputLabel,
   Select,
