@@ -1,3 +1,62 @@
+{/* Live totals chart */}
+<Box mt={4} sx={{ width: '100%', p: 2, border: '1px solid #FFC107', borderRadius: 2, bgcolor: '#fffbea' }}>
+  <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+    <Typography variant="h6" sx={{ fontWeight: 600, color: '#d17b00' }}>
+      Live Totals by Partition
+    </Typography>
+    <Typography variant="body2" color="textSecondary">
+      Last updated: {lastUpdate}
+    </Typography>
+  </Box>
+
+  {loading ? (
+    <Skeleton variant="rectangular" width="100%" height={360} />
+  ) : (
+    <ChartCard
+      chartType="bar"
+      chartHeight={380}
+      data={
+        [...partitions] // clone to avoid mutating original
+          .sort((a, b) => b.total - a.total) // sort descending
+          .map((p, i) => ({
+            name: displayNameMap[p.name] || p.name.replace(' Partition', ''),
+            value: p.total,
+            fill: colorsMap[p.name]?.[0] || (i % 2 === 0 ? '#FFC107' : '#B0BEC5'),
+            breakdown: {
+              Employee: p.Employee,
+              Contractor: p.Contractor,
+              ...(p.TempBadge ? { TempBadge: p.TempBadge } : {})
+            }
+          }))
+      }
+      dataKey="value"
+      colors={{ head: '#FFC107', cap: '#B0BEC5' }}
+      breakdown={{
+        Employee: realtimeEmp,
+        Contractor: realtimeCont,
+        TempBadge: partitions.reduce((sum, p) => sum + (p.TempBadge || 0), 0),
+      }}
+      sx={{ border: '2px solid #FFC107', borderRadius: 2 }}
+      tooltipFormatter={(entry) => {
+        return [
+          `Total: ${entry.value}`,
+          `Employees: ${entry.payload.breakdown?.Employee || 0}, Contractors: ${entry.payload.breakdown?.Contractor || 0}${entry.payload.breakdown?.TempBadge ? `, Temp Badge: ${entry.payload.breakdown?.TempBadge}` : ''}`
+        ];
+      }}
+    />
+  )}
+</Box>
+
+
+
+
+
+
+
+
+
+
+
 const displayNameMap = {
   'CR.Costa Rica Partition': 'Costa Rica',
   'AR.Cordoba': 'Argentina',
