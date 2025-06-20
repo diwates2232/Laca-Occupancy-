@@ -1,3 +1,33 @@
+ import React, { useEffect, useState } from 'react';
+ // …
+ import { partitionList } from '../services/occupancy.service';
+
++// Map raw partition keys → friendly names
++const displayNameMap = {
++  'CR.Costa Rica Partition': 'Costa Rica',
++  'AR.Cordoba':               'Argentina',
++  'MX.Mexico City':           'Mexico',
++  'PE.Lima':                  'Lima',
++  'BR.Sao Paulo':             'São Paulo',
++  'PA.Panama City':           'Panama'
++};
+
+
+
+
+- title={p.name}
++ title={displayNameMap[p.name] || p.name.replace(' Partition','')}
+
+
+
+
+
+
+
+
+
+
+
 --- a/src/pages/PartitionDetail.jsx
 +++ b/src/pages/PartitionDetail.jsx
 @@
