@@ -1,4 +1,52 @@
- import React, { useState } from 'react';
+< -- inside the Tooltip component -->
+- content={({ active, payload, label }) => {
+-   if (!active || !payload || !payload.length) return null;
+-   const { breakdown = {}, name } = payload[0].payload;
+-   return (
+-     <Box sx={{ color: '#FFF' }}>
+-       <Typography variant="subtitle2" sx={{ color: colors.head, mb: 1 }}>
+-         {name}
+-       </Typography>
+-       {Object.entries(breakdown).map(([key, val]) => (
+-         <Typography key={key} variant="body2">
+-           {key}: {val}
+-         </Typography>
+-       ))}
+-     </Box>
+-   );
+- }}
++ content={({ active, payload }) => {
++   if (!active || !payload || !payload.length) return null;
++   const { breakdown = {}, name } = payload[0].payload;
++   return (
++     <Box
++       sx={{
++         backgroundColor: '#000',     // ensure black background
++         border: `1px solid ${colors.head}`,
++         padding: 1,
++         borderRadius: 1,
++       }}
++     >
++       <Typography variant="subtitle2" sx={{ color: colors.head, mb: 1 }}>
++         {name}
++       </Typography>
++       {Object.entries(breakdown).map(([key, val]) => (
++         <Typography key={key} variant="body2" sx={{ color: '#FFF' }}>
++           {key}: {val}
++         </Typography>
++       ))}
++     </Box>
++   );
++ }}
+
+
+
+
+
+
+
+
+import React, { useState } from 'react';
 +import React, { Fragment, useState } from 'react';
 
 
