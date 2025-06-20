@@ -1,195 +1,8 @@
-   // Load history …
-   }, [partition]);
-
-+  // Build breakdown by floor from details list
-+  const floorBreakdown = useMemo(() => {
-+    const map = {};
-+    details.forEach(({ floor, DirectionType }) => {
-+      if (!map[floor]) {
-+        map[floor] = { Employees: 0, Contractors: 0, TempBadge: 0 };
-+      }
-+      // assume DirectionType or another field tells role:
-+      // if you have a badgeType or similar, adjust below.
-+      // Here I'm guessing:
-+      if (DirectionType === 'Employee') {
-+        map[floor].Employees++;
-+      } else if (DirectionType === 'Contractor') {
-+        map[floor].Contractors++;
-+      } else {
-+        map[floor].TempBadge++;
-+      }
-+    });
-+    return map;
-+  }, [details]);
-
-
-
-
-
--            <ChartCard
--              title=""
--              data={Object.entries(live.floors).map(([floor, cnt]) => ({ name: floor.trim(), value: cnt }))}
--              chartHeight={320}
-+            <ChartCard
-+              title=""
-+              chartHeight={320}
-+              data={Object.entries(floorBreakdown).map(([floor, br]) => ({
-+                name: floor.trim(),
-+                value: br.Employees + br.Contractors + br.TempBadge,
-+                breakdown: {
-+                  Employees:   br.Employees,
-+                  Contractors: br.Contractors,
-+                  'Temp Badge': br.TempBadge
-+                }
-+              }))}
-+              axisProps={{
-+                xAxis: {
-+                  label: { value: 'Floor', position: 'insideBottomRight', offset: -10, fill: '#FFF' },
-+                  tick:  { fill: '#FFF', fontWeight: 600 }
-+                },
-+                yAxis: {
-+                  label: { value: 'Count', angle: -90, position: 'insideLeft', fill: '#FFF' },
-+                  tick:  { fill: '#FFF', fontWeight: 600 }
-+                }
-+              }}
-
-
-
-
-
-
-
-
-
-
-{/* Chart + See Details */}
-           <Box mb={4} sx={{ px: "20px", p:2, border: '2px solid #FFC107' }}>
-             <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-               <Typography variant="h6">Live Floor Counts</Typography>
-               <Typography variant="body2" color="textSecondary">
-                 Last updated: {lastUpdate}
-               </Typography>
-             </Box>
--            <ChartCard
--              title=""
--              data={Object.entries(live.floors).map(([floor, cnt]) => ({ name: floor.trim(), value: cnt }))}
--              chartHeight={320}
--            />
-+            <ChartCard
-+              title=""
-+              chartHeight={320}
-+              data={Object.entries(live.floors).map(([floor, floorData]) => {
-+                // derive total (either floorData.total or sum of parts)
-+                const total = floorData.total != null
-+                  ? floorData.total
-+                  : (floorData.Employee || 0)
-+                      + (floorData.Contractor || 0)
-+                      + (floorData.TempBadge || 0);
-+
-+                return {
-+                  name: floor.trim(),
-+                  value: total,
-+                  breakdown: {
-+                    Employees:   floorData.Employee   || 0,
-+                    Contractors: floorData.Contractor || 0,
-+                    'Temp Badge': floorData.TempBadge || 0
-+                  }
-+                };
-+              })}
-+              axisProps={{
-+                xAxis: {
-+                  label: { value: 'Floor', position: 'insideBottomRight', offset: -10, fill: '#FFF' },
-+                  tick:  { fill: '#FFF', fontWeight: 600 }
-+                },
-+                yAxis: {
-+                  label: { value: 'Count', angle: -90, position: 'insideLeft', fill: '#FFF' },
-+                  tick:  { fill: '#FFF', fontWeight: 600 }
-+                }
-+              }}
-+            />
-
-
-
-
-
-
-
-
-
-
-
-
-<ChartCard
-  title=""
-- data={Object.entries(live.floors).map(([floor, cnt]) => ({ name: floor.trim(), value: cnt }))}
-+ data={Object.entries(live.floors).map(([floor, floorData]) => {
-+   // sum or use total if provided
-+   const total =
-+     floorData.total != null
-+       ? floorData.total
-+       : (floorData.Employee || 0)
-+         + (floorData.Contractor || 0)
-+         + (floorData.TempBadge || 0);
-+   return {
-+     name: floor.trim(),
-+     value: total,
-+     breakdown: {
-+       Employees:   floorData.Employee   || 0,
-+       Contractors: floorData.Contractor || 0,
-+       'Temp Badge': floorData.TempBadge || 0
-+     }
-+   };
-+ })}
-  chartHeight={320}
-+ axisProps={{
-+   xAxis: {
-+     label: { value: 'Floor', position: 'insideBottomRight', offset: -10, fill: '#FFF' },
-+     tick:  { fill: '#FFF', fontWeight: 600 }
-+   },
-+   yAxis: {
-+     label: { value: 'Count', angle: -90, position: 'insideLeft', fill: '#FFF' },
-+     tick:  { fill: '#FFF', fontWeight: 600 }
-+   }
-+ }}
-/>
-
-
-
-
-
-
-
-const { breakdown = {}, name } = payload[0].payload;
-
-
-<Typography variant="subtitle2" sx={{ color: colors.head, mb: 1 }}>
-  {name}
-</Typography>
-{Object.entries(breakdown).map(([key, val]) => (
-  <Typography key={key} variant="body2" sx={{ color: '#FFF' }}>
-    {key}: {val}
-  </Typography>
-))}
-
-
-
-
-<ChartCard
-  title=""
-  data={Object.entries(live.floors).map(([floor, cnt]) => ({ name: floor.trim(), value: cnt }))}
-  chartHeight={320}
-/>
-
-
-
-
-
-
-
-
-
-Omce check fully file and then Update chart section step by step
-
+Check Both file carefully now we got result like 
+Employee 0
+Contractor 0
+Temp badge 20
+Count is not correct 
 
 // src/pages/PartitionDetail.jsx
 import React, { useEffect, useState, useMemo } from "react";
@@ -250,6 +63,8 @@ export default function PartitionDetail() {
     return () => clearInterval(timer);
   }, [partition]);
 
+
+
   // Load history
   useEffect(() => {
     setHistoryLoading(true);
@@ -258,6 +73,32 @@ export default function PartitionDetail() {
       setHistoryLoading(false);
     });
   }, [partition]);
+
+
+
+  // Build breakdown by floor from details list
+  const floorBreakdown = useMemo(() => {
+    const map = {};
+    details.forEach(({ floor, DirectionType }) => {
+      if (!map[floor]) {
+        map[floor] = { Employees: 0, Contractors: 0, TempBadge: 0 };
+      }
+      // assume DirectionType or another field tells role:
+      // if you have a badgeType or similar, adjust below.
+      // Here I'm guessing:
+     if (DirectionType === 'Employee') {
+        map[floor].Employees++;
+      } else if (DirectionType === 'Contractor') {
+        map[floor].Contractors++;
+     } else {
+        map[floor].TempBadge++;
+      }
+    });
+    return map;
+  }, [details]);
+
+
+
 
   if (!liveSummary || !history) return <LoadingSpinner />;
 
@@ -346,12 +187,46 @@ export default function PartitionDetail() {
                 Last updated: {lastUpdate}
               </Typography>
             </Box>
-            <ChartCard
+
+            {/* <ChartCard
               title=""
               data={Object.entries(live.floors).map(([floor, cnt]) => ({ name: floor.trim(), value: cnt }))}
+
+               chartHeight={320}
+            /> */}
+
+                     <ChartCard
+              title=""
               chartHeight={320}
+              data={Object.entries(floorBreakdown).map(([floor, br]) => ({
+                name: floor.trim(),
+                value: br.Employees + br.Contractors + br.TempBadge,
+                breakdown: {
+                  Employees:   br.Employees,
+                  Contractors: br.Contractors,
+                  'Temp Badge': br.TempBadge
+                }
+              }))}
+              axisProps={{
+                xAxis: {
+                  label: { value: 'Floor', position: 'insideBottomRight', offset: -10, fill: '#FFF' },
+                  tick:  { fill: '#FFF', fontWeight: 600 }
+                },
+                yAxis: {
+                  label: { value: 'Count', angle: -90, position: 'insideLeft', fill: '#FFF' },
+                 tick:  { fill: '#FFF', fontWeight: 600 }
+                }
+              }}
+
+
+
             />
-            <Box display="flex" justifyContent="flex-end" mt={1}>  
+
+
+
+
+
+   <Box display="flex" justifyContent="flex-end" mt={1}>  
   <Button
   variant="contained"
   size="small"
@@ -371,17 +246,6 @@ export default function PartitionDetail() {
     </>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -512,7 +376,17 @@ export default function ChartCard({
              
                 content={({ active, payload }) => {
    if (!active || !payload || !payload.length) return null;
-   const { breakdown = {}, name } = payload[0].payload;
+    const { breakdown = {}, name } = payload[0].payload;
+
+{/* <Typography variant="subtitle2" sx={{ color: colors.head, mb: 1 }}>
+  {name}
+</Typography>
+{Object.entries(breakdown).map(([key, val]) => (
+  <Typography key={key} variant="body2" sx={{ color: '#FFF' }}>
+    {key}: {val}
+  </Typography>
+))} */}
+
    return (
      <Box
        sx={{
@@ -610,6 +484,5 @@ export default function ChartCard({
     </Card>
   );
 }
-
 
 
