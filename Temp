@@ -1,3 +1,451 @@
+Omce check fully file and then Update chart section step by step
+
+
+// src/pages/PartitionDetail.jsx
+import React, { useEffect, useState, useMemo } from "react";
+import {
+  Container,
+  Box,
+  Typography,
+  Button,
+  CircularProgress,
+} from "@mui/material";
+
+import { useParams, useNavigate } from "react-router-dom";
+import SummaryCard from "../components/SummaryCard";
+import ChartCard from "../components/ChartCard";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { fetchLiveSummary, fetchHistory } from "../api/occupancy.service";
+import { lookupFloor } from "../utils/floorLookup";
+
+import GroupIcon from '@mui/icons-material/Group';         // Replaces TodayIcon
+import TrackChangesIcon from '@mui/icons-material/TrackChanges'; // Replaces SyncIcon
+
+
+import PeopleIcon from '@mui/icons-material/People';
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
+
+
+
+export default function PartitionDetail() {
+  const { partition } = useParams();
+  const navigate = useNavigate();
+
+  const [liveSummary, setLiveSummary] = useState(null);
+  const [history, setHistory] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [details, setDetails] = useState([]);
+  const [lastUpdate, setLastUpdate] = useState("");
+
+  // Auto-refresh live
+  useEffect(() => {
+    let timer;
+    async function loadLive() {
+      const json = await fetchLiveSummary();
+      setLiveSummary(json);
+      // we'll still fetch details so partition/details page has data ready
+      const det = json.details
+        .filter(r => r.PartitionName2 === partition && r.Direction === "InDirection")
+        .map(r => ({
+          ...r,
+          floor: lookupFloor(r.PartitionName2, r.Door, r.Direction)
+        }));
+      setDetails(det);
+      setLastUpdate(new Date().toLocaleTimeString());
+    }
+    loadLive();
+    timer = setInterval(loadLive, 1000);
+    return () => clearInterval(timer);
+  }, [partition]);
+
+  // Load history
+  useEffect(() => {
+    setHistoryLoading(true);
+    fetchHistory(partition).then(json => {
+      setHistory(json);
+      setHistoryLoading(false);
+    });
+  }, [partition]);
+
+  if (!liveSummary || !history) return <LoadingSpinner />;
+
+  // Totals
+  const lastDay = history.summaryByDate.at(-1);
+  const partToday = lastDay.region;
+  const live = liveSummary.realtime[partition] || {
+    total: 0, Employee: 0, Contractor: 0, TempBadge: 0, floors: {}
+  };
+
+  return (
+    <>
+      <Header />
+
+      <Box component="main" sx={{ pt: 1, pb: 1 }}>
+        <Container maxWidth={false} disableGutters>
+          {/* Back */}
+          <Box display="flex" alignItems="center" mb={1} sx={{ px: "20px" }}>
+            <Button size="small" onClick={() => navigate(-1)}>← Back</Button>
+          </Box>
+
+
+          {/* Six‐card partition summary */}
+          <Box display="flex" flexWrap="wrap" gap={1} mb={2} sx={{ px: "20px" }}>
+            {[
+              {
+                title: `Todays Total Headcount`,
+                value: historyLoading ? <CircularProgress size={20} /> : partToday.total,
+                icon: <GroupIcon sx={{ color: '#E57373', fontSize: 36 }} />,
+                border: '#FFD666'
+              },
+              {
+                title: `Todays Employees Count`,
+                value: historyLoading ? <CircularProgress size={20} /> : partToday.Employee,
+                icon: <PeopleIcon sx={{ color: '#81C784', fontSize: 36 }} />,
+                border: '#81C784'
+              },
+              {
+                title: `Todays Contractors Count`,
+                value: historyLoading ? <CircularProgress size={20} /> : partToday.Contractor,
+                icon: <BusinessCenterIcon sx={{ color: '#64B5F6', fontSize: 36 }} />,
+                border: '#FFE599'
+              },
+              {
+                title: `Realtime Headcount`,
+                value: live.total,
+                icon: <TrackChangesIcon sx={{ color: '#BA68C8', fontSize: 36 }} />,
+                border: '#FFF2CC'
+              },
+              {
+                title: `Realtime Employees Count`,
+                value: live.Employee,
+                icon: <PeopleIcon sx={{ color: '#FFB74D', fontSize: 36 }} />,
+                border: '#FFD666'
+              },
+              {
+                title: `Realtime Contractors Count`,
+                value: live.Contractor,
+                icon: <BusinessCenterIcon sx={{ color: '#4DB6AC', fontSize: 36 }} />,
+                border: '#FFE599'
+              }
+            ].map(card => (
+              <Box key={card.title} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+                <SummaryCard
+                  title={card.title}
+                  total={card.value}
+                  stats={[]}
+                  icon={card.icon}
+                  sx={{
+                    height: 140,
+                    border: `1px solid ${card.border}`
+                  }}
+                />
+              </Box>
+            ))}
+          </Box>
+
+
+
+
+          {/* Chart + See Details */}
+          <Box mb={4} sx={{ px: "20px",p:2, border: '2px solid #FFC107'  }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+              <Typography variant="h6">Live Floor Counts</Typography>
+              <Typography variant="body2" color="textSecondary">
+                Last updated: {lastUpdate}
+              </Typography>
+            </Box>
+            <ChartCard
+              title=""
+              data={Object.entries(live.floors).map(([floor, cnt]) => ({ name: floor.trim(), value: cnt }))}
+              chartHeight={320}
+            />
+            <Box display="flex" justifyContent="flex-end" mt={1}>  
+  <Button
+  variant="contained"
+  size="small"
+  onClick={() =>
+    navigate(`/partition/${encodeURIComponent(partition)}/details`)
+  }
+>
+  See Details
+</Button>
+
+            </Box>
+          </Box>
+        </Container>
+      </Box>
+
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// src/components/ChartCard.jsx
+// import React, { useState } from 'react';
+import React, { Fragment, useState } from 'react';
+import { Card, CardContent, Typography, Box } from '@mui/material';
+import {
+  AreaChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
+  Brush,
+  LabelList,
+  ReferenceLine,
+} from 'recharts';
+import dayjs from 'dayjs';
+
+export default function ChartCard({
+  title,
+  data = [],
+  dataKey = 'value',
+  chartHeight = 350,
+  colors = { head: '#FFC107', cap: '#B0BEC5' },
+  animateDuration = 800,
+  showCrosshair = true,
+  timeFormat = 'HH:mm:ss',
+    axisProps = {},               // NEW
+  tooltipFormatter = null,      // NEW
+}) {
+  const [hidden, setHidden] = useState({});
+  const [activeIndex, setActiveIndex] = useState(null);
+
+  if (!Array.isArray(data) || !data.length) {
+    return (
+      <Card sx={{ mb: 2 }}>
+        <CardContent sx={{ textAlign: 'center' }}>
+          <Typography variant="h6">{title}</Typography>
+          <Typography variant="body2">No data to display.</Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const hasCapacity = data[0].Capacity != null;
+  const handleLegendClick = o => {
+    const { dataKey } = o;
+    setHidden(prev => ({ ...prev, [dataKey]: !prev[dataKey] }));
+  };
+
+  return (
+    <Card sx={{ mb: 2 }}>
+      <CardContent>
+        {/* Chart title */}
+        <Typography variant="h6" gutterBottom sx={{ color: colors.head }}>
+          {title}
+        </Typography>
+
+        {/* Chart container */}
+        <Box sx={{ width: '100%', height: chartHeight }}>
+          <ResponsiveContainer>
+            <AreaChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+              <defs>
+                <linearGradient id="colorHead" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="50%" stopColor={colors.head} stopOpacity={0.4} />
+                  <stop offset="95%" stopColor={colors.head} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+
+              {/* Grid */}
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+
+              {/* Crosshair vertical line */}
+              {showCrosshair && activeIndex != null && data[activeIndex] && (
+                <ReferenceLine
+                  x={data[activeIndex].name}
+                  stroke={colors.head}
+                  strokeOpacity={0.5}
+                />
+              )}
+
+              <XAxis
+                dataKey="name"
+                tick={{ fill: '#FFF', fontWeight: 600 }}
+                tickFormatter={t => {
+                  // if timestamp-like, format; else just return
+                  return typeof t === 'number'
+                    ? dayjs(t).format(timeFormat)
+                    : t;
+                    
+                }}
+                label={{
+                  value: 'Time',
+                  position: 'insideBottomRight',
+                  offset: -10,
+                  fill: '#FFF',
+                  fontWeight: 600
+                }}
+                {...axisProps.xAxis}
+              />
+
+              <YAxis
+                tick={{ fill: '#FFF', fontWeight: 600 }}
+                label={{
+                  value: 'Count',
+                  angle: -90,
+                  position: 'insideLeft',
+                  fill: '#FFF',
+                  fontWeight: 600
+                }}
+                 {...axisProps.yAxis}
+              />
+
+              {/* Tooltip & Legend */}
+               <Tooltip
+                contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}`, padding: '1rem' }}
+                cursor={showCrosshair}
+                isAnimationActive={false}
+                onMouseMove={o => setActiveIndex(o && o.activeTooltipIndex)}
+             
+             
+                content={({ active, payload }) => {
+   if (!active || !payload || !payload.length) return null;
+   const { breakdown = {}, name } = payload[0].payload;
+   return (
+     <Box
+       sx={{
+         backgroundColor: '#000',     // ensure black background
+         border: `1px solid ${colors.head}`,
+        padding: 1,
+         borderRadius: 1,
+       }}
+     >
+       <Typography variant="subtitle2" sx={{ color: colors.head, mb: 1 }}>
+         {name}
+       </Typography>
+       {Object.entries(breakdown).map(([key, val]) => (
+         <Typography key={key} variant="body2" sx={{ color: '#FFF' }}>
+           {key}: {val}
+         </Typography>
+       ))}
+     </Box>
+   );
+ }}
+
+
+
+
+
+              
+              />
+
+              <Legend wrapperStyle={{ color: '#FFF' }} onClick={handleLegendClick} />
+
+              {/* Brush for zooming/panning */}
+              <Brush
+                dataKey="name"
+                height={30}
+                stroke={colors.head}
+                travellerWidth={10}
+                updateId={data.length} // reset on data change
+              />
+
+              {/* Capacity area */}
+              {hasCapacity && !hidden.Capacity && (
+                <Area
+                  type="monotone"
+                  dataKey="Capacity"
+                  name="Capacity"
+                  stroke={colors.cap}
+                  fill={`${colors.cap}33`}
+                  dot={false}
+                >
+                  <LabelList
+                    dataKey="Capacity"
+                    position="top"
+                    style={{ fill: colors.cap, fontSize: 10, fontWeight: 600 }}
+                  />
+                </Area>
+              )}
+
+              {/* Headcount area */}
+              {!hidden.Headcount && (
+                <Area
+                  type="monotone"
+                  dataKey={hasCapacity ? 'Headcount' : dataKey}
+                  name={hasCapacity ? 'Headcount' : dataKey}
+                  stroke={colors.head}
+                  fill="url(#colorHead)"
+                  dot={false}
+                  isAnimationActive
+                  animationDuration={animateDuration}
+                >
+                  <LabelList
+                    dataKey={hasCapacity ? 'Headcount' : dataKey}
+                    position="top"
+                    style={{ fill: '#FFF', fontSize: 12, fontWeight: 600 }}
+                  />
+                </Area>
+              )}
+
+              {/* Overlay line for crisp “spark” */}
+              {!hidden.Headcount && (
+                <Line
+                  type="monotone"
+                  dataKey={hasCapacity ? 'Headcount' : dataKey}
+                  stroke={colors.head}
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive
+                  animationDuration={animateDuration}
+                  activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
+                />
+              )}
+            </AreaChart>
+          </ResponsiveContainer>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+data={Object.entries(live.floors).map(([floor, cnt]) => ({
+  name: floor.trim(),
+  value: cnt
+}))}
+
+
+
+
+
+
+
+
+
 // Build breakdown by floor from details list
 const floorBreakdown = useMemo(() => {
   const map = {};
