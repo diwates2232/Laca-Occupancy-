@@ -1,3 +1,70 @@
+  <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+    <SummaryCard
+      title={displayNameMap[p.name] || p.name.replace(' Partition','')}
+      icon={/* … */}
+      total={p.total}
+      stats={[ /* … */ ]}
+      titleColor={titleC}
+      totalColor={totalC}
+      statColors={statCs}
+      sx={{
+        width: '100vw%',
+        border: `1px solid ${titleC}`,
++       // typography overrides:
++       '& .MuiTypography-subtitle1': {
++         fontSize: '1rem'          // partition title
++       },
++       '& .MuiTypography-h4': {
++         fontSize: '1.5rem'        // partition total
++       },
++       '& .MuiTypography-caption': {
++         fontSize: '0.875rem'      // partition stats labels/values
++       }
+      }}
+    />
+  </Box>
+
+
+
+
+  {loading ? (
+    <Skeleton variant="rectangular" width="100%" height={320} />
+  ) : (
+    <ChartCard
+      chartType="bar"
+      chartHeight={360}
+-     data={partitions.map((p,i) => ({
+-       name: p.name,
+-       value: p.total,
+-       fill: i % 2 === 0 ? '#FFC107' : '#B0BEC5'
+-     }))}
++     data={partitions.map((p, i) => ({
++       name: displayNameMap[p.name] || p.name.replace(' Partition',''),
++       value: p.total,
++       fill: colorsMap[p.name]?.[0] || (i % 2 ? '#B0BEC5' : '#FFC107')
++     }))}
+      dataKey="value"
+      colors={{ head: '#FFC107', cap: '#B0BEC5' }}
+      breakdown={{
+        Employee: realtimeEmp,
+        Contractor: realtimeCont,
+        TempBadge: partitions.reduce((sum,p)=>sum+p.TempBadge,0),
+      }}
+      sx={{ border: '1px solid #FFC107' }}
+    />
+  )}
+
+
+
+
+
+
+
+
+
+
+
+
 1) Now Add Font size here ,for partation titile , Total and statscarefully ,
 
         {/* Partition cards */}
