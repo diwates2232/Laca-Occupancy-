@@ -1,100 +1,67 @@
---- a/src/pages/Dashboard.jsx
-+++ b/src/pages/Dashboard.jsx
-@@
- import TodayIcon  from '@mui/icons-material/Today';
- import SyncIcon   from '@mui/icons-material/Sync';
-+import PeopleIcon from '@mui/icons-material/People';
-+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
- 
-@@
--        {/* Top summary cards */}
--        <Box
--          display="flex"
--          alignItems="stretch"
--          sx={{ mb: 1, width: '100vw%' }}
--        >
--          <Box sx={{ flex: 1 }}>
--            <SummaryCard
--              title="Today’s Headcount"
--              total={todayTot}
--              stats={[
--                { label: 'Employees',   value: todayEmp },
--                { label: 'Contractors', value: todayCont }
--              ]}
--              icon={<TodayIcon />}
--              sx={{ height: 190, border: '2px solid #FFC107' }}
--            />
--          </Box>
--
--          <Divider flexItem sx={{ mx: 1 }} />
--
--          <Box sx={{ flex: 1 }}>
--            <SummaryCard
--              title="Realtime Headcount"
--              total={realtimeTot}
--              stats={[
--                { label: 'Employees',   value: realtimeEmp },
--                { label: 'Contractors', value: realtimeCont }
--              ]}
--              icon={<SyncIcon />}
--              sx={{ height: 190, border: '2px solid #FFC107' }}
--            />
--          </Box>
--        </Box>
-+        {/* Top six summary cards */}
-+        <Box display="flex" flexWrap="wrap" gap={1} mb={1}>
-+          {[
-+            {
-+              title: "Today's Total Headcount",
-+              value: todayTot,
-+              icon: <TodayIcon />,
-+              color: '#FFC107'
-+            },
-+            {
-+              title: "Today's Employees Count",
-+              value: todayEmp,
-+              icon: <PeopleIcon />,
-+              color: '#4caf50'
-+            },
-+            {
-+              title: "Today's Contractors Count",
-+              value: todayCont,
-+              icon: <BusinessCenterIcon />,
-+              color: '#2196f3'
-+            },
-+            {
-+              title: "Realtime Headcount",
-+              value: realtimeTot,
-+              icon: <SyncIcon />,
-+              color: '#FF5722'
-+            },
-+            {
-+              title: "Realtime Employees Count",
-+              value: realtimeEmp,
-+              icon: <PeopleIcon />,
-+              color: '#00BCD4'
-+            },
-+            {
-+              title: "Realtime Contractors Count",
-+              value: realtimeCont,
-+              icon: <BusinessCenterIcon />,
-+              color: '#9C27B0'
-+            }
-+          ].map(card => (
-+            <Box key={card.title} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
-+              <SummaryCard
-+                title={card.title}
-+                total={card.value}
-+                stats={[]}
-+                icon={card.icon}
-+                sx={{
-+                  height: 140,
-+                  border: `2px solid ${card.color}`
-+                }}
-+              />
-+            </Box>
-+          ))}
-+        </Box>
+//C:\Users\W0024618\Desktop\laca-occupancy-frontend\public\index.html
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,shrink-to-fit=no"
+    />
+    <meta name="theme-color" content="#000000" />
+    <title>Western Union • LACA Occupancy Dashboard</title>
+    <!-- Favicon (optional) -->
+    <link rel="icon" href="%PUBLIC_URL%/assets/logo.png" />
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!--
+      If you ever need to insert a script before React mounts,
+      you can do it here.
+    -->
+  </body>
+</html>
+
+
+
+
+
+// src/routes/AppRoutes.jsx
+
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Dashboard                from '../pages/Dashboard';
+import RealtimeDetails          from '../pages/RealtimeDetails';
+import History                  from '../pages/History';
+import PartitionDetail          from '../pages/PartitionDetail';
+import PartitionDetailDetails   from '../pages/PartitionDetailDetails';
+
+export default function AppRoutes() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Home dashboard */}
+        <Route path="/" element={<Dashboard />} />
+
+        {/* History (global) */}
+        <Route path="/history" element={<History />} />
+
+        {/* Partition‐scoped history */}
+        <Route path="/partition/:partition/history" element={<History />} />
+
+        {/* Real-time details */}
+        <Route path="/realtime/:partition" element={<RealtimeDetails />} />
+
+        {/* Partition overview */}
+        <Route path="/partition/:partition" element={<PartitionDetail />} />
+
+        {/* Partition details sub-page */}
+        <Route path="/partition/:partition/details" element={<PartitionDetailDetails />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
 
 
 
@@ -103,15 +70,174 @@
 
 
 
-Below files are look good i want to update onlt top two cards 
-Today’s Headcountand and Realtime Headcount
-make a 6 cards and 
-display result like
-Todays Total Headcount  |  Todays Employees Count  | Todays Contractor Count     | Realtime Headcount  | Realtime Employees Count |  Realtime Contractors Count
-    3                              1                        2
 
-Like this and add standerd colourful relavant icons above ,
-update only necessary snippets and give me updated files carefully .
+// src/theme/westernUnionTheme.js
+import { createTheme } from '@mui/material/styles';
+
+const westernUnionTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    background: {
+      default: '#000000',
+      paper:   '#1c1c1c'
+    },
+    primary: {
+      main: '#FFC107',
+      contrastText: '#000000'
+    },
+    secondary: {
+      main: '#FFFFFF',
+      contrastText: '#000000'
+    },
+    text: {
+      primary:   '#FFFFFF',
+      secondary: 'rgba(255,255,255,0.7)'
+    },
+    divider: 'rgba(255,255,255,0.2)'
+  },
+
+  typography: {
+    fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
+    // Card titles
+    subtitle1: { fontWeight: 700, color: '#FFC107' },
+    // Totals (variant h4 in SummaryCard)
+    h4: { color: '#FFC107', fontWeight: 'bold' },
+    // Stat values (variant h6)
+    h6: { color: '#FFC107', fontWeight: 700 },
+    // Stat labels (variant caption)
+    caption: { color: '#FFC107', fontWeight: 700 },
+
+    // You can leave other variants untouched
+    body1:   { color: '#FFFFFF' },
+    body2:   { color: 'rgba(255,255,255,0.7)' }
+  },
+
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        html: {
+          height: '100%'
+        },
+        body: {
+          margin: 0,
+          padding: 0,
+          height: '100%',
+          background: 'linear-gradient(135deg, #000000 30%, #2c0000 60%, #000000 100%)',
+          backgroundAttachment: 'fixed',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: 'cover',
+          animation: 'gradientSpin 20s ease infinite',
+          overflowX: 'hidden'
+        },
+        '@keyframes gradientSpin': {
+          '0%':   { backgroundPosition: '0% 50%' },
+          '50%':  { backgroundPosition: '100% 50%' },
+          '100%': { backgroundPosition: '0% 50%' }
+        }
+      }
+    },
+
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          borderRadius: 4
+        },
+        contained: {
+          backgroundColor: '#FFC107',
+          color: '#000000',
+          '&:hover': {
+            backgroundColor: '#e6ac00'
+          }
+        }
+      }
+    },
+
+    MuiDivider: {
+      styleOverrides: {
+        root: {
+          backgroundColor: 'rgba(255,255,255,0.2)'
+        }
+      }
+    },
+
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: {
+          backgroundColor: '#333',
+          color: '#FFF'
+        }
+      }
+    }
+
+    // Note: We no longer override MuiCard so your SummaryCard and ChartCard
+    // backgrounds, borders and hover effects come from their own `sx` props.
+  }
+});
+
+export default westernUnionTheme;
+
+
+
+
+
+
+
+
+// src/index.js
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import App from './App';
+import reportWebVitals from './reportWebVitals';
+import westernUnionTheme from './theme/westernUnionTheme';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <ThemeProvider theme={westernUnionTheme}>
+    <CssBaseline />
+    <App />
+  </ThemeProvider>
+);
+
+reportWebVitals();
+
+
+
+
+
+
+
+// src/reportWebVitals.js
+
+const reportWebVitals = onPerfEntry => {
+  if (onPerfEntry && onPerfEntry instanceof Function) {
+    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+      getCLS(onPerfEntry);
+      getFID(onPerfEntry);
+      getFCP(onPerfEntry);
+      getLCP(onPerfEntry);
+      getTTFB(onPerfEntry);
+    });
+  }
+};
+
+export default reportWebVitals;
+
+
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\App.jsx
+
+import React from 'react';
+import AppRoutes from './routes/AppRoutes';
+
+export default function App() {
+  return <AppRoutes />;
+}
+
+
+
 
 
 // src/pages/Dashboard.jsx
@@ -134,6 +260,9 @@ import {
 
 import TodayIcon  from '@mui/icons-material/Today';
 import SyncIcon   from '@mui/icons-material/Sync';
+
+import PeopleIcon from '@mui/icons-material/People';
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 
 // Flags
 import CostaRicaFlag  from '../assets/flags/costa-rica.png';
@@ -212,48 +341,67 @@ export default function Dashboard() {
           px: '20px',        // ← exactly 20px padding both sides
         }}
       >
-        {/* Top summary cards */}
-        <Box
-          display="flex"
-          alignItems="stretch"
-          sx={{ mb: 1, width: '100vw%' }}
-        >
-          <Box sx={{ flex: 1 }}>
-            <SummaryCard
-              title="Today’s Headcount"
-              total={todayTot}
-              stats={[
-                { label: 'Employees',   value: todayEmp },
-                { label: 'Contractors', value: todayCont }
-              ]}
-              // sx={{ height: 190, border: '2px solid #FFC107' }}
-                          icon={<TodayIcon />}
-            sx={{ height: 190, border: '2px solid #FFC107' }}
-            />
-          </Box>
 
-          <Divider
-            // orientation="vertical"
-            flexItem
-            sx={{ mx: 1 }}
-          />
 
-          <Box sx={{ flex: 1 }}>
-            <SummaryCard
-              title="Realtime Headcount"
-              total={realtimeTot}
-              stats={[
-                { label: 'Employees',   value: realtimeEmp },
-                { label: 'Contractors', value: realtimeCont }
-              ]}
-              // sx={{ height: 190, border: '2px solid #FFC107' }}
-
-           icon={<SyncIcon />}
-            sx={{ height: 190, border: '2px solid #FFC107' }}
-
-            />
-          </Box>
+        {/* Top six summary cards */}
+        <Box display="flex" flexWrap="wrap" gap={1} mb={1}>
+          {[
+            {
+              title: "Today's Total Headcount",
+              value: todayTot,
+              icon: <TodayIcon />,
+             color: '#FFC107'
+            },
+            {
+              title: "Today's Employees Count",
+              value: todayEmp,
+              icon: <PeopleIcon />,
+              color: '#4caf50'
+            },
+            {
+              title: "Today's Contractors Count",
+              value: todayCont,
+              icon: <BusinessCenterIcon />,
+              color: '#2196f3'
+            },
+            {
+              title: "Realtime Headcount",
+              value: realtimeTot,
+              icon: <SyncIcon />,
+              color: '#FF5722'
+            },
+            {
+              title: "Realtime Employees Count",
+             value: realtimeEmp,
+              icon: <PeopleIcon />,
+              color: '#00BCD4'
+            },
+            {
+              title: "Realtime Contractors Count",
+              value: realtimeCont,
+              icon: <BusinessCenterIcon />,
+              color: '#9C27B0'
+            }
+          ].map(card => (
+            <Box key={card.title} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+              <SummaryCard
+                title={card.title}
+                total={card.value}
+                stats={[]}
+                icon={card.icon}
+                sx={{
+                  height: 140,
+                  border: `2px solid ${card.color}`
+                }}
+              />
+            </Box>
+          ))}
         </Box>
+
+
+
+
+
 
         {/* Partition cards */}
         <Box mt={4} sx={{ width: '100vw%', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -443,6 +591,399 @@ export default function Dashboard() {
 
 
 
+// src/components/ChartCard.jsx
+import React, { useState } from 'react';
+import { Card, CardContent, Typography, Box } from '@mui/material';
+import {
+  AreaChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
+  Brush,
+  LabelList,
+  ReferenceLine,
+} from 'recharts';
+import dayjs from 'dayjs';
+
+export default function ChartCard({
+  title,
+  data = [],
+  dataKey = 'value',
+  chartHeight = 350,
+  colors = { head: '#FFC107', cap: '#B0BEC5' },
+  animateDuration = 800,
+  showCrosshair = true,
+  timeFormat = 'HH:mm:ss',
+}) {
+  const [hidden, setHidden] = useState({});
+  const [activeIndex, setActiveIndex] = useState(null);
+
+  if (!Array.isArray(data) || !data.length) {
+    return (
+      <Card sx={{ mb: 2 }}>
+        <CardContent sx={{ textAlign: 'center' }}>
+          <Typography variant="h6">{title}</Typography>
+          <Typography variant="body2">No data to display.</Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const hasCapacity = data[0].Capacity != null;
+  const handleLegendClick = o => {
+    const { dataKey } = o;
+    setHidden(prev => ({ ...prev, [dataKey]: !prev[dataKey] }));
+  };
+
+  return (
+    <Card sx={{ mb: 2 }}>
+      <CardContent>
+        {/* Chart title */}
+        <Typography variant="h6" gutterBottom sx={{ color: colors.head }}>
+          {title}
+        </Typography>
+
+        {/* Chart container */}
+        <Box sx={{ width: '100%', height: chartHeight }}>
+          <ResponsiveContainer>
+            <AreaChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+              <defs>
+                <linearGradient id="colorHead" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="50%" stopColor={colors.head} stopOpacity={0.4} />
+                  <stop offset="95%" stopColor={colors.head} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+
+              {/* Grid */}
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+
+              {/* Crosshair vertical line */}
+              {showCrosshair && activeIndex != null && data[activeIndex] && (
+                <ReferenceLine
+                  x={data[activeIndex].name}
+                  stroke={colors.head}
+                  strokeOpacity={0.5}
+                />
+              )}
+
+              <XAxis
+                dataKey="name"
+                tick={{ fill: '#FFF', fontWeight: 600 }}
+                tickFormatter={t => {
+                  // if timestamp-like, format; else just return
+                  return typeof t === 'number'
+                    ? dayjs(t).format(timeFormat)
+                    : t;
+                }}
+                label={{
+                  value: 'Time',
+                  position: 'insideBottomRight',
+                  offset: -10,
+                  fill: '#FFF',
+                  fontWeight: 600
+                }}
+              />
+
+              <YAxis
+                tick={{ fill: '#FFF', fontWeight: 600 }}
+                label={{
+                  value: 'Count',
+                  angle: -90,
+                  position: 'insideLeft',
+                  fill: '#FFF',
+                  fontWeight: 600
+                }}
+              />
+
+              {/* Tooltip & Legend */}
+              <Tooltip
+                contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}` }}
+                cursor={showCrosshair}
+                isAnimationActive={false}
+                onMouseMove={o => setActiveIndex(o && o.activeTooltipIndex)}
+                labelStyle={{ color: colors.head, fontWeight: 600 }}
+                formatter={(value, name) => {
+                  if (name === 'Headcount' && hasCapacity) {
+                    const cap = data.find(d => d.Headcount === value)?.Capacity || 0;
+                    const pct = cap ? ((value / cap) * 100).toFixed(1) : '0.0';
+                    return [`${value} (${pct}%)`, name];
+                  }
+                  return [value, name];
+                }}
+              />
+              <Legend wrapperStyle={{ color: '#FFF' }} onClick={handleLegendClick} />
+
+              {/* Brush for zooming/panning */}
+              <Brush
+                dataKey="name"
+                height={30}
+                stroke={colors.head}
+                travellerWidth={10}
+                updateId={data.length} // reset on data change
+              />
+
+              {/* Capacity area */}
+              {hasCapacity && !hidden.Capacity && (
+                <Area
+                  type="monotone"
+                  dataKey="Capacity"
+                  name="Capacity"
+                  stroke={colors.cap}
+                  fill={`${colors.cap}33`}
+                  dot={false}
+                >
+                  <LabelList
+                    dataKey="Capacity"
+                    position="top"
+                    style={{ fill: colors.cap, fontSize: 10, fontWeight: 600 }}
+                  />
+                </Area>
+              )}
+
+              {/* Headcount area */}
+              {!hidden.Headcount && (
+                <Area
+                  type="monotone"
+                  dataKey={hasCapacity ? 'Headcount' : dataKey}
+                  name={hasCapacity ? 'Headcount' : dataKey}
+                  stroke={colors.head}
+                  fill="url(#colorHead)"
+                  dot={false}
+                  isAnimationActive
+                  animationDuration={animateDuration}
+                >
+                  <LabelList
+                    dataKey={hasCapacity ? 'Headcount' : dataKey}
+                    position="top"
+                    style={{ fill: '#FFF', fontSize: 12, fontWeight: 600 }}
+                  />
+                </Area>
+              )}
+
+              {/* Overlay line for crisp “spark” */}
+              {!hidden.Headcount && (
+                <Line
+                  type="monotone"
+                  dataKey={hasCapacity ? 'Headcount' : dataKey}
+                  stroke={colors.head}
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive
+                  animationDuration={animateDuration}
+                  activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
+                />
+              )}
+            </AreaChart>
+          </ResponsiveContainer>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+// src/components/Footer.jsx
+
+import React from 'react';
+import { Box, Typography } from '@mui/material';
+
+export default function Footer() {
+   return (
+     <Box component="footer" p={1} textAlign="center">
+
+      <Typography variant="body2" color="textSecondary">
+        © {new Date().getFullYear()} Western Union. All rights reserved.
+      </Typography>
+    </Box>
+  );
+}
+
+
+
+
+
+
+// src/components/Header.jsx
+
+import React from 'react';
+import {
+  AppBar,
+  Toolbar,
+  Box,
+  Typography,
+  Select,
+  MenuItem,
+  IconButton
+} from '@mui/material';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+import HomeIcon    from '@mui/icons-material/Home';
+import HistoryIcon from '@mui/icons-material/History';
+import ListAltIcon from '@mui/icons-material/ListAlt';
+
+import WuLogo from '../assets/wu-logo.png';
+import CostaRicaFlag from '../assets/flags/costa-rica.png';
+import ArgentinaFlag  from '../assets/flags/argentina.png';
+import MexicoFlag     from '../assets/flags/mexico.png';
+import PeruFlag       from '../assets/flags/peru.png';
+import BrazilFlag     from '../assets/flags/brazil.png';
+import PanamaFlag     from '../assets/flags/panama.png';
+import LacaFlag       from '../assets/laca-flag.png';
+import { partitionList } from '../services/occupancy.service';
+
+export default function Header() {
+  const navigate = useNavigate();
+  const loc = useLocation();
+
+  const parts = loc.pathname.split('/').filter(Boolean);
+  const isPartitionPath = parts[0] === 'partition' && Boolean(parts[1]);
+  const currentPartition = isPartitionPath ? decodeURIComponent(parts[1]) : '';
+  const suffixSegments = isPartitionPath
+    ? parts.slice(2)
+    : parts[0] === 'history'
+      ? ['history']
+      : [];
+
+  const flagMap = {
+    'CR.Costa Rica Partition': CostaRicaFlag,
+    'AR.Cordoba':               ArgentinaFlag,
+    'MX.Mexico City':           MexicoFlag,
+    'PE.Lima':                  PeruFlag,
+    'BR.Sao Paulo':             BrazilFlag,
+    'PA.Panama City':           PanamaFlag,
+  };
+  const selectedFlag = flagMap[currentPartition] || LacaFlag;
+
+  const makePartitionPath = (suffix) => {
+    const base = `/partition/${encodeURIComponent(currentPartition)}`;
+    return suffix ? `${base}/${suffix}` : base;
+  };
+
+  const handlePartitionChange = (newPartition) => {
+    if (!newPartition) return navigate('/');
+    const base = `/partition/${encodeURIComponent(newPartition)}`;
+    const full = suffixSegments.length
+      ? `${base}/${suffixSegments.join('/')}`
+      : base;
+    navigate(full);
+  };
+
+  return (
+    <AppBar position="static" color="primary" sx={{ mb: 2 }}>
+      <Toolbar sx={{ justifyContent: 'space-between' }}>
+
+        {/* Left side: Logo, Title, Navigation Icons */}
+        <Box display="flex" alignItems="center" sx={{ flexGrow: 1 }}>
+          <Box component="img" src={WuLogo} alt="WU Logo" sx={{ height: 36, mr: 2 }} />
+
+          <Typography variant="h6" sx={{ fontWeight: 600, mr: 3 }}>
+            Western Union – LACA
+            {currentPartition && (
+              <> • {currentPartition.replace('CR.Costa Rica Partition','Costa Rica')}</>
+            )}
+          </Typography>
+
+          {/* Dashboard Icon (green) */}
+          <IconButton
+            size="large"
+            color="inherit"
+            onClick={() => {
+              const target = currentPartition
+                ? `/partition/${encodeURIComponent(currentPartition)}`
+                : '/';
+              navigate(target);
+            }}
+          >
+            <HomeIcon sx={{ color: '#4caf50' }} />
+          </IconButton>
+
+          {/* History Icon (orange) */}
+          <IconButton
+            size="large"
+            color="inherit"
+            onClick={() => {
+              const target = currentPartition
+                ? makePartitionPath('history')
+                : '/history';
+              navigate(target);
+            }}
+          >
+            <HistoryIcon sx={{ color: '#F88379' }} />
+          </IconButton>
+
+          {/* Details Icon (blue) */}
+          {currentPartition && (
+            <IconButton
+              size="large"
+              color="inherit"
+              onClick={() => navigate(makePartitionPath('details'))}
+            >
+              <ListAltIcon sx={{ color: '#2196f3' }} />
+            </IconButton>
+          )}
+        </Box>
+
+        {/* Right side: Partition selector + Flag */}
+        <Box display="flex" alignItems="center">
+          <Select
+            size="small"
+            value={currentPartition}
+            displayEmpty
+            onChange={e => handlePartitionChange(e.target.value)}
+            sx={{ bgcolor: 'background.paper', mr: 2 }}
+          >
+            <MenuItem value="">— Select Partition —</MenuItem>
+            {partitionList.map(p => (
+              <MenuItem key={p} value={p}>
+                {p.replace('Partition', '')}
+              </MenuItem>
+            ))}
+          </Select>
+          <Box component="img" src={selectedFlag} alt="Flag" sx={{ height: 50 }} />
+        </Box>
+      </Toolbar>
+    </AppBar>
+  );
+}
+
+
+
+
+
+
+
+//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\LoadingSpinner.jsx
+
+import React from 'react';
+import { CircularProgress, Box } from '@mui/material';
+
+export default function LoadingSpinner() {
+  return (
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      height="60vh"
+    >
+      <CircularProgress />
+    </Box>
+  );
+}
+
+
+
+
+
+
+
+
+
 
 
 //C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\SummaryCard.jsx
@@ -545,4 +1086,33 @@ export default function SummaryCard({
     </Card>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
