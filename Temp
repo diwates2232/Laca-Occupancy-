@@ -1,3 +1,90 @@
+// at the top of Dashboard.jsx
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
+} from 'recharts';
+
+
+
+
+
+
+{/* Live totals chart */}
+<Box mt={4} sx={{ width: '100%', p: 2, border: '1px solid #FFC107', borderRadius: 2 }}>
+  <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+    <Typography variant="h6" sx={{ fontWeight: 600, color: '#FFC107' }}>
+      Live Totals by Partition
+    </Typography>
+    <Typography variant="body2" color="textSecondary">
+      Last updated: {lastUpdate}
+    </Typography>
+  </Box>
+
+  {loading ? (
+    <Skeleton variant="rectangular" width="100%" height={360} />
+  ) : (
+    <ResponsiveContainer width="100%" height={400}>
+      <BarChart
+        data={partitions
+          .sort((a,b) => b.total - a.total)
+          .map(p => ({
+            name: displayNameMap[p.name] || p.name.replace(' Partition',''),
+            Employee: p.Employee,
+            Contractor: p.Contractor,
+            TempBadge: p.TempBadge,
+          }))
+        }
+        margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.2)" />
+        <XAxis
+          dataKey="name"
+          tick={{ fill: '#FFF' }}
+          interval={0}
+          angle={-30}
+          textAnchor="end"
+        />
+        <YAxis tick={{ fill: '#FFF' }} />
+        <Tooltip
+          contentStyle={{ backgroundColor: '#000', border: '1px solid #FFC107' }}
+          itemStyle={{ color: '#FFF' }}
+          labelStyle={{ color: '#FFC107' }}
+        />
+        <Legend wrapperStyle={{ color: '#FFF' }} />
+
+        <Bar dataKey="Employee" stackId="a" name="Employees" fill={colorsMap[p.name]?.[2] || '#81C784'} />
+        <Bar dataKey="Contractor" stackId="a" name="Contractors" fill={colorsMap[p.name]?.[3] || '#64B5F6'} />
+        <Bar
+          dataKey="TempBadge"
+          stackId="a"
+          name="Temp Badge"
+          fill={colorsMap[p.name]?.[4] || '#FFB74D'}
+          isAnimationActive={false}
+        />
+      </BarChart>
+    </ResponsiveContainer>
+  )}
+</Box>
+
+
+
+
+
+
+import ChartCard from '../components/ChartCard';
+
+
+
+
+
+
+
 Now Read below both files carefully and start imrroving partation by chart 
 
 // src/pages/Dashboard.jsx
