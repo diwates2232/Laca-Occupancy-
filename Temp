@@ -1,3 +1,87 @@
+// Build breakdown by floor from details list
+const floorBreakdown = useMemo(() => {
+  const map = {};
+  details.forEach(({ floor, DirectionType }) => {
+    if (!map[floor]) {
+      map[floor] = { Employees: 0, Contractors: 0, TempBadge: 0 };
+    }
+    if (DirectionType === 'Employee') {
+      map[floor].Employees++;
+    } else if (DirectionType === 'Contractor') {
+      map[floor].Contractors++;
+    } else {
+      map[floor].TempBadge++;
+    }
+  });
+  return map;
+}, [details]);
+
+
+
+
+
+
+-            <ChartCard
+-              title=""
+-              chartHeight={320}
+-              data={Object.entries(floorBreakdown).map(([floor, br]) => ({
+-                name: floor.trim(),
+-                value: br.Employees + br.Contractors + br.TempBadge,
+-                breakdown: {
+-                  Employees:   br.Employees,
+-                  Contractors: br.Contractors,
+-                  'Temp Badge': br.TempBadge
+-                }
+-              }))}
+-              axisProps={{
+-                xAxis: {
+-                  label: { value: 'Floor', position: 'insideBottomRight', offset: -10, fill: '#FFF' },
+-                  tick:  { fill: '#FFF', fontWeight: 600 }
+-                },
+-                yAxis: {
+-                  label: { value: 'Count', angle: -90, position: 'insideLeft', fill: '#FFF' },
+-                  tick:  { fill: '#FFF', fontWeight: 600 }
+-                }
+-              }}
+-            />
++            <ChartCard
++              title=""
++              chartHeight={320}
++              data={Object.entries(live.floors).map(([floor, fd]) => ({
++                name: floor.trim(),
++                value: fd.total != null
++                  // use a provided total if present
++                  ? fd.total
++                  // else sum the parts
++                  : (fd.Employee || 0) + (fd.Contractor || 0) + (fd.TempBadge || 0),
++                breakdown: {
++                  Employees:   fd.Employee   || 0,
++                  Contractors: fd.Contractor || 0,
++                  'Temp Badge': fd.TempBadge || 0
++                }
++              }))}
++              axisProps={{
++                xAxis: {
++                  label:  { value: 'Floor', position: 'insideBottomRight', offset: -10, fill: '#FFF' },
++                  tick:   { fill: '#FFF', fontWeight: 600 }
++                },
++                yAxis: {
++                  label:  { value: 'Count', angle: -90, position: 'insideLeft', fill: '#FFF' },
++                  tick:   { fill: '#FFF', fontWeight: 600 }
++                }
++              }}
++            />
+
+
+
+
+
+
+
+
+
+
+
 Check Both file carefully now we got result like 
 Employee 0
 Contractor 0
