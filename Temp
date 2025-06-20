@@ -1,3 +1,72 @@
+<ChartCard
+  title=""
+- data={Object.entries(live.floors).map(([floor, cnt]) => ({ name: floor.trim(), value: cnt }))}
++ data={Object.entries(live.floors).map(([floor, floorData]) => {
++   // sum or use total if provided
++   const total =
++     floorData.total != null
++       ? floorData.total
++       : (floorData.Employee || 0)
++         + (floorData.Contractor || 0)
++         + (floorData.TempBadge || 0);
++   return {
++     name: floor.trim(),
++     value: total,
++     breakdown: {
++       Employees:   floorData.Employee   || 0,
++       Contractors: floorData.Contractor || 0,
++       'Temp Badge': floorData.TempBadge || 0
++     }
++   };
++ })}
+  chartHeight={320}
++ axisProps={{
++   xAxis: {
++     label: { value: 'Floor', position: 'insideBottomRight', offset: -10, fill: '#FFF' },
++     tick:  { fill: '#FFF', fontWeight: 600 }
++   },
++   yAxis: {
++     label: { value: 'Count', angle: -90, position: 'insideLeft', fill: '#FFF' },
++     tick:  { fill: '#FFF', fontWeight: 600 }
++   }
++ }}
+/>
+
+
+
+
+
+
+
+const { breakdown = {}, name } = payload[0].payload;
+
+
+<Typography variant="subtitle2" sx={{ color: colors.head, mb: 1 }}>
+  {name}
+</Typography>
+{Object.entries(breakdown).map(([key, val]) => (
+  <Typography key={key} variant="body2" sx={{ color: '#FFF' }}>
+    {key}: {val}
+  </Typography>
+))}
+
+
+
+
+<ChartCard
+  title=""
+  data={Object.entries(live.floors).map(([floor, cnt]) => ({ name: floor.trim(), value: cnt }))}
+  chartHeight={320}
+/>
+
+
+
+
+
+
+
+
+
 Omce check fully file and then Update chart section step by step
 
 
