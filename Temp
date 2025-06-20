@@ -1,3 +1,111 @@
+{/* Top six summary cards with improved layout */}
+<Box className="dishes box-container" mb={3}>
+  {[
+    {
+      title: "Today's Total Headcount",
+      value: todayTot,
+      icon: <TodayIcon sx={{ color: '#FFC107' }} />,
+    },
+    {
+      title: "Today's Employees Count",
+      value: todayEmp,
+      icon: <PeopleIcon sx={{ color: '#4CAF50' }} />,
+    },
+    {
+      title: "Today's Contractors Count",
+      value: todayCont,
+      icon: <BusinessCenterIcon sx={{ color: '#2196F3' }} />,
+    },
+    {
+      title: "Realtime Headcount",
+      value: realtimeTot,
+      icon: <SyncIcon sx={{ color: '#FF5722' }} />,
+    },
+    {
+      title: "Realtime Employees Count",
+      value: realtimeEmp,
+      icon: <PeopleIcon sx={{ color: '#00BCD4' }} />,
+    },
+    {
+      title: "Realtime Contractors Count",
+      value: realtimeCont,
+      icon: <BusinessCenterIcon sx={{ color: '#9C27B0' }} />,
+    }
+  ].map((card, index) => (
+    <Box key={index} className="box" sx={{ minHeight: '140px' }}>
+      <SummaryCard
+        title={card.title}
+        total={card.value}
+        icon={card.icon}
+        stats={[]}
+        sx={{
+          height: '100%',
+          backgroundColor: 'var(--card-bg, #1e1e2f)', // optional override
+          color: '#fff',
+        }}
+      />
+    </Box>
+  ))}
+</Box>
+
+
+
+
+
+
+export default function SummaryCard({ title, total, stats = [], icon, sx = {} }) {
+  return (
+    <Card
+      sx={{
+        px: 2,
+        py: 2,
+        height: '100%',
+        boxShadow: 'var(--box-shadow)',
+        borderRadius: '.5rem',
+        backgroundColor: 'var(--card-bg, #1e1e2f)',
+        ...sx
+      }}
+    >
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Box>
+          <Typography variant="subtitle2" color="textSecondary" fontWeight="bold">
+            {title}
+          </Typography>
+          <Typography variant="h5" fontWeight="bold">
+            {total}
+          </Typography>
+        </Box>
+        <Box>
+          {icon}
+        </Box>
+      </Box>
+    </Card>
+  );
+}
+
+
+
+
+
+/* Custom height and hover (optional) */
+.box {
+  min-height: 160px;
+  transition: transform 0.2s;
+}
+.box:hover {
+  transform: translateY(-4px);
+}
+
+
+
+
+
+
+
+
+
+
+
 /* src/index.css */
 
 /* 1. Font import */
