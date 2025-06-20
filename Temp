@@ -1,5 +1,6 @@
+Read below snippet carefully 
 
-        {/* Top six summary cards */}
+{/* Top six summary cards */}
      <Box display="flex" flexWrap="wrap" gap={1} mb={1}>
   {[
     {
@@ -42,9 +43,9 @@
   ].map(card => (
     <Box key={card.title} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
       <SummaryCard
-        title={card.title}
-        total={card.value}
-        stats={[]}
+        title={card.title}    ----------Add Font size here 
+        total={card.value} --------- -same add font size
+        stats={[]}           ---------same font size here
         icon={card.icon}
         sx={{
           height: 140,
@@ -54,3 +55,8 @@
     </Box>
   ))}
 </Box>
+
+
+
+
+
