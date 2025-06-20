@@ -1,3 +1,50 @@
+-              <Tooltip
+-                contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}` }}
+-                cursor={showCrosshair}
+-                isAnimationActive={false}
+-                onMouseMove={o => setActiveIndex(o && o.activeTooltipIndex)}
+-                labelStyle={{ color: colors.head, fontWeight: 600 }}
+-                formatter={(value, name) => {
+-                  if (name === 'Headcount' && hasCapacity) {
+-                    const cap = data.find(d => d.Headcount === value)?.Capacity || 0;
+-                    const pct = cap ? ((value / cap) * 100).toFixed(1) : '0.0';
+-                    return [`${value} (${pct}%)`, name];
+-                  }
+-                  return [value, name];
+-                }}
+-              />
++              <Tooltip
++                contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}`, padding: '1rem' }}
++                cursor={showCrosshair}
++                isAnimationActive={false}
++                onMouseMove={o => setActiveIndex(o && o.activeTooltipIndex)}
++                content={({ active, payload, label }) => {
++                  if (!active || !payload || !payload.length) return null;
++                  // payload[0].payload is the original data object
++                  const { breakdown = {}, name } = payload[0].payload;
++                  return (
++                    <Box sx={{ color: '#FFF' }}>
++                      <Typography variant="subtitle2" sx={{ color: colors.head, mb: 1 }}>
++                        {name}
++                      </Typography>
++                      {Object.entries(breakdown).map(([key, val]) => (
++                        <Typography key={key} variant="body2">
++                          {key}: {val}
++                        </Typography>
++                      ))}
++                    </Box>
++                  );
++                }}
++              />
+
+
+
+
+
+
+
+
+
 Read this section  carefulluy ,Currently When move cursor on partation name it display Partation name & Value 
 expected is display like 
 ex-Costa Rica 
