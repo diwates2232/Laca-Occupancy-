@@ -1,4 +1,68 @@
-           {/* Chart + See Details */}
+   // Load history …
+   }, [partition]);
+
++  // Build breakdown by floor from details list
++  const floorBreakdown = useMemo(() => {
++    const map = {};
++    details.forEach(({ floor, DirectionType }) => {
++      if (!map[floor]) {
++        map[floor] = { Employees: 0, Contractors: 0, TempBadge: 0 };
++      }
++      // assume DirectionType or another field tells role:
++      // if you have a badgeType or similar, adjust below.
++      // Here I'm guessing:
++      if (DirectionType === 'Employee') {
++        map[floor].Employees++;
++      } else if (DirectionType === 'Contractor') {
++        map[floor].Contractors++;
++      } else {
++        map[floor].TempBadge++;
++      }
++    });
++    return map;
++  }, [details]);
+
+
+
+
+
+-            <ChartCard
+-              title=""
+-              data={Object.entries(live.floors).map(([floor, cnt]) => ({ name: floor.trim(), value: cnt }))}
+-              chartHeight={320}
++            <ChartCard
++              title=""
++              chartHeight={320}
++              data={Object.entries(floorBreakdown).map(([floor, br]) => ({
++                name: floor.trim(),
++                value: br.Employees + br.Contractors + br.TempBadge,
++                breakdown: {
++                  Employees:   br.Employees,
++                  Contractors: br.Contractors,
++                  'Temp Badge': br.TempBadge
++                }
++              }))}
++              axisProps={{
++                xAxis: {
++                  label: { value: 'Floor', position: 'insideBottomRight', offset: -10, fill: '#FFF' },
++                  tick:  { fill: '#FFF', fontWeight: 600 }
++                },
++                yAxis: {
++                  label: { value: 'Count', angle: -90, position: 'insideLeft', fill: '#FFF' },
++                  tick:  { fill: '#FFF', fontWeight: 600 }
++                }
++              }}
+
+
+
+
+
+
+
+
+
+
+{/* Chart + See Details */}
            <Box mb={4} sx={{ px: "20px", p:2, border: '2px solid #FFC107' }}>
              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                <Typography variant="h6">Live Floor Counts</Typography>
