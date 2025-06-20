@@ -1,3 +1,40 @@
+data={Object.entries(live.floors).map(([floor, cnt]) => ({
+  name: floor.trim(),
+  value: cnt
+}))}
+
+
+
+
+
+
+- data={Object.entries(live.floors).map(([floor, cnt]) => ({
+-   name: floor.trim(),
+-   value: cnt
+- }))}
++ data={Object.entries(live.floors).map(([floor, floorData]) => ({
++   name: floor.trim(),
++   value:   // pick whichever total you want charted; 
++             // either floorData.total or sum of its parts:
++            (floorData.total != null
++              ? floorData.total
++              : (floorData.Employee || 0)
++                + (floorData.Contractor || 0)
++                + (floorData.TempBadge || 0)),
++   breakdown: {
++     Employees:   floorData.Employee   || 0,
++     Contractors: floorData.Contractor || 0,
++     'Temp Badge': floorData.TempBadge || 0
++   }
++ }))}
+
+
+
+
+
+
+
+
 Update same here display
 Floor
 Employee 
