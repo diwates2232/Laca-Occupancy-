@@ -1,180 +1,34 @@
-< -- inside the Tooltip component -->
-- content={({ active, payload, label }) => {
--   if (!active || !payload || !payload.length) return null;
--   const { breakdown = {}, name } = payload[0].payload;
--   return (
--     <Box sx={{ color: '#FFF' }}>
--       <Typography variant="subtitle2" sx={{ color: colors.head, mb: 1 }}>
--         {name}
--       </Typography>
--       {Object.entries(breakdown).map(([key, val]) => (
--         <Typography key={key} variant="body2">
--           {key}: {val}
--         </Typography>
--       ))}
--     </Box>
--   );
-- }}
-+ content={({ active, payload }) => {
-+   if (!active || !payload || !payload.length) return null;
-+   const { breakdown = {}, name } = payload[0].payload;
-+   return (
-+     <Box
-+       sx={{
-+         backgroundColor: '#000',     // ensure black background
-+         border: `1px solid ${colors.head}`,
-+         padding: 1,
-+         borderRadius: 1,
-+       }}
-+     >
-+       <Typography variant="subtitle2" sx={{ color: colors.head, mb: 1 }}>
-+         {name}
-+       </Typography>
-+       {Object.entries(breakdown).map(([key, val]) => (
-+         <Typography key={key} variant="body2" sx={{ color: '#FFF' }}>
-+           {key}: {val}
-+         </Typography>
-+       ))}
-+     </Box>
-+   );
-+ }}
-
-
-
-
-
-
-
-
-import React, { useState } from 'react';
-+import React, { Fragment, useState } from 'react';
-
-
-
-
--              <Tooltip
--                contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}` }}
--                cursor={showCrosshair}
--                isAnimationActive={false}
--                onMouseMove={o => setActiveIndex(o && o.activeTooltipIndex)}
--                labelStyle={{ color: colors.head, fontWeight: 600 }}
--                formatter={(value, name) => {
--                  if (name === 'Headcount' && hasCapacity) {
--                    const cap = data.find(d => d.Headcount === value)?.Capacity || 0;
--                    const pct = cap ? ((value / cap) * 100).toFixed(1) : '0.0';
--                    return [`${value} (${pct}%)`, name];
--                  }
--                  return [value, name];
--                }}
--              />
-+              <Tooltip
-+                contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}`, padding: '1rem' }}
-+                cursor={showCrosshair}
-+                isAnimationActive={false}
-+                onMouseMove={o => setActiveIndex(o && o.activeTooltipIndex)}
-+                content={({ active, payload, label }) => {
-+                  if (!active || !payload || !payload.length) return null;
-+                  // payload[0].payload is the original data object
-+                  const { breakdown = {}, name } = payload[0].payload;
-+                  return (
-+                    <Box sx={{ color: '#FFF' }}>
-+                      <Typography variant="subtitle2" sx={{ color: colors.head, mb: 1 }}>
-+                        {name}
-+                      </Typography>
-+                      {Object.entries(breakdown).map(([key, val]) => (
-+                        <Typography key={key} variant="body2">
-+                          {key}: {val}
-+                        </Typography>
-+                      ))}
-+                    </Box>
-+                  );
-+                }}
-+              />
-
-
-
-
-
-
-
- <ChartCard
-   chartType="bar"
-   chartHeight={360}
--  data={partitions.map((p, i) => ({
--    name: displayNameMap[p.name] || p.name.replace(' Partition',''),
--    value: p.total,
--    fill: colorsMap[p.name]?.[0] || (i % 2 === 0 ? '#FFC107' : '#B0BEC5')
--  }))}
-+  data={partitions.map((p, i) => ({
-+    name: displayNameMap[p.name] || p.name.replace(' Partition',''),
-+    value: p.total,
-+    breakdown: {
-+      Employees: p.Employee,
-+      Contractors: p.Contractor,
-+      ...(p.TempBadge ? { 'Temp Badge': p.TempBadge } : {})
-+    },
-+    fill: colorsMap[p.name]?.[0] || (i % 2 === 0 ? '#FFC107' : '#B0BEC5')
-+  }))}
-
-
-
-
-
-
-
-
-
-
-
-
-
-Read this section  carefulluy ,Currently When move cursor on partation name it display Partation name & Value 
-expected is display like 
-ex-Costa Rica 
-Employee
+Update same here display
+Floor
+Employee 
 Contractor
-Temp bage 
-like 
-        {/* Live totals chart */}
-        <Box mt={4} sx={{ width: '100vw%' ,p:2, border: '1px solid #FFC107' }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" gutterBottom>
-              Live Totals by Partition
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-              Last updated: {lastUpdate}
-            </Typography>
+Temp badge 
+
+          {/* Chart + See Details */}
+          <Box mb={4} sx={{ px: "20px",p:2, border: '2px solid #FFC107'  }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+              <Typography variant="h6">Live Floor Counts</Typography>
+              <Typography variant="body2" color="textSecondary">
+                Last updated: {lastUpdate}
+              </Typography>
+            </Box>
+            <ChartCard
+              title=""
+              data={Object.entries(live.floors).map(([floor, cnt]) => ({ name: floor.trim(), value: cnt }))}
+              chartHeight={320}
+            />
+            <Box display="flex" justifyContent="flex-end" mt={1}>  
+  <Button
+  variant="contained"
+  size="small"
+  onClick={() =>
+    navigate(`/partition/${encodeURIComponent(partition)}/details`)
+  }
+>
+  See Details
+</Button>
+
+            </Box>
           </Box>
-
-        {loading ? (
-            <Skeleton variant="rectangular" width="100%" height={320} />
-          ) : (
-  <ChartCard
-    chartType="bar"                  // new prop
-    chartHeight={360}
-
-     data={partitions.map((p, i) => ({
-       name: displayNameMap[p.name] || p.name.replace(' Partition',''),
-       value: p.total,
-        fill: colorsMap[p.name]?.[0] || (i % 2 === 0 ? '#FFC107' : '#B0BEC5')
-     }))}
-
-
-
-    dataKey="value"
-    colors={{ head: '#FFC107', cap: '#B0BEC5' }}
-
-     // Pass in the live breakdown for Employees / Contractors / TempBadge
-     breakdown={{
-       Employee: realtimeEmp,
-       Contractor: realtimeCont,
-       TempBadge: partitions.reduce((sum,p)=>sum+p.TempBadge,0),
-     }}
-
-
-
-    sx={{ border: '2px solid #FFC107' }}
-  />
-          )}
-        </Box>
-      </Container>
+        </Container>
+      </Box>
