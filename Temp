@@ -1,3 +1,101 @@
+-import {
+-  BarChart,
+-  Bar,
+-  XAxis,
+-  YAxis,
+-  Tooltip,
+-  ResponsiveContainer,
+-  CartesianGrid,
+-  p,
+-  Legend,
+-} from 'recharts';
++import {
++  BarChart,
++  Bar,
++  XAxis,
++  YAxis,
++  Tooltip,
++  ResponsiveContainer,
++  CartesianGrid,
++  Legend,
++  Cell
++} from 'recharts';
+
+
+
+
+{/* Live totals chart */}
+<Box mt={4} sx={{ width: '100%', p: 2, border: '1px solid #FFC107', borderRadius: 2 }}>
+  <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+    <Typography variant="h6" sx={{ fontWeight: 600, color: '#FFC107' }}>
+      Live Totals by Partition
+    </Typography>
+    <Typography variant="body2" color="textSecondary">
+      Last updated: {lastUpdate}
+    </Typography>
+  </Box>
+
+  {loading ? (
+    <Skeleton variant="rectangular" width="100%" height={360} />
+  ) : (
+    <ResponsiveContainer width="100%" height={400}>
+      {/* 1) Precompute the data array */}
+      {(() => {
+        const chartData = partitions
+          .sort((a, b) => b.total - a.total)
+          .map((p) => ({
+            name: displayNameMap[p.name] || p.name.replace(' Partition',''),
+            Employee: p.Employee,
+            Contractor: p.Contractor,
+            TempBadge: p.TempBadge,
+            colors: colorsMap[p.name] || ['#81C784','#64B5F6','#FFB74D']
+          }));
+        return (
+          <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.2)" />
+            <XAxis
+              dataKey="name"
+              tick={{ fill: '#FFF' }}
+              angle={-30}
+              textAnchor="end"
+            />
+            <YAxis tick={{ fill: '#FFF' }} />
+            <Tooltip
+              contentStyle={{ backgroundColor: '#000', border: '1px solid #FFC107' }}
+              itemStyle={{ color: '#FFF' }}
+              labelStyle={{ color: '#FFC107' }}
+            />
+            <Legend wrapperStyle={{ color: '#FFF' }} />
+
+            {/* 2) Stacked bars for each category */}
+            <Bar dataKey="Employee" stackId="a" name="Employees" >
+              {chartData.map((entry, idx) => (
+                <Cell key={`cell-emp-${idx}`} fill={entry.colors[2]} />
+              ))}
+            </Bar>
+            <Bar dataKey="Contractor" stackId="a" name="Contractors">
+              {chartData.map((entry, idx) => (
+                <Cell key={`cell-cont-${idx}`} fill={entry.colors[3]} />
+              ))}
+            </Bar>
+            <Bar dataKey="TempBadge" stackId="a" name="Temp Badge">
+              {chartData.map((entry, idx) => (
+                <Cell key={`cell-temp-${idx}`} fill={entry.colors[4] || '#FFB74D'} />
+              ))}
+            </Bar>
+          </BarChart>
+        );
+      })()}
+    </ResponsiveContainer>
+  )}
+</Box>
+
+
+
+
+
+
+
 ERROR in ./src/pages/Dashboard.jsx 862:52-58
 export 'p' (imported as 'p') was not found in 'recharts' (possible exports: Area, AreaChart, Bar, BarChart, Brush, CartesianAxis, CartesianGrid, Cell, ComposedChart, Cross, Curve, Customized, DefaultLegendContent, DefaultTooltipContent, Dot, ErrorBar, Funnel, FunnelChart, Global, Label, LabelList, Layer, Legend, Line, LineChart, Pie, PieChart, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Polygon, Radar, RadarChart, RadialBar, RadialBarChart, Rectangle, ReferenceArea, ReferenceDot, ReferenceLine, ResponsiveContainer, Sankey, Scatter, ScatterChart, Sector, SunburstChart, Surface, Symbols, Text, Tooltip, Trapezoid, Treemap, XAxis, YAxis, ZAxis)
 ERROR in ./src/pages/Dashboard.jsx 871:53-59
