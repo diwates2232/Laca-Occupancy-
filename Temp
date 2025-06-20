@@ -104,6 +104,7 @@ export default function Dashboard() {
 
 
 // make changes now cards look perfect but increase internal components size , it looks card are big but cards display data are small
+add px Border for each cards
         {/* Top six summary cards */}
         <Box display="flex" flexWrap="wrap" gap={1} mb={1}>
           {[
