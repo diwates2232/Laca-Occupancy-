@@ -1,3 +1,124 @@
+import { Card, Typography, Box } from '@mui/material';
+
+export default function SummaryCard({ title, total, stats = [], icon, sx = {} }) {
+  return (
+    <Card
+      sx={{
+        px: 2,
+        py: 2,
+        height: '100%',
+        boxShadow: 'var(--box-shadow)',
+        borderRadius: '.5rem',
+        backgroundColor: 'var(--card-bg, #1e1e2f)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        border: '2px solid #2c2c3e', // Default border (can be overridden)
+        ...sx
+      }}
+    >
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+        <Typography
+          variant="subtitle1"
+          fontWeight={600}
+          color="text.secondary"
+          sx={{ fontSize: '0.95rem' }}
+        >
+          {title}
+        </Typography>
+        <Box sx={{ fontSize: 36 }}>
+          {icon}
+        </Box>
+      </Box>
+
+      <Typography
+        variant="h4"
+        fontWeight="bold"
+        sx={{ fontSize: '1.75rem', mt: 1 }}
+      >
+        {total}
+      </Typography>
+    </Card>
+  );
+}
+
+
+
+
+import GroupIcon from '@mui/icons-material/Group';         // Replaces TodayIcon
+import TrackChangesIcon from '@mui/icons-material/TrackChanges'; // Replaces SyncIcon
+
+
+
+
+import GroupIcon from '@mui/icons-material/Group';         // Replaces TodayIcon
+import TrackChangesIcon from '@mui/icons-material/TrackChanges'; // Replaces SyncIcon
+
+
+
+<Box display="flex" flexWrap="wrap" gap={1} mb={1}>
+  {[
+    {
+      title: "Today's Total Headcount",
+      value: todayTot,
+      icon: <GroupIcon sx={{ color: '#1e8449', fontSize: 36 }} />,
+      borderColor: '#1e8449',
+    },
+    {
+      title: "Today's Employees Count",
+      value: todayEmp,
+      icon: <PeopleIcon sx={{ color: '#4CAF50', fontSize: 36 }} />,
+      borderColor: '#4CAF50',
+    },
+    {
+      title: "Today's Contractors Count",
+      value: todayCont,
+      icon: <BusinessCenterIcon sx={{ color: '#2196F3', fontSize: 36 }} />,
+      borderColor: '#2196F3',
+    },
+    {
+      title: "Realtime Headcount",
+      value: realtimeTot,
+      icon: <TrackChangesIcon sx={{ color: '#FF5722', fontSize: 36 }} />,
+      borderColor: '#FF5722',
+    },
+    {
+      title: "Realtime Employees Count",
+      value: realtimeEmp,
+      icon: <PeopleIcon sx={{ color: '#00BCD4', fontSize: 36 }} />,
+      borderColor: '#00BCD4',
+    },
+    {
+      title: "Realtime Contractors Count",
+      value: realtimeCont,
+      icon: <BusinessCenterIcon sx={{ color: '#9C27B0', fontSize: 36 }} />,
+      borderColor: '#9C27B0',
+    }
+  ].map(card => (
+    <Box key={card.title} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+      <SummaryCard
+        title={card.title}
+        total={card.value}
+        stats={[]}
+        icon={card.icon}
+        sx={{
+          height: 140,
+          border: `2px solid ${card.borderColor}`
+        }}
+      />
+    </Box>
+  ))}
+</Box>
+
+
+
+
+
+
+
+
+
+
 Now read below section carefully ,
 
 // src/pages/Dashboard.jsx
