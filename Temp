@@ -1,3 +1,113 @@
+export default function ChartCard({
+  title,
+  data = [],
+  dataKey = 'value',
+  chartHeight = 350,
+  colors = { head: '#FFC107', cap: '#B0BEC5' },
+  animateDuration = 800,
+  showCrosshair = true,
+  timeFormat = 'HH:mm:ss',
++  axisProps = {},               // NEW
++  tooltipFormatter = null,      // NEW
+}) {
+
+
+
+  <XAxis
+    dataKey="name"
+    tick={{ fill: '#FFF', fontWeight: 600 }}
+    tickFormatter={t => /* … */}
+    label={{ value: 'Time', /* … */ }}
++   {...axisProps.xAxis}
+  />
+
+  <YAxis
+    tick={{ fill: '#FFF', fontWeight: 600 }}
+    label={{ value: 'Count', /* … */ }}
++   {...axisProps.yAxis}
+  />
+
+
+
+
+
+
+  <Tooltip
+-   contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}` }}
+-   cursor={showCrosshair}
+-   isAnimationActive={false}
+-   onMouseMove={o => setActiveIndex(o && o.activeTooltipIndex)}
+-   labelStyle={{ color: colors.head, fontWeight: 600 }}
+-   formatter={(value, name) => {
+-     if (name === 'Headcount' && hasCapacity) { /* … */ }
+-     return [value, name];
+-   }}
++   contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}` }}
++   cursor={showCrosshair}
++   isAnimationActive={false}
++   onMouseMove={o => setActiveIndex(o && o.activeTooltipIndex)}
++   labelStyle={{ color: colors.head, fontWeight: 600 }}
++   formatter={tooltipFormatter || ((value, name) => [value, name])}
+  />
+
+
+
+
+
+
+<ChartCard
+  chartType="bar"
+  chartHeight={360}
+  data={partitions.map((p,i) => ({
+    name: displayNameMap[p.name] || p.name.replace(' Partition',''),
+    value: p.total,
+    fill: colorsMap[p.name]?.[0] || (i % 2 === 0 ? '#FFC107' : '#B0BEC5')
+  }))}
+  dataKey="value"
+  colors={{ head: '#FFC107', cap: '#B0BEC5' }}
+
++  // 1) Crisp X & Y axis props:
++  axisProps={{
++    xAxis: {
++      tick: { fill: '#FFF', fontWeight: 600 },
++      label: { value: 'Partition', position: 'insideBottomRight', offset: -10, fill: '#FFF' },
++      angle: -30,
++      textAnchor: 'end'
++    },
++    yAxis: {
++      tick: { fill: '#FFF', fontWeight: 600 },
++      label: { value: 'Count', angle: -90, position: 'insideLeft', fill: '#FFF' }
++    }
++  }}
++
++  // 2) Custom tooltip so it lists all breakdown fields:
++  tooltipFormatter={(value, name, entry) => {
++    const part = entry.payload.name;
++    // if this is the first call (label), return partition name
++    if (name === undefined && value === undefined) return part;
++    // otherwise value is the number, name is key
++    return [`${value}`, `${name}`];
++  }}
+
+  // Pass in the live breakdown for Employees / Contractors / TempBadge
+  breakdown={{
+    Employee: realtimeEmp,
+    Contractor: realtimeCont,
+    TempBadge: partitions.reduce((sum,p)=>sum+p.TempBadge,0),
+  }}
+
+  sx={{ border: '2px solid #FFC107' }}
+/>
+
+
+
+
+
+
+
+
+
+
 // src/pages/Dashboard.jsx
 
 import React, { useEffect, useState } from 'react';
