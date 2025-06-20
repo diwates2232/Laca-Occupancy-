@@ -1,4 +1,37 @@
-  <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+const displayNameMap = {
+  'CR.Costa Rica Partition': 'Costa Rica',
+  'AR.Cordoba': 'Argentina',
+  'MX.Mexico City': 'Mexico',
+  'PE.Lima': 'Peru',
+  'BR.Sao Paulo': 'Brazil',
+  'PA.Panama City': 'Panama',
+};
+
+const colorsMap = {
+  'CR.Costa Rica Partition': ['#FFD666', '#fcf3cf', '#2ecc71', '#ec7063', '#ec7063'],
+  'AR.Cordoba':               ['#FFE599', '#fcf3cf', '#2ecc71', '#ec7063'],
+  'MX.Mexico City':           ['#FFD666', '#fcf3cf', '#2ecc71', '#ec7063'],
+  'PE.Lima':                  ['#FFF2CC', '#fcf3cf', '#2ecc71', '#ec7063'],
+  'BR.Sao Paulo':             ['#FFD666', '#fcf3cf', '#2ecc71', '#ec7063'],
+  'PA.Panama City':           ['#FFE599', '#fcf3cf', '#2ecc71', '#ec7063'],
+};
+
+
+
+data={partitions.map((p, i) => ({
+  name: displayNameMap[p.name] || p.name.replace(' Partition',''),
+  value: p.total,
+  fill: colorsMap[p.name]?.[0] || (i % 2 === 0 ? '#FFC107' : '#B0BEC5')
+}))}
+
+
+
+
+
+
+
+
+<Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
     <SummaryCard
       title={displayNameMap[p.name] || p.name.replace(' Partition','')}
       icon={/* … */}
