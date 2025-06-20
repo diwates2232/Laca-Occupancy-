@@ -1,3 +1,9 @@
+ import React, { useState } from 'react';
++import React, { Fragment, useState } from 'react';
+
+
+
+
 -              <Tooltip
 -                contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}` }}
 -                cursor={showCrosshair}
@@ -36,6 +42,35 @@
 +                  );
 +                }}
 +              />
+
+
+
+
+
+
+
+ <ChartCard
+   chartType="bar"
+   chartHeight={360}
+-  data={partitions.map((p, i) => ({
+-    name: displayNameMap[p.name] || p.name.replace(' Partition',''),
+-    value: p.total,
+-    fill: colorsMap[p.name]?.[0] || (i % 2 === 0 ? '#FFC107' : '#B0BEC5')
+-  }))}
++  data={partitions.map((p, i) => ({
++    name: displayNameMap[p.name] || p.name.replace(' Partition',''),
++    value: p.total,
++    breakdown: {
++      Employees: p.Employee,
++      Contractors: p.Contractor,
++      ...(p.TempBadge ? { 'Temp Badge': p.TempBadge } : {})
++    },
++    fill: colorsMap[p.name]?.[0] || (i % 2 === 0 ? '#FFC107' : '#B0BEC5')
++  }))}
+
+
+
+
 
 
 
