@@ -1,3 +1,108 @@
+--- a/src/pages/Dashboard.jsx
++++ b/src/pages/Dashboard.jsx
+@@
+ import TodayIcon  from '@mui/icons-material/Today';
+ import SyncIcon   from '@mui/icons-material/Sync';
++import PeopleIcon from '@mui/icons-material/People';
++import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
+ 
+@@
+-        {/* Top summary cards */}
+-        <Box
+-          display="flex"
+-          alignItems="stretch"
+-          sx={{ mb: 1, width: '100vw%' }}
+-        >
+-          <Box sx={{ flex: 1 }}>
+-            <SummaryCard
+-              title="Today’s Headcount"
+-              total={todayTot}
+-              stats={[
+-                { label: 'Employees',   value: todayEmp },
+-                { label: 'Contractors', value: todayCont }
+-              ]}
+-              icon={<TodayIcon />}
+-              sx={{ height: 190, border: '2px solid #FFC107' }}
+-            />
+-          </Box>
+-
+-          <Divider flexItem sx={{ mx: 1 }} />
+-
+-          <Box sx={{ flex: 1 }}>
+-            <SummaryCard
+-              title="Realtime Headcount"
+-              total={realtimeTot}
+-              stats={[
+-                { label: 'Employees',   value: realtimeEmp },
+-                { label: 'Contractors', value: realtimeCont }
+-              ]}
+-              icon={<SyncIcon />}
+-              sx={{ height: 190, border: '2px solid #FFC107' }}
+-            />
+-          </Box>
+-        </Box>
++        {/* Top six summary cards */}
++        <Box display="flex" flexWrap="wrap" gap={1} mb={1}>
++          {[
++            {
++              title: "Today's Total Headcount",
++              value: todayTot,
++              icon: <TodayIcon />,
++              color: '#FFC107'
++            },
++            {
++              title: "Today's Employees Count",
++              value: todayEmp,
++              icon: <PeopleIcon />,
++              color: '#4caf50'
++            },
++            {
++              title: "Today's Contractors Count",
++              value: todayCont,
++              icon: <BusinessCenterIcon />,
++              color: '#2196f3'
++            },
++            {
++              title: "Realtime Headcount",
++              value: realtimeTot,
++              icon: <SyncIcon />,
++              color: '#FF5722'
++            },
++            {
++              title: "Realtime Employees Count",
++              value: realtimeEmp,
++              icon: <PeopleIcon />,
++              color: '#00BCD4'
++            },
++            {
++              title: "Realtime Contractors Count",
++              value: realtimeCont,
++              icon: <BusinessCenterIcon />,
++              color: '#9C27B0'
++            }
++          ].map(card => (
++            <Box key={card.title} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
++              <SummaryCard
++                title={card.title}
++                total={card.value}
++                stats={[]}
++                icon={card.icon}
++                sx={{
++                  height: 140,
++                  border: `2px solid ${card.color}`
++                }}
++              />
++            </Box>
++          ))}
++        </Box>
+
+
+
+
+
+
+
+
 Below files are look good i want to update onlt top two cards 
 Today’s Headcountand and Realtime Headcount
 make a 6 cards and 
