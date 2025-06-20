@@ -1,228 +1,12 @@
---- a/src/components/SummaryCard.jsx
-+++ b/src/components/SummaryCard.jsx
-@@ // Icon + Title
--          <Typography
--            variant="subtitle1"
--            gutterBottom
--            sx={titleColor ? { color: titleColor } : {}}
--          >
-+          <Typography
-+            variant="subtitle1"
-+            gutterBottom
-+            sx={{
-+              ...(titleColor ? { color: titleColor } : {}),
-+              border: '1px solid #fff',
-+              px: 0.5,
-+              py: 0.25
-+            }}
-+          >
-             {title}
-           </Typography>
-@@ // Total
--            <Typography
--              variant="h4"
--              sx={{
--                mr: 1,
--                ...(totalColor ? { color: totalColor } : {})
--              }}
--            >
-+            <Typography
-+              variant="h4"
-+              sx={{
-+                mr: 1,
-+                ...(totalColor ? { color: totalColor } : {}),
-+                border: '1px solid #fff',
-+                px: 0.5,
-+                py: 0.25
-+              }}
-+            >
-               {total}
-             </Typography>
-@@ // Stats
--              <Typography
--                variant="caption"
--                sx={ statColors && statColors[idx]
--                  ? { color: statColors[idx] }
--                  : {} }
--              >
-+              <Typography
-+                variant="caption"
-+                sx={{
-+                  ...(statColors && statColors[idx] ? { color: statColors[idx] } : {}),
-+                  border: '1px solid #fff',
-+                  px: 0.5,
-+                  py: 0.25
-+                }}
-+              >
-                 {label}
-               </Typography>
--              <Typography
--                variant="h6"
--                sx={ statColors && statColors[idx]
--                  ? { color: statColors[idx] }
--                  : {} }
--              >
-+              <Typography
-+                variant="h6"
-+                sx={{
-+                  ...(statColors && statColors[idx] ? { color: statColors[idx] } : {}),
-+                  border: '1px solid #fff',
-+                  px: 0.5,
-+                  py: 0.25
-+                }}
-+              >
-                 {value}
-               </Typography>
+Below files are look good i want to update onlt top two cards 
+Today’s Headcountand and Realtime Headcount
+make a 6 cards and 
+display result like
+Todays Total Headcount  |  Todays Employees Count  | Todays Contractor Count     | Realtime Headcount  | Realtime Employees Count |  Realtime Contractors Count
+    3                              1                        2
 
-
-
-
-
-
-
-
-
---- a/src/components/SummaryCard.jsx
-+++ b/src/components/SummaryCard.jsx
-@@
--export default function SummaryCard({ title, total, stats, icon, titleColor,totalColor,statColors,idx,sx = {} }) {
-+export default function SummaryCard({
-+  title,
-+  total,
-+  stats,
-+  icon,
-+  titleColor,
-+  totalColor,
-+  statColors,
-+  sx = {}
-+}) {
-   return (
-     <Card variant="outlined" sx={{ px: 2, py: 1, ...sx }}>
-       <CardContent sx={{ textAlign: 'center' }}>
-@@
--        <Grid container spacing={1} justifyContent="center">
--          {stats.map(({ label, value }) => (
--            <Grid key={label} item xs={6}>
-+        <Grid container spacing={1} justifyContent="center">
-+          {stats.map(({ label, value }, idx) => (
-+            <Grid key={label} item xs={6}>
-               <Typography
-                 variant="caption"
--                sx={ statColors && statColors[idx]
--                  ? { color: statColors[idx] }
--                  : {} }
-+                sx={ statColors && statColors[idx]
-+                  ? { color: statColors[idx] }
-+                  : {} }
-               >
-                 {label}
-               </Typography>
-               <Typography
-                 variant="h6"
--                sx={ statColors && statColors[idx]
--                  ? { color: statColors[idx] }
--                  : {} }
-+                sx={ statColors && statColors[idx]
-+                  ? { color: statColors[idx] }
-+                  : {} }
-               >
-                 {value}
-               </Typography>
-             </Grid>
-           ))}
-         </Grid>
-
-
-
-
-
-
-
-
-When i update below files Colours are updated only for Title and total 
-remenainig colours are not update check and update it carefully
-
-
-//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\SummaryCard.jsx
-import React from 'react';
-import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
-
-export default function SummaryCard({ title, total, stats, icon, titleColor,totalColor,statColors,idx,sx = {} }) {
-
-  return (
-    <Card variant="outlined" sx={{ px: 2, py: 1, ...sx }}>
-      <CardContent sx={{ textAlign: 'center' }}>
-     
-             {/* Icon + Title */}
-        <Box display="flex" justifyContent="center" alignItems="center" mb={1}>
-          {icon && (
-            <Box component="span" sx={{ mr: 1, fontSize: 32, color: 'primary.main' }}>
-              {icon}
-            </Box>
-          )}
-          {/* <Typography variant="subtitle1" gutterBottom> */}
-
-          <Typography
-            variant="subtitle1"
-            gutterBottom
-            sx={ titleColor ? { color: titleColor } : {} }
-          >
-
-            {title}
-          </Typography>
-        </Box>
-
-     
-     
-        {total != null && (
-          <Box display="flex" justifyContent="center" alignItems="baseline" mb={1}>
-            {/* <Typography variant="h4" sx={{ mr: 1 }}> */}
-
-            <Typography
-              variant="h4"
-              sx={{
-                mr: 1,
-                ...(totalColor ? { color: totalColor } : {})
-              }}
-            >
-
-              {total}
-            </Typography>
-            {/* <Typography variant="caption">Total</Typography> */}
-          
-          </Box>
-        )}
-        <Grid container spacing={1} justifyContent="center">
-          {stats.map(({ label, value }) => (
-            <Grid key={label} item xs={6}>
-
-              {/* <Typography variant="caption">{label}</Typography> */}
-              {/* <Typography variant="h6">{value}</Typography> */}
-
-              <Typography
-                variant="caption"
-                sx={ statColors && statColors[idx]
-                  ? { color: statColors[idx] }
-                  : {} }
-              >
-                {label}
-              </Typography>
-              <Typography
-                variant="h6"
-                sx={ statColors && statColors[idx]
-                  ? { color: statColors[idx] }
-                  : {} }
-              >
-                {value}
-              </Typography>
-
-            </Grid>
-          ))}
-        </Grid>
-      </CardContent>
-    </Card>
-  );
-}
+Like this and add standerd colourful relavant icons above ,
+update only necessary snippets and give me updated files carefully .
 
 
 // src/pages/Dashboard.jsx
@@ -399,7 +183,7 @@ export default function Dashboard() {
                   '#FFFFFF'  // Contractors (white)
                 ],
                 'MX.Mexico City': [
-                  '#006847', // title (green)
+                  '#009C3B', // title (green)
                   '#FFFFFF', // total (white)
                   '#CE1126', // Employees (red)
                   '#FFFFFF'  // Contractors (white)
@@ -423,10 +207,6 @@ export default function Dashboard() {
                   '#FFFFFF'  // Contractors (white)
                 ]
               };
-
-
-
-
 
               return partitions.map(p => {
   
@@ -475,7 +255,7 @@ export default function Dashboard() {
                     sx={{
                         width: '100vw%',
                         // border: `3px solid ${borderColor}`
-                           border: `3px solid ${titleC}`
+                           border: `2px solid ${titleC}`
                       }}
                     />
                   </Box>
@@ -558,111 +338,106 @@ export default function Dashboard() {
 
 
 
-// src/theme/westernUnionTheme.js
-import { createTheme } from '@mui/material/styles';
-
-const westernUnionTheme = createTheme({
-  palette: {
-    mode: 'dark',
-    background: {
-      default: '#000000',
-      paper:   '#1c1c1c'
-    },
-    primary: {
-      main: '#FFC107',
-      contrastText: '#000000'
-    },
-    secondary: {
-      main: '#FFFFFF',
-      contrastText: '#000000'
-    },
-    text: {
-      primary:   '#FFFFFF',
-      secondary: 'rgba(255,255,255,0.7)'
-    },
-    divider: 'rgba(255,255,255,0.2)'
-  },
-
-  typography: {
-    fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-    // Card titles
-    subtitle1: { fontWeight: 500, color: '#FFC107' },
-    // Totals (variant h4 in SummaryCard)
-    h4: { color: '#FFC107', fontWeight: 'bold' },
-    // Stat values (variant h6)
-    h6: { color: '#FFC107', fontWeight: 600 },
-    // Stat labels (variant caption)
-    caption: { color: '#FFC107', fontWeight: 500 },
-
-    // You can leave other variants untouched
-    body1:   { color: '#FFFFFF' },
-    body2:   { color: 'rgba(255,255,255,0.7)' }
-  },
-
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        html: {
-          height: '100%'
-        },
-        body: {
-          margin: 0,
-          padding: 0,
-          height: '100%',
-          background: 'linear-gradient(135deg, #000000 30%, #2c0000 60%, #000000 100%)',
-          backgroundAttachment: 'fixed',
-          backgroundRepeat: 'no-repeat',
-          backgroundSize: 'cover',
-          animation: 'gradientSpin 20s ease infinite',
-          overflowX: 'hidden'
-        },
-        '@keyframes gradientSpin': {
-          '0%':   { backgroundPosition: '0% 50%' },
-          '50%':  { backgroundPosition: '100% 50%' },
-          '100%': { backgroundPosition: '0% 50%' }
-        }
-      }
-    },
-
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-          borderRadius: 4
-        },
-        contained: {
-          backgroundColor: '#FFC107',
-          color: '#000000',
-          '&:hover': {
-            backgroundColor: '#e6ac00'
-          }
-        }
-      }
-    },
-
-    MuiDivider: {
-      styleOverrides: {
-        root: {
-          backgroundColor: 'rgba(255,255,255,0.2)'
-        }
-      }
-    },
-
-    MuiTooltip: {
-      styleOverrides: {
-        tooltip: {
-          backgroundColor: '#333',
-          color: '#FFF'
-        }
-      }
-    }
-
-    // Note: We no longer override MuiCard so your SummaryCard and ChartCard
-    // backgrounds, borders and hover effects come from their own `sx` props.
-  }
-});
-
-export default westernUnionTheme;
 
 
+//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\SummaryCard.jsx
+import React from 'react';
+import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
+
+// export default function SummaryCard({ title, total, stats, icon, titleColor,totalColor,statColors,idx,sx = {} }) {
+export default function SummaryCard({
+  title,
+  total,
+  stats,
+  icon,
+  titleColor,
+  totalColor,
+  statColors,
+  sx,idx = {}
+}) {
+
+  return (
+    <Card variant="outlined" sx={{ px: 2, py: 1, ...sx }}>
+      <CardContent sx={{ textAlign: 'center' }}>
+     
+             {/* Icon + Title */}
+        <Box display="flex" justifyContent="center" alignItems="center" mb={1}>
+          {icon && (
+            <Box component="span" sx={{ mr: 1, fontSize: 32, color: 'primary.main' }}>
+              {icon}
+            </Box>
+          )}
+
+          
+          {/* <Typography variant="subtitle1" gutterBottom> */}
+
+          <Typography
+            variant="subtitle1"
+            gutterBottom
+            sx={ titleColor ? { color: titleColor } : {} }
+          >
+
+            {title}
+          </Typography>
+        </Box>
+
+     
+     
+        {total != null && (
+          <Box display="flex" justifyContent="center" alignItems="baseline" mb={1}>
+            {/* <Typography variant="h4" sx={{ mr: 1 }}> */}
+
+            <Typography
+              variant="h4"
+              sx={{
+                mr: 1,
+                ...(totalColor ? { color: totalColor } : {})
+              }}
+            >
+
+              {total}
+            </Typography>
+            {/* <Typography variant="caption">Total</Typography> */}
+          
+          </Box>
+        )}
+  
+
+        <Grid container spacing={1} justifyContent="center">
+          {stats.map(({ label, value }, idx) => (
+            <Grid key={label} item xs={6}>
+
+
+
+              <Typography
+                variant="caption"
+                // sx={ statColors && statColors[idx]
+                //   ? { color: statColors[idx] }
+                //   : {} }
+
+                sx={ statColors && statColors[idx]
+                  ? { color: statColors[idx] }
+                  : {} }
+  >
+                {label}
+              </Typography>
+              <Typography
+                variant="h6"
+
+
+                sx={ statColors && statColors[idx]
+                  ? { color: statColors[idx] }
+                  : {} }
+
+              >
+                {value}
+              </Typography>
+
+            </Grid>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+}
 
