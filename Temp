@@ -1,3 +1,60 @@
+           {/* Chart + See Details */}
+           <Box mb={4} sx={{ px: "20px", p:2, border: '2px solid #FFC107' }}>
+             <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+               <Typography variant="h6">Live Floor Counts</Typography>
+               <Typography variant="body2" color="textSecondary">
+                 Last updated: {lastUpdate}
+               </Typography>
+             </Box>
+-            <ChartCard
+-              title=""
+-              data={Object.entries(live.floors).map(([floor, cnt]) => ({ name: floor.trim(), value: cnt }))}
+-              chartHeight={320}
+-            />
++            <ChartCard
++              title=""
++              chartHeight={320}
++              data={Object.entries(live.floors).map(([floor, floorData]) => {
++                // derive total (either floorData.total or sum of parts)
++                const total = floorData.total != null
++                  ? floorData.total
++                  : (floorData.Employee || 0)
++                      + (floorData.Contractor || 0)
++                      + (floorData.TempBadge || 0);
++
++                return {
++                  name: floor.trim(),
++                  value: total,
++                  breakdown: {
++                    Employees:   floorData.Employee   || 0,
++                    Contractors: floorData.Contractor || 0,
++                    'Temp Badge': floorData.TempBadge || 0
++                  }
++                };
++              })}
++              axisProps={{
++                xAxis: {
++                  label: { value: 'Floor', position: 'insideBottomRight', offset: -10, fill: '#FFF' },
++                  tick:  { fill: '#FFF', fontWeight: 600 }
++                },
++                yAxis: {
++                  label: { value: 'Count', angle: -90, position: 'insideLeft', fill: '#FFF' },
++                  tick:  { fill: '#FFF', fontWeight: 600 }
++                }
++              }}
++            />
+
+
+
+
+
+
+
+
+
+
+
+
 <ChartCard
   title=""
 - data={Object.entries(live.floors).map(([floor, cnt]) => ({ name: floor.trim(), value: cnt }))}
