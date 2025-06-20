@@ -1,104 +1,168 @@
-{/* Top six summary cards */}
-<Box display="flex" flexWrap="wrap" gap={1} mb={1}>
-  {[
-    {
-      title: "Today's Total Headcount",
-      value: todayTot,
-      icon: <GroupIcon sx={{ color: '#E57373', fontSize: 36 }} />,
-      borderColor: '#FFD666',
-    },
-    // … rest of your cards …
-  ].map(card => (
-    <Box key={card.title} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
-      <SummaryCard
-        title={card.title}
-        total={card.value}
-        stats={[]}
-        icon={card.icon}
-        sx={{
-          height: 140,
-          border: `1px solid ${card.borderColor}`,
-          // typography tweaks:
-          '& .MuiTypography-subtitle1': {
-            fontSize: '1.1rem',     // title font
-          },
-          '& .MuiTypography-h4': {
-            fontSize: '2rem',       // total font
-          },
-          '& .MuiTypography-caption': {
-            fontSize: '0.9rem',     // stats labels (if any)
-          }
-        }}
-      />
-    </Box>
-  ))}
-</Box>
+1) Now Add Font size here ,for partation titile , Total and statscarefully ,
+
+        {/* Partition cards */}
+        <Box mt={4} sx={{ width: '100vw%', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          {loading ? (
+            <Skeleton variant="rectangular" width="100vw%" height={200} />
+          ) : (
+                        (() => {
+              // map of flags and primary colors for each partition
+              const flagMap = {
+                'CR.Costa Rica Partition': CostaRicaFlag,
+                'AR.Cordoba':               ArgentinaFlag,
+                'MX.Mexico City':           MexicoFlag,
+                'PE.Lima':                  PeruFlag,
+                'BR.Sao Paulo':             BrazilFlag,
+                'PA.Panama City':           PanamaFlag,
+              };
+
+
+              // full palette arrays per flag: [title, total, stat1, stat2, stat3?]
+              const colorsMap = {
+                'CR.Costa Rica Partition': [
+                  '#FFD666', // title (red)
+                  '#fcf3cf', // total (blue)
+                  '#2ecc71', // Employees (white)
+                  '#ec7063', // Contractors (blue)
+                  '#ec7063'  // TempBadge (white)
+                ],
+               'AR.Cordoba': [
+                   '#FFE599', // title (light blue)
+                  '#fcf3cf', // total (white)
+                  '#2ecc71', // Employees (sun yellow)
+                  '#ec7063',  // Contractors (white)
+                ],
+                'MX.Mexico City': [
+                   '#FFD666', // title (green)
+                  '#fcf3cf', // total (white)
+                  '#2ecc71', // Employees (red)
+                  '#ec7063',  // Contractors (white)
+                ],
+                'PE.Lima': [
+                  '#FFF2CC', // title (red)
+                  '#fcf3cf', // total (white)
+                  '#2ecc71',// Employees (red)
+                  '#ec7063',  // Contractors (white)
+                ],
+                'BR.Sao Paulo': [
+                  '#FFD666', // title (green)
+                  '#fcf3cf', // total (yellow)
+                  '#2ecc71', // Employees (blue)
+                  '#ec7063', // Contractors (yellow)
+                ],
+                'PA.Panama City': [
+                  '#FFE599', // title (blue)
+                  '#fcf3cf', // total (white)
+                  '#2ecc71', // Employees (red)
+                  '#ec7063', // Contractors (white)
+                ]
+              };
+
+              return partitions.map(p => {
+  
+
+                const flagSrc = flagMap[p.name] || '';
+                const colors = colorsMap[p.name] || ['#FFC107', '#FFC107'];
+                const [ titleC, totalC, ...statCs ] = colors;
+
+
+                return (
+                  <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+                    <SummaryCard
+                      // title={p.name}
+                      title={displayNameMap[p.name] || p.name.replace(' Partition','')}
+                    
+                      icon={
+                        flagSrc && (
+                          <Box
+                            component="img"
+                            src={flagSrc}
+                            alt={`${p.name} flag`}
+                            sx={{
+                              width: 50,
+                              height: 30,
+                              border: '1px solid #fff'  // 1px border
+                            }}
+                          />
+                        )
+                      }
+
+
+                      total={p.total}
+                      stats={[
+                        { label: 'Employees',   value: p.Employee },
+                        { label: 'Contractors', value: p.Contractor },
+                        ...(p.name === 'CR.Costa Rica Partition'
+                          ? [{ label: 'Temp Badge', value: p.TempBadge }]
+                          : [])
+                      ]}
+
+                      // pass our new color props
+                      titleColor={titleC}
+                      totalColor={totalC}
+                      statColors={statCs}
+
+
+                    sx={{
+                        width: '100vw%',
+                    
+                           border: `1px solid ${titleC}`
+                      }}
+                    />
+                  </Box>
+                );
+              });
+            })()
+           )}
+         </Box>
 
 
 
 
 
-
-
-Read below snippet carefully 
-
-{/* Top six summary cards */}
-     <Box display="flex" flexWrap="wrap" gap={1} mb={1}>
-  {[
-    {
-      title: "Today's Total Headcount",
-      value: todayTot,
-      icon: <GroupIcon sx={{ color: '#E57373', fontSize: 36 }} />,
-      borderColor: '#FFD666',
-    },
-    {
-      title: "Today's Employees Count",
-      value: todayEmp,
-      icon: <PeopleIcon sx={{ color: '#81C784', fontSize: 36 }} />,
-      borderColor: '#81C784', 
-    },
-    {
-      title: "Today's Contractors Count",
-      value: todayCont,
-      icon: <BusinessCenterIcon sx={{ color: '#64B5F6', fontSize: 36 }} />,
-      borderColor: '#FFE599',
-      
-    },
-    {
-      title: "Realtime Headcount",
-      value: realtimeTot,
-      icon: <TrackChangesIcon sx={{ color: '#BA68C8', fontSize: 36 }} />,
-      borderColor: '#FFF2CC',
-    },
-    {
-      title: "Realtime Employees Count",
-      value: realtimeEmp,
-      icon: <PeopleIcon sx={{ color: '#FFB74D', fontSize: 36 }} />,
-      borderColor: '#FFD666',
-    },
-    {
-      title: "Realtime Contractors Count",
-      value: realtimeCont,
-      icon: <BusinessCenterIcon sx={{ color:  '#4DB6AC', fontSize: 36 }} />,
-      borderColor: '#FFE599'
-    }
-  ].map(card => (
-    <Box key={card.title} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
-      <SummaryCard
-        title={card.title}    ----------Add Font size here 
-        total={card.value} --------- -same add font size
-        stats={[]}           ---------same font size here
-        icon={card.icon}
-        sx={{
-          height: 140,
-          border: `1px solid ${card.borderColor}`
-        }}
-      />
-    </Box>
-  ))}
-</Box>
+2) Currently chart display like partation count wise like Costa Rica 152 then their name shound first like 
+now removed order and update data dynamic like When new entry arrive 
 
 
 
 
+        {/* Live totals chart */}
+        <Box mt={4} sx={{ width: '100vw%' ,p:2, border: '1px solid #FFC107' }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6" gutterBottom>
+              Live Totals by Partition
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              Last updated: {lastUpdate}
+            </Typography>
+          </Box>
+
+        {loading ? (
+            <Skeleton variant="rectangular" width="100%" height={320} />
+          ) : (
+  <ChartCard
+    chartType="bar"                  // new prop
+    chartHeight={360}
+    data={partitions.map((p,i) => ({
+     name: p.name,
+      value: p.total,
+      fill: i % 2 === 0 ? '#FFC107' : '#B0BEC5'
+    }))}
+    dataKey="value"
+    colors={{ head: '#FFC107', cap: '#B0BEC5' }}
+
+     // Pass in the live breakdown for Employees / Contractors / TempBadge
+     breakdown={{
+       Employee: realtimeEmp,
+       Contractor: realtimeCont,
+       TempBadge: partitions.reduce((sum,p)=>sum+p.TempBadge,0),
+     }}
+
+
+
+    sx={{ border: '2px solid #FFC107' }}
+  />
+          )}
+        </Box>
+      </Container>
 
