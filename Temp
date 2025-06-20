@@ -1,3 +1,45 @@
+{/* Top six summary cards */}
+<Box display="flex" flexWrap="wrap" gap={1} mb={1}>
+  {[
+    {
+      title: "Today's Total Headcount",
+      value: todayTot,
+      icon: <GroupIcon sx={{ color: '#E57373', fontSize: 36 }} />,
+      borderColor: '#FFD666',
+    },
+    // … rest of your cards …
+  ].map(card => (
+    <Box key={card.title} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+      <SummaryCard
+        title={card.title}
+        total={card.value}
+        stats={[]}
+        icon={card.icon}
+        sx={{
+          height: 140,
+          border: `1px solid ${card.borderColor}`,
+          // typography tweaks:
+          '& .MuiTypography-subtitle1': {
+            fontSize: '1.1rem',     // title font
+          },
+          '& .MuiTypography-h4': {
+            fontSize: '2rem',       // total font
+          },
+          '& .MuiTypography-caption': {
+            fontSize: '0.9rem',     // stats labels (if any)
+          }
+        }}
+      />
+    </Box>
+  ))}
+</Box>
+
+
+
+
+
+
+
 Read below snippet carefully 
 
 {/* Top six summary cards */}
