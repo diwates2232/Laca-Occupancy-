@@ -1,3 +1,14 @@
+- const BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
++ const BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3005';
+
+ export async function fetchLiveSummary() { … }
+ export async function fetchHistory(location) { … }
+
+
+
+
+
+
 src/
 ├── api/
 │   └── occupancy.service.js
