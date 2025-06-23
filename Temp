@@ -1,3 +1,64 @@
+// src/config/db.js
+require('dotenv').config();    // ensure .env is loaded
+const sql = require('mssql');
+
+// sanity check
+if (!process.env.DB_SERVER) {
+  console.error('❌ ENV ERROR: DB_SERVER is undefined!');
+  process.exit(1);
+}
+console.log('🔍 Connecting to DB_SERVER:', process.env.DB_SERVER, 'port:', process.env.DB_PORT);
+
+const dbConfig = {
+  user:     process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  server:   process.env.DB_SERVER,            // e.g. "SRVWUFRA0986V"
+  port:     parseInt(process.env.DB_PORT, 10),// e.g. 1433
+  database: process.env.DB_DATABASE,
+  options: {
+    encrypt: true,
+    trustServerCertificate: true
+  },
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000
+  }
+};
+
+const poolPromise = new sql.ConnectionPool(dbConfig)
+  .connect()
+  .then(pool => {
+    console.log('✅ MSSQL connected');
+    return pool;
+  })
+  .catch(err => {
+    console.error('❌ MSSQL connection failed', err);
+    process.exit(1);
+  });
+
+module.exports = {
+  sql,
+  poolPromise
+};
+
+
+
+  DB_USER=GSOC_Test
+DB_PASSWORD=Westernuniongsoc@2025
+DB_SERVER=SRVWUFRA0986V
+DB_DATABASE=ACVSUJournal_00010027
+DB_PORT=1433
+
+PORT=3005
+
+
+
+
+
+
+
+
 When i update above files we got beow error .i think you define SQLExpress but we are use mssql
 check and so;lve the issue
 
