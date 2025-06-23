@@ -1,3 +1,112 @@
+cd C:\Users\W0024618\Desktop\emea-occupancy-frontend
+npm install @mui/icons-material @mui/x-date-pickers date-fns @date-io/date-fns
+
+
+
+
+In src/assets/flags/ put:
+	•	austria.png
+	•	uae.png
+	•	ireland.png
+	•	italy.png
+	•	lithuania.png
+	•	morocco.png
+	•	russia.png
+	•	uk.png
+	•	spain.png
+
+And in src/assets/ put wu-logo.png.
+
+
+
+
+src/components/Header.jsx
+src/components/SummaryCard.jsx
+src/components/ChartCard.jsx
+src/components/DataTable.jsx
+src/components/LoadingSpinner.jsx
+src/components/Footer.jsx
+
+
+
+
+import HomeIcon    from '@mui/icons-material/Home';
+import HistoryIcon from '@mui/icons-material/History';
+import ListAltIcon from '@mui/icons-material/ListAlt';
+
+import WuLogo        from '../assets/wu-logo.png';
+import AustriaFlag   from '../assets/flags/austria.png';
+import UAEFlag       from '../assets/flags/uae.png';
+import IrelandFlag   from '../assets/flags/ireland.png';
+import ItalyFlag     from '../assets/flags/italy.png';
+import LithuaniaFlag from '../assets/flags/lithuania.png';
+import MoroccoFlag   from '../assets/flags/morocco.png';
+import RussiaFlag    from '../assets/flags/russia.png';
+import UKFlag        from '../assets/flags/uk.png';
+import SpainFlag     from '../assets/flags/spain.png';
+
+
+
+
+
+
+
+import GroupIcon          from '@mui/icons-material/Group';
+import TrackChangesIcon   from '@mui/icons-material/TrackChanges';
+import PeopleIcon         from '@mui/icons-material/People';
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
+
+import Header            from '../components/Header';
+import Footer            from '../components/Footer';
+import SummaryCard       from '../components/SummaryCard';
+import ChartCard         from '../components/ChartCard';
+import LoadingSpinner    from '../components/LoadingSpinner';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+
+
+
+
+
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';  // date-fns adapter
+import Header         from '../components/Header';
+import Footer         from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+
+
+
+
+
+
+import Header         from '../components/Header';
+import Footer         from '../components/Footer';
+import SummaryCard    from '../components/SummaryCard';
+import ChartCard      from '../components/ChartCard';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { lookupFloor } from '../utils/floorLookup';
+
+
+
+
+
+import Header         from '../components/Header';
+import Footer         from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import DataTable      from '../components/DataTable';
+import { lookupFloor } from '../utils/floorLookup';
+
+
+
+
+
+
+
+
+
+
+
+
 Solve error one by one also build all components jsx carefully
 
 C:\Users\W0024618\Desktop\emea-occupancy-frontend> npm start
