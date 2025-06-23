@@ -1,3 +1,42 @@
+// src/config/db.js
+const dbConfig = {
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  server: process.env.DB_SERVER,    // e.g. "SRVWUFRA0986V"
+  port: parseInt(process.env.DB_PORT, 10),
+  database: process.env.DB_DATABASE,
+  options: {
+    instanceName: process.env.DB_INSTANCE || undefined, 
+    encrypt: true,
+    trustServerCertificate: true
+  },
+  // ...
+};
+
+
+
+
+DB_INSTANCE=SQLEXPRESS
+
+mm
+
+
+
+
+DB_USER=GSOC_Test
+DB_PASSWORD=Westernuniongsoc@2025
+DB_SERVER=SRVWUFRA0986V
+DB_DATABASE=ACVSUJournal_00010027
+DB_PORT=1433
+
+PORT=3005
+
+
+
+
+
+
+
 once check below files and solve the issue
 
  C:\Users\W0024618\Desktop\emea-occupancy-backend> node server.js
