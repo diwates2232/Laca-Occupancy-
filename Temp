@@ -1,3 +1,23 @@
+src/
+├── api/
+│   └── occupancy.service.js
+├── assets/
+│   ├── flags/
+│   ├── images/
+│   └── styles/
+├── components/
+├── hooks/
+├── pages/
+├── routes/
+├── services/
+├── theme/
+└── utils/
+
+
+
+
+
+
 npx create-react-app emea-occupancy-frontend
 cd emea-occupancy-frontend
 npm install @mui/material @emotion/react @emotion/styled recharts dayjs date-fns xlsx file-saver react-router-dom
