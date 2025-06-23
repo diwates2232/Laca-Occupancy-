@@ -1,4 +1,33 @@
-Once check all files carefully and solve the issue,
+PS C:\Users\W0024618\Desktop\emea-occupancy-backend> node server.js
+🔍 Connecting to DB_SERVER: SRVWUFRA0986V port: 1433
+🚀 Server running on port 3005
+❌ MSSQL connection failed ConnectionError: Login failed for user 'GSOC_Test'.
+    at C:\Users\W0024618\Desktop\emea-occupancy-backend\node_modules\mssql\lib\tedious\connection-pool.js:85:17
+    at Connection.onConnect (C:\Users\W0024618\Desktop\emea-occupancy-backend\node_modules\tedious\lib\connection.js:849:9)
+    at Object.onceWrapper (node:events:633:26)
+    at Connection.emit (node:events:518:28)
+    at Connection.emit (C:\Users\W0024618\Desktop\emea-occupancy-backend\node_modules\tedious\lib\connection.js:970:18)
+    at C:\Users\W0024618\Desktop\emea-occupancy-backend\node_modules\tedious\lib\connection.js:2369:18
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  code: 'ELOGIN',
+  originalError: ConnectionError: Login failed for user 'GSOC_Test'.
+      at Login7TokenHandler.onErrorMessage (C:\Users\W0024618\Desktop\emea-occupancy-backend\node_modules\tedious\lib\token\handler.js:186:19)
+      at Readable.<anonymous> (C:\Users\W0024618\Desktop\emea-occupancy-backend\node_modules\tedious\lib\token\token-stream-parser.js:19:33)
+      at Readable.emit (node:events:518:28)
+      at addChunk (node:internal/streams/readable:561:12)
+      at readableAddChunkPushObjectMode (node:internal/streams/readable:538:3)
+      at Readable.push (node:internal/streams/readable:393:5)
+      at nextAsync (node:internal/streams/from:194:22)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+    code: 'ELOGIN'
+  }
+}
+
+
+
+
+
+Once check all files carefully and solve the issue,alos review all files line by line and update it 
 
 C:\Users\W0024618\Desktop\emea-occupancy-backend\src\config\db.js
 
