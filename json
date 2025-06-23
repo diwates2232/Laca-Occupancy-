@@ -1,3 +1,714 @@
+// src/components/Header.jsx
+import React from 'react';
+import {
+  AppBar,
+  Toolbar,
+  Box,
+  Typography,
+  Select,
+  MenuItem,
+  IconButton
+} from '@mui/material';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+import HomeIcon    from '@mui/icons-material/Home';
+import HistoryIcon from '@mui/icons-material/History';
+import ListAltIcon from '@mui/icons-material/ListAlt';
+
+import WuLogo from '../assets/wu-logo.png';
+import AustriaFlag    from '../assets/flags/austria.png';
+import UAEFlag        from '../assets/flags/uae.png';
+import IrelandFlag    from '../assets/flags/ireland.png';
+import ItalyFlag      from '../assets/flags/italy.png';
+import LithuaniaFlag  from '../assets/flags/lithuania.png';
+import MoroccoFlag    from '../assets/flags/morocco.png';
+import RussiaFlag     from '../assets/flags/russia.png';
+import UKFlag         from '../assets/flags/uk.png';
+import SpainFlag      from '../assets/flags/spain.png';
+
+import { partitionList } from '../services/occupancy.service';
+
+const flagMap = {
+  'AUT.Vienna':    AustriaFlag,
+  'DU.Abu Dhab':   UAEFlag,
+  'IE.Dublin':     IrelandFlag,
+  'IT.Rome':       ItalyFlag,
+  'LT.Vilnius':    LithuaniaFlag,
+  'MA.Casablanca': MoroccoFlag,
+  'RU.Moscow':     RussiaFlag,
+  'UK.London':     UKFlag,
+  'ES.Madrid':     SpainFlag
+};
+
+const displayName = {
+  'AUT.Vienna':    'Vienna',
+  'DU.Abu Dhab':   'Abu Dhabi',
+  'IE.Dublin':     'Dublin',
+  'IT.Rome':       'Rome',
+  'LT.Vilnius':    'Vilnius',
+  'MA.Casablanca': 'Casablanca',
+  'RU.Moscow':     'Moscow',
+  'UK.London':     'London',
+  'ES.Madrid':     'Madrid'
+};
+
+export default function Header() {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  const parts = pathname.split('/').filter(Boolean);
+  const isPartition = parts[0] === 'partition';
+  const current = isPartition ? decodeURIComponent(parts[1]) : '';
+
+  const handleChange = (p) => {
+    navigate(p ? `/partition/${encodeURIComponent(p)}` : '/');
+  };
+
+  return (
+    <AppBar position="static" color="primary" sx={{ mb: 2 }}>
+      <Toolbar sx={{ justifyContent: 'space-between' }}>
+        <Box display="flex" alignItems="center" sx={{ flexGrow: 1 }}>
+          <Box component="img" src={WuLogo} alt="WU" sx={{ height: 36, mr: 2 }} />
+          <Typography variant="h6" sx={{ fontWeight: 600, mr: 3 }}>
+            EMEA Occupancy Dashboard
+            {current && <> • {displayName[current]}</>}
+          </Typography>
+
+          <IconButton color="inherit" onClick={() => navigate('/')}>
+            <HomeIcon sx={{ color: '#4caf50' }} />
+          </IconButton>
+          <IconButton color="inherit" onClick={() => navigate('/history')}>
+            <HistoryIcon sx={{ color: '#F88379' }} />
+          </IconButton>
+          {current && (
+            <IconButton color="inherit" onClick={() => navigate(`/partition/${encodeURIComponent(current)}/details`)}>
+              <ListAltIcon sx={{ color: '#2196f3' }} />
+            </IconButton>
+          )}
+        </Box>
+
+        <Box display="flex" alignItems="center">
+          <Select
+            size="small"
+            value={current}
+            displayEmpty
+            onChange={e => handleChange(e.target.value)}
+            sx={{ bgcolor: 'background.paper', mr: 2 }}
+          >
+            <MenuItem value="">— Select Site —</MenuItem>
+            {partitionList.map(p => (
+              <MenuItem key={p} value={p}>
+                {displayName[p]}
+              </MenuItem>
+            ))}
+          </Select>
+          {current && (
+            <Box
+              component="img"
+              src={flagMap[current]}
+              alt={displayName[current]}
+              sx={{ height: 32 }}
+            />
+          )}
+        </Box>
+      </Toolbar>
+    </AppBar>
+  );
+}
+
+
+
+
+// src/pages/Dashboard.jsx
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Typography,
+  Skeleton
+} from '@mui/material';
+
+import GroupIcon         from '@mui/icons-material/Group';
+import TrackChangesIcon  from '@mui/icons-material/TrackChanges';
+import PeopleIcon        from '@mui/icons-material/People';
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
+
+import Header            from '../components/Header';
+import Footer            from '../components/Footer';
+import SummaryCard       from '../components/SummaryCard';
+import ChartCard         from '../components/ChartCard';
+import LoadingSpinner    from '../components/LoadingSpinner';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+import { partitionList } from '../services/occupancy.service';
+
+const displayName = {
+  'AUT.Vienna':    'Vienna',
+  'DU.Abu Dhab':   'Abu Dhabi',
+  'IE.Dublin':     'Dublin',
+  'IT.Rome':       'Rome',
+  'LT.Vilnius':    'Vilnius',
+  'MA.Casablanca': 'Casablanca',
+  'RU.Moscow':     'Moscow',
+  'UK.London':     'London',
+  'ES.Madrid':     'Madrid'
+};
+
+const colorsMap = {
+  'AUT.Vienna':    ['#FFD666','#fcf3cf','#2ecc71','#ec7063'],
+  'DU.Abu Dhab':   ['#FFE599','#fcf3cf','#2ecc71','#ec7063'],
+  'IE.Dublin':     ['#FFF2CC','#fcf3cf','#2ecc71','#ec7063'],
+  'IT.Rome':       ['#FFD666','#fcf3cf','#2ecc71','#ec7063'],
+  'LT.Vilnius':    ['#FFE599','#fcf3cf','#2ecc71','#ec7063'],
+  'MA.Casablanca': ['#FFF2CC','#fcf3cf','#2ecc71','#ec7063'],
+  'RU.Moscow':     ['#FFD666','#fcf3cf','#2ecc71','#ec7063'],
+  'UK.London':     ['#FFE599','#fcf3cf','#2ecc71','#ec7063'],
+  'ES.Madrid':     ['#FFC0CB','#ffe5ec','#ff4081','#d50065']
+};
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) return <Typography color="error">Error loading live data</Typography>;
+
+  const todayTot  = data?.today.total    ?? 0;
+  const todayEmp  = data?.today.Employee ?? 0;
+  const todayCon  = data?.today.Contractor ?? 0;
+
+  const regions   = data?.realtime || {};
+  const partitions = partitionList.map(p => {
+    const r = regions[p] || {};
+    return {
+      name: p,
+      total:     r.total || 0,
+      Employee:  r.Employee || 0,
+      Contractor:r.Contractor || 0,
+      floors:    r.floors || {}
+    };
+  }).sort((a,b) => b.total - a.total);
+
+  const realtimeTot  = partitions.reduce((s,p) => s + p.total, 0);
+  const realtimeEmp  = partitions.reduce((s,p) => s + p.Employee, 0);
+  const realtimeCon  = partitions.reduce((s,p) => s + p.Contractor, 0);
+
+  return (
+    <>
+      <Header />
+      <Container maxWidth={false} disableGutters sx={{ px:2, py:1 }}>
+        <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
+          {[
+            { title: "Today's Total",       value: todayTot,  icon:<GroupIcon/>,         border:'#FFD666' },
+            { title: "Today's Employees",   value: todayEmp,  icon:<PeopleIcon/>,        border:'#81C784' },
+            { title: "Today's Contractors", value: todayCon,  icon:<BusinessCenterIcon/>,border:'#FFE599' },
+            { title: "Realtime Total",      value: realtimeTot, icon:<TrackChangesIcon/>,border:'#FFF2CC' },
+            { title: "RT Employees",        value: realtimeEmp, icon:<PeopleIcon/>,        border:'#FFD666' },
+            { title: "RT Contractors",      value: realtimeCon, icon:<BusinessCenterIcon/>,border:'#FFE599' }
+          ].map(c => (
+            <Box key={c.title} sx={{ flex:'1 1 30%', minWidth:200 }}>
+              <SummaryCard
+                title={c.title}
+                total={c.value}
+                stats={[]}
+                icon={c.icon}
+                sx={{ border:`1px solid ${c.border}`, height:100 }}
+              />
+            </Box>
+          ))}
+        </Box>
+
+        {/* Partition cards */}
+        {loading
+          ? <LoadingSpinner/>
+          : (
+            <Box display="flex" flexWrap="wrap" gap={1} mb={4}>
+              {partitions.map(p => {
+                const [titleC,totalC,stat1C,stat2C] = colorsMap[p.name]||['#fff','#fff','#fff','#fff'];
+                return (
+                  <Box key={p.name} sx={{ flex:'1 1 30%', minWidth:200 }}>
+                    <SummaryCard
+                      title={displayName[p.name]}
+                      total={p.total}
+                      stats={[
+                        { label:'Employees',   value:p.Employee },
+                        { label:'Contractors', value:p.Contractor }
+                      ]}
+                      icon={<Box component="img" src={colorsMap[p.name] && flagMap[p.name]} sx={{height:24}} />}
+                      titleColor={titleC}
+                      totalColor={totalC}
+                      statColors={[stat1C,stat2C]}
+                      sx={{ border:`1px solid ${titleC}` }}
+                    />
+                  </Box>
+                );
+              })}
+            </Box>
+          )
+        }
+
+        {/* Live totals bar chart */}
+        <Box p={2} sx={{ border:'1px solid #FFC107' }}>
+          <Box display="flex" justifyContent="space-between" mb={1}>
+            <Typography variant="h6">Live Totals by Site</Typography>
+            <Typography variant="body2">Last updated: {lastUpdate}</Typography>
+          </Box>
+          {loading
+            ? <Skeleton variant="rectangular" height={200}/>
+            : <ChartCard
+                data={partitions.map((p,i)=>({
+                  name: displayName[p.name],
+                  value:p.total,
+                  breakdown:{ Employees:p.Employee, Contractors:p.Contractor }
+                }))}
+                dataKey="value"
+                colors={{ head:'#FFC107', cap:'#B0BEC5' }}
+                chartHeight={300}
+              />
+          }
+        </Box>
+      </Container>
+      <Footer/>
+    </>
+  );
+}
+
+
+
+
+
+
+
+// src/pages/History.jsx
+import React, { useEffect, useState, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
+import {
+  Container, Box,
+  Typography, Paper,
+  Table, TableHead, TableBody, TableRow, TableCell,
+  Button, TextField
+} from '@mui/material';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+
+import Header         from '../components/Header';
+import Footer         from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { fetchHistory } from '../api/occupancy.service';
+
+const codeToCountry = {
+  AUT: 'Austria',
+  DU:  'UAE',
+  IE:  'Ireland',
+  IT:  'Italy',
+  LT:  'Lithuania',
+  MA:  'Morocco',
+  RU:  'Russia',
+  UK:  'United Kingdom',
+  ES:  'Spain'
+};
+
+export default function History() {
+  const { partition } = useParams();
+  const decoded     = partition ? decodeURIComponent(partition) : null;
+  const filterCode  = decoded?.split('.')[0] || null;
+
+  const [data, setData]             = useState(null);
+  const [loading, setLoading]       = useState(true);
+  const [pickedDate, setPickedDate] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+
+  useEffect(() => {
+    fetchHistory().then(json => {
+      setData(json);
+      setLoading(false);
+    });
+  }, []);
+
+  const summary = useMemo(() => {
+    if (!data || !pickedDate) return null;
+    const dateStr = format(pickedDate,'yyyy-MM-dd');
+    return data.summaryByDate.find(r=>r.date===dateStr) || null;
+  }, [data,pickedDate]);
+
+  const partitionRows = useMemo(() => {
+    if (!summary) return [];
+    return Object.entries(summary.partitions)
+      .filter(([key]) => !filterCode || key.startsWith(filterCode+'.'))
+      .map(([key,vals]) => {
+        const [code,site] = key.split('.');
+        return {
+          country: codeToCountry[code]||code,
+          site:    site,
+          employee:   vals.Employee,
+          contractor: vals.Contractor,
+          total:      vals.total
+        };
+      });
+  }, [summary, filterCode]);
+
+  const detailRows = useMemo(() => {
+    if (!data || !pickedDate) return [];
+    const dateStr = format(pickedDate,'yyyy-MM-dd');
+    return data.details
+      .filter(r=>r.SwipeDate.slice(0,10)===dateStr)
+      .filter(r=>!filterCode||r.PartitionName2.startsWith(filterCode+'.'));
+  }, [data,pickedDate,filterCode]);
+
+  const exportExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(detailRows.map((r,i)=>({
+      Sr: i+1,
+      Date: r.SwipeDate.slice(0,10),
+      Time: r.LocaleMessageTime.slice(11,19),
+      EmployeeID: r.EmployeeID,
+      Name: r.ObjectName1,
+      PersonnelType: r.PersonnelType,
+      Door: r.Door,
+      Partition: r.PartitionName2
+    })));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Details');
+    const buf = XLSX.write(wb,{bookType:'xlsx',type:'array'});
+    saveAs(new Blob([buf]), `history_${pickedDate.toISOString().slice(0,10)}.xlsx`);
+  };
+
+  if (loading) return <LoadingSpinner/>;
+  return (
+    <>
+      <Header/>
+      <Container maxWidth={false} disableGutters sx={{ p:2 }}>
+        <Box mb={2}>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DatePicker
+              label="Select date"
+              value={pickedDate}
+              onChange={d=>{ setPickedDate(d); setShowDetails(false); }}
+              renderInput={params=><TextField {...params} fullWidth/>}
+            />
+          </LocalizationProvider>
+        </Box>
+
+        {pickedDate && summary && (
+          <>
+            <Paper elevation={3} sx={{ mb:2, p:2 }}>
+              <Typography variant="h6" gutterBottom>
+                {format(pickedDate,'EEEE, MMM d, yyyy')}
+              </Typography>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Country</TableCell>
+                    <TableCell>Site</TableCell>
+                    <TableCell align="right">Employees</TableCell>
+                    <TableCell align="right">Contractors</TableCell>
+                    <TableCell align="right">Total</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {partitionRows.map((r,i)=>(
+                    <TableRow key={i}>
+                      <TableCell>{r.country}</TableCell>
+                      <TableCell>{r.site}</TableCell>
+                      <TableCell align="right">{r.employee}</TableCell>
+                      <TableCell align="right">{r.contractor}</TableCell>
+                      <TableCell align="right">{r.total}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <Box textAlign="center" mt={2}>
+                <Button variant="contained" onClick={()=>setShowDetails(v=>!v)}>
+                  {showDetails?'Hide Details':'See Details'}
+                </Button>
+                {showDetails && (
+                  <Button sx={{ ml:1 }} variant="outlined" onClick={exportExcel}>
+                    Export to Excel
+                  </Button>
+                )}
+              </Box>
+            </Paper>
+
+            {showDetails && (
+              <Paper elevation={1} sx={{ p:2 }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      {['Sr','Time','ID','Name','Type','Door','Partition'].map(h=>(
+                        <TableCell key={h}>{h}</TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {detailRows.map((r,i)=>(
+                      <TableRow key={`${r.PersonGUID}-${i}`}>
+                        <TableCell>{i+1}</TableCell>
+                        <TableCell>{r.LocaleMessageTime.slice(11,19)}</TableCell>
+                        <TableCell>{r.EmployeeID}</TableCell>
+                        <TableCell>{r.ObjectName1}</TableCell>
+                        <TableCell>{r.PersonnelType}</TableCell>
+                        <TableCell>{r.Door}</TableCell>
+                        <TableCell>{r.PartitionName2}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Paper>
+            )}
+          </>
+        )}
+      </Container>
+      <Footer/>
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+// src/pages/PartitionDetail.jsx
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Container, Box, Typography, Button, CircularProgress } from '@mui/material';
+
+import Header         from '../components/Header';
+import Footer         from '../components/Footer';
+import SummaryCard    from '../components/SummaryCard';
+import ChartCard      from '../components/ChartCard';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { fetchLiveSummary, fetchHistory } from '../api/occupancy.service';
+import { lookupFloor } from '../utils/floorLookup';
+
+export default function PartitionDetail() {
+  const { partition } = useParams();
+  const navigate = useNavigate();
+
+  const [live, setLive]       = useState(null);
+  const [history, setHistory] = useState(null);
+  const [details, setDetails] = useState([]);
+  const [lastUpdate, setLast] = useState('');
+
+  useEffect(() => {
+    const iv = setInterval(async () => {
+      const js = await fetchLiveSummary();
+      setLive(js);
+      setLast(new Date().toLocaleTimeString());
+      const det = js.details
+        .filter(r=>r.PartitionName2===partition && r.Direction==='InDirection')
+        .map(r=>({...r, floor: lookupFloor(partition,r.Door,r.Direction)}));
+      setDetails(det);
+    },1000);
+    return ()=>clearInterval(iv);
+  },[partition]);
+
+  useEffect(() => {
+    fetchHistory(partition).then(js=>setHistory(js));
+  },[partition]);
+
+  if (!live || !history) return <LoadingSpinner/>;
+
+  const today = history.summaryByDate.at(-1).region;
+  const siteLive = live.realtime[partition] || { total:0,Employee:0,Contractor:0,floors:{} };
+
+  return (
+    <>
+      <Header/>
+      <Box component="main" sx={{ px:2, py:1 }}>
+        <Button onClick={()=>navigate(-1)}>← Back</Button>
+
+        <Box display="flex" flexWrap="wrap" gap={1} my={2}>
+          {[
+            { title:'Today Total',   value:today.total,   icon:<SummaryCardIcon/> , border:'#FFD666'},
+            { title:'Today Emp',     value:today.Employee, icon:<PeopleIcon/> , border:'#81C784'},
+            { title:'Today Cont',    value:today.Contractor, icon:<BusinessCenterIcon/> , border:'#FFE599'},
+            { title:'RT Total',      value:siteLive.total, icon:<TrackChangesIcon/> , border:'#FFF2CC'},
+            { title:'RT Emp',        value:siteLive.Employee, icon:<PeopleIcon/> , border:'#FFD666'},
+            { title:'RT Cont',       value:siteLive.Contractor, icon:<BusinessCenterIcon/> , border:'#FFE599'},
+          ].map(c=>(
+            <Box key={c.title} sx={{ flex:'1 1 30%', minWidth:180 }}>
+              <SummaryCard
+                title={c.title}
+                total={c.value}
+                stats={[]}
+                icon={c.icon}
+                sx={{ height:100, border:`1px solid ${c.border}` }}
+              />
+            </Box>
+          ))}
+        </Box>
+
+        <Box p={2} sx={{ border:'1px solid #FFC107' }}>
+          <Box display="flex" justifyContent="space-between" mb={1}>
+            <Typography variant="h6">Live Floor Counts</Typography>
+            <Typography variant="body2">Last updated: {lastUpdate}</Typography>
+          </Box>
+          <ChartCard
+            data={Object.entries(siteLive.floors).map(([floor,cnt])=>({name:floor,value:cnt}))}
+            dataKey="value"
+            chartHeight={300}
+          />
+          <Box textAlign="right" mt={1}>
+            <Button onClick={()=>navigate(`/partition/${encodeURIComponent(partition)}/details`)}>
+              See Details
+            </Button>
+          </Box>
+        </Box>
+      </Box>
+      <Footer/>
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+// src/pages/PartitionDetailDetails.jsx
+import React, { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Container, Box, Typography, Button, TextField,
+  Paper, TableContainer, Table, TableHead, TableRow, TableCell, TableBody
+} from '@mui/material';
+
+import Header         from '../components/Header';
+import Footer         from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import DataTable      from '../components/DataTable';
+import { fetchLiveSummary } from '../api/occupancy.service';
+import { lookupFloor }      from '../utils/floorLookup';
+
+export default function PartitionDetailDetails() {
+  const { partition } = useParams();
+  const navigate = useNavigate();
+
+  const [details, setDetails] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdate, setLast] = useState('');
+  const [search, setSearch]   = useState('');
+
+  useEffect(() => {
+    fetchLiveSummary().then(js => {
+      const det = js.details
+        .filter(r=>r.PartitionName2===partition && r.Direction==='InDirection')
+        .map(r=>({ ...r, floor: lookupFloor(partition,r.Door,r.Direction) }));
+      setDetails(det);
+      setLast(new Date().toLocaleTimeString());
+      setLoading(false);
+    });
+  },[partition]);
+
+  const grouped = useMemo(() => {
+    const m = {};
+    details.forEach(r => {
+      m[r.floor] = m[r.floor]||[];
+      m[r.floor].push(r);
+    });
+    return m;
+  }, [details]);
+
+  const filtered = useMemo(() => {
+    const term = search.toLowerCase();
+    return Object.entries(grouped).map(([floor,emps])=>[
+      floor,
+      emps.filter(e=> e.ObjectName1.toLowerCase().includes(term)||e.EmployeeID.includes(term))
+    ]).filter(([,emps])=>emps.length);
+  }, [grouped,search]);
+
+  if (loading) return <LoadingSpinner/>;
+
+  const columns = [
+    { field:'EmployeeID', headerName:'Emp ID'},
+    { field:'ObjectName1', headerName:'Name'},
+    { field:'LocaleMessageTime', headerName:'Swipe Time'},
+    { field:'PersonnelType', headerName:'Type'},
+    { field:'CardNumber', headerName:'Card'},
+    { field:'Door', headerName:'Door'}
+  ];
+
+  return (
+    <>
+      <Header/>
+      <Container maxWidth={false} disableGutters sx={{ p:2 }}>
+        <Button onClick={()=>navigate(-1)}>← Back to Overview</Button>
+        <Box display="flex" alignItems="center" my={2}>
+          <Typography variant="h6" sx={{ mr:2 }}>Floor Details</Typography>
+          {lastUpdate && <Typography variant="body2">Last updated: {lastUpdate}</Typography>}
+          <TextField
+            size="small"
+            placeholder="Search…"
+            value={search}
+            onChange={e=>setSearch(e.target.value)}
+            sx={{ ml:2 }}
+          />
+        </Box>
+
+        {filtered.map(([floor,emps])=>(
+          <Box key={floor} mb={3}>
+            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+              {floor} (Total {emps.length})
+            </Typography>
+            <DataTable columns={columns} rows={emps.map((r,i)=>({
+              ...r,
+              LocaleMessageTime: r.LocaleMessageTime.slice(11,19)
+            }))}/>
+          </Box>
+        ))}
+      </Container>
+      <Footer/>
+    </>
+  );
+}
+
+
+
+
+
+
+
+// src/routes/AppRoutes.jsx
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+
+import Dashboard               from '../pages/Dashboard';
+import History                 from '../pages/History';
+import PartitionDetail         from '../pages/PartitionDetail';
+import PartitionDetailDetails  from '../pages/PartitionDetailDetails';
+
+export default function AppRoutes() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Dashboard/>} />
+        <Route path="/history" element={<History/>} />
+        <Route path="/partition/:partition" element={<PartitionDetail/>} />
+        <Route path="/partition/:partition/details" element={<PartitionDetailDetails/>} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
 http://localhost:3005/api/occupancy/live-summary
 
 {
