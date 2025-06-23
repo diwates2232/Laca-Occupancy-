@@ -1,3 +1,12 @@
+- <Route path="/realtime/:partition" …
++ <Route path="/partition/:partition/details" …
+
+
+
+
+
+
+
 const displayNameMap = {
   'AUT.Vienna':   'Vienna',
   'DU.Abu Dhab':  'Abu Dhabi',
