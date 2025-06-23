@@ -1,3 +1,60 @@
+// src/config/db.js
+require('dotenv').config();    // just in case it wasn’t routed through server.js
+const sql = require('mssql');
+
+// —— DEBUGGING CHECK ——
+if (!process.env.DB_SERVER) {
+  console.error('❌ ENV ERROR: DB_SERVER is undefined. Did you place .env in the project root?');
+  process.exit(1);
+}
+console.log('🔍 Connecting to DB_SERVER:', process.env.DB_SERVER);
+
+// —— ACTUAL CONFIG ——
+const dbConfig = {
+  user:     process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  server:   process.env.DB_SERVER,
+  database: process.env.DB_DATABASE,
+  port:     parseInt(process.env.DB_PORT, 10),
+  options: {
+    encrypt: true,
+    trustServerCertificate: true
+  },
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000
+  }
+};
+
+const poolPromise = new sql.ConnectionPool(dbConfig)
+  .connect()
+  .then(pool => {
+    console.log('✅ MSSQL connected');
+    return pool;
+  })
+  .catch(err => {
+    console.error('❌ MSSQL connection failed', err);
+    process.exit(1);
+  });
+
+module.exports = {
+  sql,
+  poolPromise
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
 PS C:\Users\W0024618\Desktop\emea-occupancy-backend> node server.js
 🚀 Server running on port 3005
 ❌ MSSQL connection failed TypeError: The "config.server" property is required and must be of type string.
