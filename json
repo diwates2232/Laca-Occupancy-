@@ -1,3 +1,118 @@
+// src/hooks/useLiveOccupancy.js
+import { useState, useEffect, useRef } from 'react';
+import { fetchLiveSummary } from '../api/occupancy.service';
+
+export function useLiveOccupancy(interval = 1000) {
+  const [data, setData]     = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]   = useState(null);
+  const timer = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      try {
+        const json = await fetchLiveSummary();
+        if (!active) return;
+        setData(json);
+        setLoading(false);
+      } catch (e) {
+        if (!active) return;
+        setError(e);
+        setLoading(false);
+      }
+    }
+    load();
+    timer.current = setInterval(load, interval);
+    return () => {
+      active = false;
+      clearInterval(timer.current);
+    };
+  }, [interval]);
+
+  return { data, loading, error };
+}
+
+
+
+
+
+
+
+--- a/src/pages/Dashboard.jsx
++++ b/src/pages/Dashboard.jsx
+@@
+-import Header from '../components/Header';
++import Header from '../components/Header';
+ import Footer from '../components/Footer';
+ import SummaryCard from '../components/SummaryCard';
+ import ChartCard from '../components/ChartCard';
+-import { useLiveOccupancy } from '../components/useLiveOccupancy';
++import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+ 
+@@ JSX
+-            <ChartCard
++          <ChartCard
+             chartType="bar"
+             chartHeight={360}
+             data={partitions.map((p, i) => ({
+@@
+-              breakdown={{
+-                Employee: realtimeEmp,
+-                Contractor: realtimeCont,
+-                TempBadge: partitions.reduce((sum,p)=>sum+p.TempBadge,0),
+-              }}
++              breakdown={{
++                Employee: realtimeEmp,
++                Contractor: realtimeCont,
++                TempBadge: partitions.reduce((sum,p) => sum + (p.TempBadge||0), 0),
++              }}
+           />
+
+
+
+
+
+
+--- a/src/pages/PartitionDetail.jsx
++++ b/src/pages/PartitionDetail.jsx
+@@ top of file
+-import SummaryCard from "../components/SummaryCard";
+-import ChartCard   from "../components/ChartCard";
+-import Header      from "../components/Header";
+-import Footer      from "../components/Footer";
+-import LoadingSpinner from "../components/LoadingSpinner";
++import SummaryCard    from "../components/SummaryCard";
++import ChartCard      from "../components/ChartCard";
++import Header         from "../components/Header";
++import Footer         from "../components/Footer";
++import LoadingSpinner from "../components/LoadingSpinner";
++
++// Icons
++import GroupIcon         from '@mui/icons-material/Group';
++import TrackChangesIcon  from '@mui/icons-material/TrackChanges';
++import PeopleIcon        from '@mui/icons-material/People';
++import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
+ 
+ import { fetchLiveSummary, fetchHistory } from "../api/occupancy.service";
+ import { lookupFloor } from "../utils/floorLookup";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ERROR in ./src/pages/Dashboard.jsx 17:0-61
 Module not found: Error: Can't resolve '../hooks/useLiveOccupancy' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
 ERROR
