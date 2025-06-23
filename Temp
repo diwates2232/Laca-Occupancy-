@@ -1,3 +1,15 @@
+npx create-react-app emea-occupancy-frontend
+cd emea-occupancy-frontend
+npm install @mui/material @emotion/react @emotion/styled recharts dayjs date-fns xlsx file-saver react-router-dom
+
+
+
+
+
+
+
+
+
 Read below all laca frontend project Structure and help me to Build emea frontend step by step.
 
 C:\Users\W0024618\Desktop\laca-occupancy-frontend\public
