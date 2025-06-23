@@ -1,3 +1,46 @@
+// test-connection.js
+require('dotenv').config();
+const sql = require('mssql');
+
+const config = {
+  user:     process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  server:   process.env.DB_SERVER,
+  port:     parseInt(process.env.DB_PORT, 10),
+  database: process.env.DB_DATABASE,
+  options: {
+    encrypt: true,
+    trustServerCertificate: true
+  }
+};
+
+console.log('🧪 Testing connection with config:', {
+  user: config.user,
+  server: config.server,
+  database: config.database,
+  port: config.port
+});
+
+sql.connect(config)
+  .then(pool => {
+    console.log('✅ test-connection: Connected!');
+    return pool.close();
+  })
+  .catch(err => {
+    console.error('❌ test-connection failed:', err);
+  });
+
+
+
+
+node test-connection.js
+
+
+
+
+
+
+
 PS C:\Users\W0024618\Desktop\emea-occupancy-backend> node server.js
 🔍 Connecting to DB_SERVER: SRVWUFRA0986V port: 1433
 🚀 Server running on port 3005
