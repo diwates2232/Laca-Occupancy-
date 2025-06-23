@@ -1,3 +1,39 @@
+   // …other entries…
+
+-  {
+-    partition: 'LT.Vilnius',
+-    door: ` EMEA_LTU_VNO_GAMA_1st Floor_Community Space`,
+-    inDirectionFloor: '1st Floor',
+-    outDirectionFloor: '1st Floor',
+-  },
++  {
++    partition: 'LT.Vilnius',
++    door: 'EMEA_LTU_VNO_GAMA_1st Floor_Community Space',
++    inDirectionFloor: '1st Floor',
++    outDirectionFloor: '1st Floor',
++  },
+
+-{
+-    partition: 'ES.Madrid',
+-    door: ` ES MADRID MAIN DOOR`,
+-    inDirectionFloor: 'Madrid',
+-    outDirectionFloor: 'Out of office',
+-  },
++  {
++    partition: 'ES.Madrid',
++    door: 'ES MADRID MAIN DOOR',
++    inDirectionFloor: 'Madrid',
++    outDirectionFloor: 'Out of office',
++  },
+
+   {
+     partition: 'DU.Abu Dhab',
+     door: `EMEA_UAE_DUB_Main Entrance Door`,
+     // …
+
+
+
+
 PS C:\Users\W0024618\Desktop\emea-occupancy-backend> node server.js
 🔍 DB CONFIG: user="GSOC_Test" server="SRVWUFRA0986V" database="ACVSUJournal_00011027" port=1433
 🚀 Server running on port 3005
