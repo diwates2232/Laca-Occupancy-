@@ -1,3 +1,19 @@
+- <Typography variant="h6" sx={{ fontWeight: 600, mr: 3 }}>
+-   Western Union – LACA
++ <Typography variant="h6" sx={{ fontWeight: 600, mr: 3 }}>
++   Western Union – EMEA
+   {currentPartition && (
+-    <> • {currentPartition.replace('CR.Costa Rica Partition','Costa Rica')}</>
++    <> • {currentPartition}</>
+   )}
+ </Typography>
+
+
+
+
+
+
+
 -import CostaRicaFlag from '../assets/flags/costa-rica.png';
 -import ArgentinaFlag  from '../assets/flags/argentina.png';
 -import MexicoFlag     from '../assets/flags/mexico.png';
