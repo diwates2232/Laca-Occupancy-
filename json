@@ -1,3 +1,13 @@
+-import { partitionList }    from '../api/occupancy.service';
++import { partitionList }    from '../api/occupancy.service';
+
+
+
+
+
+
+
+
 const BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3005';
 
 export async function fetchLiveSummary() {
