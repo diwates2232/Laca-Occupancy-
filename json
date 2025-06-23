@@ -1,3 +1,24 @@
+ERROR in ./src/pages/Dashboard.jsx 17:0-61
+Module not found: Error: Can't resolve '../hooks/useLiveOccupancy' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+ERROR
+[eslint] 
+src\pages\Dashboard.jsx
+  Line 119:76:  'flagMap' is not defined  no-undef
+
+src\pages\PartitionDetail.jsx
+  Line 58:65:  'SummaryCardIcon' is not defined     react/jsx-no-undef
+  Line 59:66:  'PeopleIcon' is not defined          react/jsx-no-undef
+  Line 60:68:  'BusinessCenterIcon' is not defined  react/jsx-no-undef
+  Line 61:66:  'TrackChangesIcon' is not defined    react/jsx-no-undef
+  Line 62:69:  'PeopleIcon' is not defined          react/jsx-no-undef
+  Line 63:71:  'BusinessCenterIcon' is not defined  react/jsx-no-undef
+
+Search for the keywords to learn more about each error.
+
+
+
+
+
 cd C:\Users\W0024618\Desktop\emea-occupancy-frontend
 npm install @mui/icons-material @mui/x-date-pickers date-fns @date-io/date-fns
 
