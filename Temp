@@ -1,3 +1,75 @@
+# .env (must be at C:\Users\W0024618\Desktop\emea-occupancy-backend\.env)
+DB_USER=GSOC_Test
+DB_PASSWORD=Westernuniongsoc@2025
+DB_SERVER=SRVWUFRA0986V
+DB_DATABASE=ACVSUJournal_00010027
+DB_PORT=1433
+PORT=3005
+
+
+
+
+
+// src/config/db.js
+require('dotenv').config();
+const sql = require('mssql');
+
+// Quick sanity check at startup
+if (!process.env.DB_SERVER || !process.env.DB_USER) {
+  console.error('❌ Missing DB_SERVER or DB_USER in environment');
+  process.exit(1);
+}
+
+const dbConfig = {
+  server: process.env.DB_SERVER,        // e.g. "SRVWUFRA0986V"
+  port:   parseInt(process.env.DB_PORT, 10), // e.g. 1433
+  database: process.env.DB_DATABASE,    // e.g. "ACVSUJournal_00010027"
+  options: {
+    encrypt: true,
+    trustServerCertificate: true
+  },
+  authentication: {
+    type: 'default',                    // SQL Server Authentication
+    options: {
+      userName: process.env.DB_USER,    // e.g. "GSOC_Test"
+      password: process.env.DB_PASSWORD // e.g. "Westernuniongsoc@2025"
+    }
+  },
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000
+  }
+};
+
+// Debug print
+console.log(
+  `🔍 Connecting to ${dbConfig.server}:${dbConfig.port} ` +
+  `DB="${dbConfig.database}" as ${dbConfig.authentication.options.userName}`
+);
+
+const poolPromise = new sql.ConnectionPool(dbConfig)
+  .connect()
+  .then(pool => {
+    console.log('✅ MSSQL connected');
+    return pool;
+  })
+  .catch(err => {
+    console.error('❌ MSSQL connection failed', err);
+    process.exit(1);
+  });
+
+module.exports = {
+  sql,
+  poolPromise
+};
+
+
+
+
+
+
+
 We got this error , i have run same query using same db user and using password query is execute in mssql since we got this error ,
 so which file you need to check and update
 
