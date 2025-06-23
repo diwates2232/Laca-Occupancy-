@@ -1,3 +1,39 @@
 curl http://localhost:3001/api/occupancy/live-summary
 curl http://localhost:3001/api/occupancy/history
 curl http://localhost:3001/api/occupancy/history/AR.Cordoba
+
+
+
+pm2 list
+
+
+pm2 restart all
+
+
+pm2 flush
+pm2 reload all
+
+
+
+pm2 delete all
+pm2 start app.js
+
+
+pm2 stop all
+
+
+
+pm2 stop all
+node app.js
+
+
+pm2 delete all
+
+
+
+pm2 start app.js --name denver-backend
+
+
+
+
+
