@@ -1,3 +1,49 @@
+-import CostaRicaFlag from '../assets/flags/costa-rica.png';
+-import ArgentinaFlag  from '../assets/flags/argentina.png';
+-import MexicoFlag     from '../assets/flags/mexico.png';
+-import PeruFlag       from '../assets/flags/peru.png';
+-import BrazilFlag     from '../assets/flags/brazil.png';
+-import PanamaFlag     from '../assets/flags/panama.png';
++import AustriaFlag    from '../assets/flags/austria.png';
++import UAEFlag        from '../assets/flags/uae.png';
++import IrelandFlag    from '../assets/flags/ireland.png';
++import ItalyFlag      from '../assets/flags/italy.png';
++import LithuaniaFlag  from '../assets/flags/lithuania.png';
++import MoroccoFlag    from '../assets/flags/morocco.png';
++import RussiaFlag     from '../assets/flags/russia.png';
++import UKFlag         from '../assets/flags/uk.png';
++import SpainFlag      from '../assets/flags/spain.png';
+
+ const flagMap = {
+-  'CR.Costa Rica Partition': CostaRicaFlag,
+-  'AR.Cordoba':               ArgentinaFlag,
+-  'MX.Mexico City':           MexicoFlag,
+-  'PE.Lima':                  PeruFlag,
+-  'BR.Sao Paulo':             BrazilFlag,
+-  'PA.Panama City':           PanamaFlag,
++  'AUT.Vienna':      AustriaFlag,
++  'DU.Abu Dhab':     UAEFlag,
++  'IE.Dublin':       IrelandFlag,
++  'IT.Rome':         ItalyFlag,
++  'LT.Vilnius':      LithuaniaFlag,
++  'MA.Casablanca':   MoroccoFlag,
++  'RU.Moscow':       RussiaFlag,
++  'UK.London':       UKFlag,
++  'ES.Madrid':       SpainFlag,
+ };
+
+
+
+
+
+
+
+
+
+
+
+
+
 -export const partitionList = [
 -  'CR.Costa Rica Partition',
 -  'MX.Mexico City',
