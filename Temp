@@ -1,3 +1,33 @@
+const displayNameMap = {
+  'AUT.Vienna':   'Vienna',
+  'DU.Abu Dhab':  'Abu Dhabi',
+  'IE.Dublin':    'Dublin',
+  'IT.Rome':      'Rome',
+  'LT.Vilnius':   'Vilnius',
+  'MA.Casablanca':'Casablanca',
+  'RU.Moscow':    'Moscow',
+  'UK.London':    'London',
+  'ES.Madrid':    'Madrid'
+};
+
+const colorsMap = {
+  'AUT.Vienna':   ['#FFD666','#fcf3cf','#2ecc71','#ec7063'],
+  'DU.Abu Dhab':  ['#FFE599','#fcf3cf','#2ecc71','#ec7063'],
+  'IE.Dublin':    ['#FFD666','#fcf3cf','#2ecc71','#ec7063'],
+  'IT.Rome':      ['#FFF2CC','#fcf3cf','#2ecc71','#ec7063'],
+  'LT.Vilnius':   ['#FFD666','#fcf3cf','#2ecc71','#ec7063'],
+  'MA.Casablanca':['#FFE599','#fcf3cf','#2ecc71','#ec7063'],
+  'RU.Moscow':    ['#FFC107','#fcf3cf','#2ecc71','#ec7063'],
+  'UK.London':    ['#FFF2CC','#fcf3cf','#2ecc71','#ec7063'],
+  'ES.Madrid':    ['#FFE599','#fcf3cf','#2ecc71','#ec7063']
+};
+
+
+
+
+
+
+
 - <Typography variant="h6" sx={{ fontWeight: 600, mr: 3 }}>
 -   Western Union – LACA
 + <Typography variant="h6" sx={{ fontWeight: 600, mr: 3 }}>
