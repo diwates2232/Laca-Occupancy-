@@ -1,3 +1,72 @@
+// src/config/db.js
+require('dotenv').config();
+const sql = require('mssql');
+
+// Pull in raw env-vars
+const rawUser     = process.env.DB_USER;
+const rawPassword = process.env.DB_PASSWORD;
+const rawServer   = process.env.DB_SERVER;
+const rawDatabase = process.env.DB_DATABASE;
+const rawPort     = process.env.DB_PORT;
+
+// Show lengths—if you’ve got extra spaces/BOM, you’ll see them here
+console.log(`DB_USER     = "${rawUser}"     (length ${rawUser?.length})`);
+console.log(`DB_PASSWORD = "${rawPassword}" (length ${rawPassword?.length})`);
+console.log(`DB_SERVER   = "${rawServer}"   (length ${rawServer?.length})`);
+console.log(`DB_DATABASE = "${rawDatabase}" (length ${rawDatabase?.length})`);
+console.log(`DB_PORT     = "${rawPort}"     (length ${rawPort?.length})`);
+
+// Trim everything
+const DB_USER     = rawUser?.trim();
+const DB_PASSWORD = rawPassword?.trim();
+const DB_SERVER   = rawServer?.trim();
+const DB_DATABASE = rawDatabase?.trim();
+const DB_PORT     = parseInt(rawPort?.trim(), 10);
+
+const dbConfig = {
+  server: DB_SERVER,
+  port:   DB_PORT,
+  database: DB_DATABASE,
+  authentication: {
+    type: 'default',
+    options: {
+      userName: DB_USER,
+      password: DB_PASSWORD
+    }
+  },
+  options: {
+    encrypt: true,
+    trustServerCertificate: true
+  },
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000
+  }
+};
+
+console.log(
+  `🔍 Connecting to ${DB_SERVER}:${DB_PORT} ` +
+  `DB="${DB_DATABASE}" as ${DB_USER}`
+);
+
+sql
+  .connect(dbConfig)
+  .then(pool => {
+    console.log('✅ MSSQL connected');
+    module.exports = { sql, poolPromise: Promise.resolve(pool) };
+  })
+  .catch(err => {
+    console.error('❌ MSSQL connection failed', err);
+    process.exit(1);
+  });
+
+
+
+
+
+
+
 # .env (must be at C:\Users\W0024618\Desktop\emea-occupancy-backend\.env)
 DB_USER=GSOC_Test
 DB_PASSWORD=Westernuniongsoc@2025
