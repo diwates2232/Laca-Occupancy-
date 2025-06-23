@@ -1,3 +1,163 @@
+Solve error one by one also build all components jsx carefully
+
+C:\Users\W0024618\Desktop\emea-occupancy-frontend> npm start
+
+> emea-occupancy-frontend@0.1.0 start
+> react-scripts start
+
+(node:24544) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:24544) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+Starting the development server...
+Failed to compile.
+
+Module not found: Error: Can't resolve '@mui/icons-material/Home' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\components'
+ERROR in ./src/components/Header.js 9:0-48
+Module not found: Error: Can't resolve '@mui/icons-material/Home' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\components'
+
+ERROR in ./src/components/Header.js 10:0-54
+Module not found: Error: Can't resolve '@mui/icons-material/History' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\components'
+
+ERROR in ./src/components/Header.js 11:0-54
+Module not found: Error: Can't resolve '@mui/icons-material/ListAlt' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\components'
+
+ERROR in ./src/components/Header.js 12:0-43
+Module not found: Error: Can't resolve '../assets/wu-logo.png' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\components'
+
+ERROR in ./src/components/Header.js 13:0-54
+Module not found: Error: Can't resolve '../assets/flags/austria.png' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\components'
+
+ERROR in ./src/components/Header.js 14:0-46
+Module not found: Error: Can't resolve '../assets/flags/uae.png' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\components'
+
+ERROR in ./src/components/Header.js 15:0-54
+Module not found: Error: Can't resolve '../assets/flags/ireland.png' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\components'
+
+ERROR in ./src/components/Header.js 16:0-50
+Module not found: Error: Can't resolve '../assets/flags/italy.png' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\components'
+
+ERROR in ./src/components/Header.js 17:0-58
+Module not found: Error: Can't resolve '../assets/flags/lithuania.png' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\components'
+
+ERROR in ./src/components/Header.js 18:0-54
+Module not found: Error: Can't resolve '../assets/flags/morocco.png' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\components'
+
+ERROR in ./src/components/Header.js 19:0-52
+Module not found: Error: Can't resolve '../assets/flags/russia.png' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\components'
+
+ERROR in ./src/components/Header.js 20:0-44
+Module not found: Error: Can't resolve '../assets/flags/uk.png' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\components'
+
+ERROR in ./src/components/Header.js 21:0-50
+Module not found: Error: Can't resolve '../assets/flags/spain.png' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\components'
+
+ERROR in ./src/pages/Dashboard.jsx 8:0-50
+Module not found: Error: Can't resolve '@mui/icons-material/Group' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/Dashboard.jsx 9:0-64
+Module not found: Error: Can't resolve '@mui/icons-material/TrackChanges' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/Dashboard.jsx 10:0-52
+Module not found: Error: Can't resolve '@mui/icons-material/People' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/Dashboard.jsx 11:0-68
+Module not found: Error: Can't resolve '@mui/icons-material/BusinessCenter' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/Dashboard.jsx 13:0-42
+Module not found: Error: Can't resolve '../components/Footer' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/Dashboard.jsx 14:0-52
+Module not found: Error: Can't resolve '../components/SummaryCard' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/Dashboard.jsx 15:0-48
+Module not found: Error: Can't resolve '../components/ChartCard' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/Dashboard.jsx 16:0-58
+Module not found: Error: Can't resolve '../components/LoadingSpinner' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/Dashboard.jsx 17:0-61
+Module not found: Error: Can't resolve '../hooks/useLiveOccupancy' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/History.jsx 9:0-71
+Module not found: Error: Can't resolve '@mui/x-date-pickers' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/History.jsx 10:0-68
+Module not found: Error: Can't resolve '@mui/x-date-pickers/AdapterDateFns' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/History.jsx 15:0-42
+Module not found: Error: Can't resolve '../components/Footer' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/History.jsx 16:0-58
+Module not found: Error: Can't resolve '../components/LoadingSpinner' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/PartitionDetail.jsx 10:0-42
+Module not found: Error: Can't resolve '../components/Footer' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/PartitionDetail.jsx 11:0-52
+Module not found: Error: Can't resolve '../components/SummaryCard' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/PartitionDetail.jsx 12:0-48
+Module not found: Error: Can't resolve '../components/ChartCard' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/PartitionDetail.jsx 13:0-58
+Module not found: Error: Can't resolve '../components/LoadingSpinner' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/PartitionDetail.jsx 15:0-51
+Module not found: Error: Can't resolve '../utils/floorLookup' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/PartitionDetailDetails.jsx 10:0-42
+Module not found: Error: Can't resolve '../components/Footer' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/PartitionDetailDetails.jsx 11:0-58
+Module not found: Error: Can't resolve '../components/LoadingSpinner' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/PartitionDetailDetails.jsx 12:0-48
+Module not found: Error: Can't resolve '../components/DataTable' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+ERROR in ./src/pages/PartitionDetailDetails.jsx 14:0-51
+Module not found: Error: Can't resolve '../utils/floorLookup' in 'C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages'
+
+webpack compiled with 35 errors
+PS C:\Users\W0024618\Desktop\emea-occupancy-frontend> 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // src/components/Header.jsx
 import React from 'react';
 import {
