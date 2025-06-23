@@ -1,3 +1,49 @@
+// src/utils/doorMap.js
+
+const doorMap = [
+  // … all of your entries …
+  {
+    partition: 'AUT.Vienna',
+    door: 'EMEA_AUT_VIENNA_ICON_11FLR_WUPSIL Main Entrance Door',
+    inDirectionFloor: '11th Floor',
+    outDirectionFloor: 'Out of office',
+  },
+  // (include everything from your backend doorMap here)
+];
+
+export default doorMap;
+
+
+
+
+// src/utils/floorLookup.js
+
+import doorMap from './doorMap';
+
+/**
+ * Given a partition, door and direction, return the mapped floor string.
+ * Falls back to 'Unmapped' only if there’s no matching entry.
+ */
+export function lookupFloor(partition, door, direction) {
+  const entry = doorMap.find(
+    d => d.partition === partition && d.door === door
+  );
+  if (!entry) return 'Unmapped';
+  return direction === 'InDirection'
+    ? entry.inDirectionFloor
+    : entry.outDirectionFloor;
+}
+
+
+
+
+
+
+
+
+
+
+
 import React, { useState } from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import {
