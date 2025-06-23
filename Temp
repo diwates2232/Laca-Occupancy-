@@ -1,3 +1,81 @@
+// server.js (at project root)
+require('dotenv').config();           // ← load .env from project root
+
+const app = require('./src/app');     // ← now points to src/app.js
+
+const PORT = process.env.PORT || 3005;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
+
+
+
+
+// src/app.js
+const express = require('express');
+const cors    = require('cors');
+const occupancyRoutes = require('./routes/occupancy.routes');
+
+const app = express();
+app.use(express.json());
+app.use(cors());
+
+// Health check
+app.get('/', (req, res) => res.send('🌍 EMEA Occupancy API Running'));
+
+// Mount our occupancy routes
+app.use('/api/occupancy', occupancyRoutes);
+
+module.exports = app;
+
+
+
+
+// src/config/db.js
+const sql = require('mssql');
+
+// NO dotenv here — we already loaded it in server.js
+
+const dbConfig = {
+  user:     process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  server:   process.env.DB_SERVER,      // ← now should be defined
+  database: process.env.DB_DATABASE,
+  port:     parseInt(process.env.DB_PORT, 10),
+  options: {
+    encrypt: true,
+    trustServerCertificate: true
+  },
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000
+  }
+};
+
+const poolPromise = new sql.ConnectionPool(dbConfig)
+  .connect()
+  .then(pool => {
+    console.log('✅ MSSQL connected');
+    return pool;
+  })
+  .catch(err => {
+    console.error('❌ MSSQL connection failed', err);
+  });
+
+module.exports = {
+  sql,
+  poolPromise
+};
+
+
+
+
+
+
+
+
+
 Once check all files carefully and update one by one .
 
 PS C:\Users\W0024618\Desktop\emea-occupancy-backend> node src/server.js
