@@ -1,3 +1,30 @@
+-export const partitionList = [
+-  'CR.Costa Rica Partition',
+-  'MX.Mexico City',
+-  'AR.Cordoba',
+-  'PA.Panama City',
+-  'PE.Lima',
+-  'BR.Sao Paulo'
+-];
++export const partitionList = [
++  'AUT.Vienna',
++  'DU.Abu Dhab',
++  'IE.Dublin',
++  'IT.Rome',
++  'LT.Vilnius',
++  'MA.Casablanca',
++  'RU.Moscow',
++  'UK.London',
++  'ES.Madrid'
++];
+
+
+
+
+
+
+
+
 - const BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
 + const BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3005';
 
