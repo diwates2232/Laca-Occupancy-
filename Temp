@@ -1,70 +1,215 @@
-// src/config/db.js
-require('dotenv').config();    // just in case it wasn’t routed through server.js
-const sql = require('mssql');
+once check below files and solve the issue
 
-// —— DEBUGGING CHECK ——
-if (!process.env.DB_SERVER) {
-  console.error('❌ ENV ERROR: DB_SERVER is undefined. Did you place .env in the project root?');
-  process.exit(1);
-}
-console.log('🔍 Connecting to DB_SERVER:', process.env.DB_SERVER);
-
-// —— ACTUAL CONFIG ——
-const dbConfig = {
-  user:     process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  server:   process.env.DB_SERVER,
-  database: process.env.DB_DATABASE,
-  port:     parseInt(process.env.DB_PORT, 10),
-  options: {
-    encrypt: true,
-    trustServerCertificate: true
-  },
-  pool: {
-    max: 10,
-    min: 0,
-    idleTimeoutMillis: 30000
-  }
-};
-
-const poolPromise = new sql.ConnectionPool(dbConfig)
-  .connect()
-  .then(pool => {
-    console.log('✅ MSSQL connected');
-    return pool;
-  })
-  .catch(err => {
-    console.error('❌ MSSQL connection failed', err);
-    process.exit(1);
-  });
-
-module.exports = {
-  sql,
-  poolPromise
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-PS C:\Users\W0024618\Desktop\emea-occupancy-backend> node server.js
+ C:\Users\W0024618\Desktop\emea-occupancy-backend> node server.js
+🔍 Connecting to DB_SERVER: SRVWUFRA0986V
 🚀 Server running on port 3005
-❌ MSSQL connection failed TypeError: The "config.server" property is required and must be of type string.
-    at new Connection (C:\Users\W0024618\Desktop\emea-occupancy-backend\node_modules\tedious\lib\connection.js:276:13)
-    at C:\Users\W0024618\Desktop\emea-occupancy-backend\node_modules\mssql\lib\tedious\connection-pool.js:78:19
-    at new Promise (<anonymous>)
-    at ConnectionPool._poolCreate (C:\Users\W0024618\Desktop\emea-occupancy-backend\node_modules\mssql\lib\tedious\connection-pool.js:67:12)
-    at ConnectionPool._connect (C:\Users\W0024618\Desktop\emea-occupancy-backend\node_modules\mssql\lib\base\connection-pool.js:446:10)
-    at C:\Users\W0024618\Desktop\emea-occupancy-backend\node_modules\mssql\lib\base\connection-pool.js:418:19
-    at new Promise (<anonymous>)
-    at ConnectionPool.connect (C:\Users\W0024618\Desktop\emea-occupancy-backend\node_modules\mssql\lib\base\connection-pool.js:417:12)
-    at Object.<anonymous> (C:\Users\W0024618\Desktop\emea-occupancy-backend\src\config\db.js:24:4)
-    at Module._compile (node:internal/modules/cjs/loader:1730:14)
+❌ MSSQL connection failed ConnectionError: Login failed for user 'GSOC_Test'.
+    at C:\Users\W0024618\Desktop\emea-occupancy-backend\node_modules\mssql\lib\tedious\connection-pool.js:85:17
+    at Connection.onConnect (C:\Users\W0024618\Desktop\emea-occupancy-backend\node_modules\tedious\lib\connection.js:849:9)
+    at Object.onceWrapper (node:events:633:26)
+    at Connection.emit (node:events:518:28)
+    at Connection.emit (C:\Users\W0024618\Desktop\emea-occupancy-backend\node_modules\tedious\lib\connection.js:970:18)
+    at C:\Users\W0024618\Desktop\emea-occupancy-backend\node_modules\tedious\lib\connection.js:2369:18
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  code: 'ELOGIN',
+  originalError: ConnectionError: Login failed for user 'GSOC_Test'.
+      at Login7TokenHandler.onErrorMessage (C:\Users\W0024618\Desktop\emea-occupancy-backend\node_modules\tedious\lib\token\handler.js:186:19)
+      at Readable.<anonymous> (C:\Users\W0024618\Desktop\emea-occupancy-backend\node_modules\tedious\lib\token\token-stream-parser.js:19:33)
+      at Readable.emit (node:events:518:28)
+      at addChunk (node:internal/streams/readable:561:12)
+      at readableAddChunkPushObjectMode (node:internal/streams/readable:538:3)
+      at Readable.push (node:internal/streams/readable:393:5)
+      at nextAsync (node:internal/streams/from:194:22)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+    code: 'ELOGIN'
+  }
+}
+PS C:\Users\W0024618\Desktop\emea-occupancy-backend> 
+
+
+C:\Users\W0024618\Desktop\emea-occupancy-backend\src\services\occupancy.service.js
+
+
+const { poolPromise, sql } = require('../config/db');
+
+/**
+ * EMEA partition list
+ */
+const partitionList = [
+  'AUT.Vienna',
+  'DU.Abu Dhab',
+  'IE.Dublin',
+  'IT.Rome',
+  'LT.Vilnius',
+  'MA.Casablanca',
+  'RU.Moscow',
+  'UK.London'
+];
+
+/**
+ * Live occupancy (today)
+ */
+exports.fetchLiveOccupancy = async () => {
+  const pool = await poolPromise;
+  const partitionsSql = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
+
+  const query = `
+    WITH CombinedQuery AS (
+      SELECT
+        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
+        t1.ObjectName1,
+        t1.ObjectName2            AS Door,
+        CASE
+          WHEN t3.Name IN ('Contractor','Terminated Contractor')
+            THEN t2.Text12
+          ELSE CAST(t2.Int1 AS NVARCHAR)
+        END                       AS EmployeeID,
+        t2.text5                  AS Text5,
+        t1.PartitionName2         AS PartitionName2,
+        t1.ObjectIdentity1        AS PersonGUID,
+        t3.Name                   AS PersonnelType,
+        COALESCE(
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]','varchar(50)'),
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID)[1]','varchar(50)'),
+          sc.value
+        )                         AS CardNumber,
+        t5a.value                 AS AdmitCode,
+        t5d.value                 AS Direction
+      FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLog] AS t1
+      LEFT JOIN [ACVSCore].[Access].[Personnel]     AS t2
+        ON t1.ObjectIdentity1 = t2.GUID
+      LEFT JOIN [ACVSCore].[Access].[PersonnelType] AS t3
+        ON t2.PersonnelTypeId = t3.ObjectID
+      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5a
+        ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
+      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5d
+        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
+      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxml] AS t_xml
+        ON t1.XmlGUID = t_xml.GUID
+      LEFT JOIN (
+        SELECT GUID, value
+        FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred]
+        WHERE Name IN ('Card','CHUID')
+      ) AS sc
+        ON t1.XmlGUID = sc.GUID
+      WHERE
+        t1.MessageType = 'CardAdmitted'
+        AND t1.PartitionName2 IN (${partitionsSql})
+        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
+            = CONVERT(DATE, GETDATE())
+    )
+    SELECT
+      LocaleMessageTime,
+      CONVERT(VARCHAR(10), LocaleMessageTime, 23) AS Dateonly,
+      CONVERT(VARCHAR(8), LocaleMessageTime, 108) AS Swipe_Time,
+      EmployeeID,
+      PersonGUID,
+      ObjectName1,
+      Door,
+      PersonnelType,
+      CardNumber,
+      Text5,
+      PartitionName2,
+      AdmitCode,
+      Direction
+    FROM CombinedQuery
+    ORDER BY LocaleMessageTime ASC;
+  `;
+
+  const result = await pool.request().query(query);
+  return result.recordset;
+};
+
+/**
+ * Core raw‐data fetch for the past N days, all or by location.
+ */
+exports.fetchHistoricalData = async ({ days = 7, location = null }) => {
+  const pool = await poolPromise;
+  const partitionsSql = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
+  const locationFilter = location
+    ? `AND t1.PartitionName2 = @location`
+    : `AND t1.PartitionName2 IN (${partitionsSql})`;
+
+  const query = `
+    WITH Hist AS (
+      SELECT
+        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
+        t1.ObjectName1,
+        t1.ObjectName2       AS Door,
+        CASE
+          WHEN t3.Name IN ('Contractor','Terminated Contractor') THEN t2.Text12
+          ELSE CAST(t2.Int1 AS NVARCHAR)
+        END                   AS EmployeeID,
+        t2.text5             AS Text5,
+        t1.PartitionName2    AS PartitionName2,
+        t1.ObjectIdentity1   AS PersonGUID,
+        t3.Name              AS PersonnelType,
+        COALESCE(
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]','varchar(50)'),
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID)[1]','varchar(50)'),
+          sc.value
+        )                     AS CardNumber,
+        t5a.value            AS AdmitCode,
+        t5d.value            AS Direction,
+        CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC)) AS SwipeDate
+      FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLog] AS t1
+      LEFT JOIN [ACVSCore].[Access].[Personnel]     AS t2
+        ON t1.ObjectIdentity1 = t2.GUID
+      LEFT JOIN [ACVSCore].[Access].[PersonnelType] AS t3
+        ON t2.PersonnelTypeId = t3.ObjectID
+      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5a
+        ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
+      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred] AS t5d
+        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
+      LEFT JOIN [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxml] AS t_xml
+        ON t1.XmlGUID = t_xml.GUID
+      LEFT JOIN (
+        SELECT GUID, value
+        FROM [ACVSUJournal_00010027].[dbo].[ACVSUJournalLogxmlShred]
+        WHERE Name IN ('Card','CHUID')
+      ) AS sc
+        ON t1.XmlGUID = sc.GUID
+      WHERE
+        t1.MessageType = 'CardAdmitted'
+        ${locationFilter}
+        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
+            >= DATEADD(DAY, -${days}, CONVERT(DATE, GETDATE()))
+    )
+    SELECT *
+    FROM Hist
+    ORDER BY LocaleMessageTime ASC;
+  `;
+
+  const req = pool.request();
+  if (location) req.input('location', sql.NVarChar, location);
+  const result = await req.query(query);
+  return result.recordset;
+};
+
+/**
+ * Public wrapper: always last 7 days, all or by location.
+ */
+exports.fetchHistoricalOccupancy = async (location) => {
+  return exports.fetchHistoricalData({ days: 7, location: location || null });
+};
+
+module.exports.partitionList = partitionList;
+
+
+
+
+
+C:\Users\W0024618\Desktop\emea-occupancy-backend\.env
+
+
+# Database config
+DB_USER=GSOC_Test
+DB_PASSWORD=Westernuniongsoc@2025
+DB_SERVER=SRVWUFRA0986V
+DB_DATABASE=ACVSUJournal_00010027
+DB_PORT=1433
+
+PORT=3005
+
+
+
