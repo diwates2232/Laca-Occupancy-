@@ -1,3 +1,64 @@
+// src/config/db.js
+require('dotenv').config();
+const sql = require('mssql');
+
+// Pull in and trim env-vars
+const DB_USER     = (process.env.DB_USER     || '').trim();
+const DB_PASSWORD = (process.env.DB_PASSWORD || '').trim();
+const DB_SERVER   = (process.env.DB_SERVER   || '').trim();
+const DB_DATABASE = (process.env.DB_DATABASE || '').trim();
+const DB_PORT     = parseInt((process.env.DB_PORT || '').trim(), 10);
+
+console.log(
+  '🔍 DB CONFIG:',
+  `user="${DB_USER}"`,
+  `server="${DB_SERVER}"`,
+  `database="${DB_DATABASE}"`,
+  `port=${DB_PORT}`
+);
+
+const dbConfig = {
+  user:     DB_USER,
+  password: DB_PASSWORD,
+  server:   DB_SERVER,
+  port:     DB_PORT,
+  database: DB_DATABASE,
+  options: {
+    encrypt: false,                // for on-prem SQL Server
+    trustServerCertificate: true,
+    enableArithAbort: true
+  },
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000
+  }
+};
+
+// Create a single connection-pool promise and export it immediately
+const poolPromise = sql.connect(dbConfig)
+  .then(pool => {
+    console.log('✅ MSSQL connected');
+    return pool;
+  })
+  .catch(err => {
+    console.error('❌ MSSQL connection failed', err);
+    process.exit(1);
+  });
+
+module.exports = {
+  sql,
+  poolPromise
+};
+
+
+
+
+
+
+
+
+
 TypeError: Cannot read properties of undefined (reading 'request')
     at exports.fetchLiveOccupancy (C:\Users\W0024618\Desktop\emea-occupancy-backend\src\services\occupancy.service.js:87:29)
     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
