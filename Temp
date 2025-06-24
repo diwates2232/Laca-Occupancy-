@@ -1,4 +1,57 @@
 // src/pages/Dashboard.jsx
+// …
+
+export default function Dashboard() {
+  // … (everything above stays the same)
+
+  //
+  // 2) Build chart data: split Vilnius into two aggregate bars + the others
+  //
+  const chartData = [];
+
+-  // 2a) GAMA + Delta individually per floor → REMOVE
+-  Object.entries(vilniusCounts).forEach(([building, floors]) => {
+-    Object.entries(floors).forEach(([floor, cnt]) => {
+-      chartData.push({
+-        name: `Vilnius ${building} ${floor}`,
+-        value: cnt,
+-        breakdown: {}
+-      });
+-    });
+-  });
+
++  // 2a) GAMA + Delta aggregated
++  Object.entries(vilniusCounts).forEach(([building, floors]) => {
++    const totalForBuilding = Object.values(floors).reduce((sum, cnt) => sum + cnt, 0);
++    chartData.push({
++      name: `Vilnius ${building}`,
++      value: totalForBuilding,
++      breakdown: {}
++    });
++  });
+
+  // 2b) Other partitions as whole
+  partitionList.forEach(p => {
+    if (p === 'LT.Vilnius') return;
+    const r = regions[p] || {};
+    chartData.push({
+      name: displayName[p],
+      value:     r.total      || 0,
+      breakdown: { Employees: r.Employee || 0, Contractors: r.Contractor || 0 }
+    });
+  });
+
+  // … (rest stays the same)
+}
+
+
+
+
+
+
+
+
+// src/pages/Dashboard.jsx
 import React, { useEffect, useState } from 'react';
 import { Container, Box, Typography, Skeleton } from '@mui/material';
 import GroupIcon          from '@mui/icons-material/Group';
