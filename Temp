@@ -1,109 +1,6 @@
---- a/src/pages/PartitionDetail.jsx
-+++ b/src/pages/PartitionDetail.jsx
-@@ line  forty-something (around summaryCards definition)
--  // If Vilnius, override summary to show GAMA/Delta instead of the last three:
--  const summaryCards = partition === 'LT.Vilnius'
--    ? [
--        // keep first three (today’s metrics)
--        ...topItems.slice(0,3),
--        // then GAMA & Delta in real time
--        {
--          title: 'Vilnius GAMA',
--          value: vilniusCounts.GAMA,
--          icon: <TrackChangesIcon/>,
--          border: '#FFE599'
--        },
--        {
--          title: 'Vilnius Delta',
--          value: vilniusCounts.Delta,
--          icon: <TrackChangesIcon/>,
--          border: '#FFD666'
--        }
--      ]
--    : topItems;
-+  // Always show the full six top‐level cards
-+  const summaryCards = topItems;
-
-
-
-
-
-
-
-
---- a/src/pages/PartitionDetail.jsx
-+++ b/src/pages/PartitionDetail.jsx
-@@
--  // If Vilnius, override summary to show GAMA/Delta instead of the last three:
--  const summaryCards = partition === 'LT.Vilnius'
--    ? [
--        // keep first three (today’s metrics)
--        ...topItems.slice(0,3),
--        // then GAMA & Delta in real time
--        {
--          title: 'Vilnius GAMA',
--          value: vilniusCounts.GAMA,
--          icon: <TrackChangesIcon/>,
--          border: '#FFE599'
--        },
--        {
--          title: 'Vilnius Delta',
--          value: vilniusCounts.Delta,
--          icon: <TrackChangesIcon/>,
--          border: '#FFD666'
--        }
--      ]
--    : topItems;
-+  // Build summary cards:
-+  // 1) Always show the six top metrics...
-+  let summaryCards = [...topItems];
-+  // 2) ...and if Vilnius, append the GAMA/Delta split
-+  if (partition === 'LT.Vilnius') {
-+    summaryCards.push(
-+      {
-+        title: 'Vilnius GAMA',
-+        value: vilniusCounts.GAMA,
-+        icon: <TrackChangesIcon/>,
-+        border: '#FFE599'
-+      },
-+      {
-+        title: 'Vilnius Delta',
-+        value: vilniusCounts.Delta,
-+        icon: <TrackChangesIcon/>,
-+        border: '#FFD666'
-+      }
-+    );
-+  }
-@@
--        {/* Summary cards */}
-+        {/* Summary cards (always 6 top metrics, plus GAMA/Delta when Vilnius) */}
-         <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
-           {summaryCards.map(c=>(
-             <Box key={c.title} sx={{ flex:'1 1 30%', minWidth:180 }}>
-               <SummaryCard
-                 title={c.title}
-                 total={c.value}
-                 stats={[]}
-                 icon={c.icon}
-                 sx={{ height:100, border:`1px solid ${c.border}` }}
-               />
-             </Box>
-           ))}
-         </Box>
-
-
-
-
-
-
-
-
-
-Now Only Update need here is 
-for Vilinus We need Today total , Employee, Contractor, realtime Total , Realtime Employee, Realtime Contractor like ....
-in this page for Vilinus realtime total and breakdown are not visible,
-Kindly add this files carefully
-
+Now currently 3 summary cards are display in one row adjust 6 cards in one row ,
+also when i select Vilinis see details option are not visible .
+solve this 2 isue and give me updated jsx file carefully
 // src/pages/PartitionDetail.jsx
 
 import React, { useEffect, useState } from 'react';
@@ -190,27 +87,7 @@ export default function PartitionDetail() {
     { title: 'RT Employees',     value: siteLive.Employee,icon:<PeopleIcon/>,        border:'#FFD666' },
     { title: 'RT Contractors',   value: siteLive.Contractor,icon:<BusinessCenterIcon/>,border:'#FFE599' },
   ];
-
-  // If Vilnius, override summary to show GAMA/Delta instead of the last three:
-  const summaryCards = partition === 'LT.Vilnius'
-    ? [
-        // keep first three (today’s metrics)
-        ...topItems.slice(0,3),
-        // then GAMA & Delta in real time
-        {
-          title: 'Vilnius GAMA',
-          value: vilniusCounts.GAMA,
-          icon: <TrackChangesIcon/>,
-          border: '#FFE599'
-        },
-        {
-          title: 'Vilnius Delta',
-          value: vilniusCounts.Delta,
-          icon: <TrackChangesIcon/>,
-          border: '#FFD666'
-        }
-      ]
-    : topItems;
+const summaryCards = topItems;
 
   // Chart data: floors for non‐Vilnius, or GAMA/Delta bars for Vilnius
 
