@@ -1,3 +1,59 @@
+--- a/src/pages/PartitionDetailDetails.jsx
++++ b/src/pages/PartitionDetailDetails.jsx
+@@ -1,6 +1,8 @@
+ import React, { useEffect, useState, useMemo } from 'react';
+ import { useParams, useNavigate } from 'react-router-dom';
+ import {
++  /* add Box import */
+   Container, Box, Typography, Button, TextField,
+   TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody
+ } from '@mui/material';
+@@
+ import { fetchLiveSummary } from '../api/occupancy.service';
+ import { lookupFloor }      from '../utils/floorLookup';
++/* import doorMap so we know GAMA vs Delta and floor name */
++import doorMapRaw         from '../utils/doorMap';
+
+ export default function PartitionDetailDetails() {
+   const { partition } = useParams();
+@@
+   const [details, setDetails] = useState([]);
+   const [loading, setLoading] = useState(true);
+   const [lastUpdate, setLast] = useState('');
+   const [searchTerm, setSearchTerm] = useState('');
+   const [expandedFloor, setExpandedFloor] = useState(null);
++
++  // build lookup: door → { building: "GAMA"|"Delta", floor }
++  const vilniusDoorInfo = useMemo(()=>{
++    return doorMapRaw.reduce((acc, { partition: p, door, inDirectionFloor })=>{
++      if(p==='LT.Vilnius'){
++        acc[door] = {
++          building: door.toUpperCase().includes('GAMA')?'GAMA':'Delta',
++          floor: inDirectionFloor
++        };
++      }
++      return acc;
++    },{});
++  },[]);
+ 
+   useEffect(() => {
+@@
+       const det = json.details
+         .filter(r => r.PartitionName2 === partition && r.Direction==='InDirection')
+-        .map(r => ({ ...r, floor: lookupFloor(r.PartitionName2, r.Door, r.Direction) }));
++        .map(r => {
++          const info = vilniusDoorInfo[r.Door];
++          return {
++            ...r,
++            building: info?.building,
++            floor: info?.floor || lookupFloor(r.PartitionName2, r.Door, r.Direction)
++          };
++        });
+
+
+
+
+
 understand what exactly i want.
 1) In Details section Delta and gama Count are not display Sreparetly
 currently Gama 1st Floor shows Delta 1st fllor details .
