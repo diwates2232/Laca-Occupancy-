@@ -1,3 +1,231 @@
+// src/utils/partitionGroups.js
+export const summaryPartitionGroup = {
+  // label in the UI  : array of “raw” partitionName2 suffixes you want to combine
+  'Vilnius': ['GAMA', 'Delta'],
+  // you can add more groupings here later if needed
+};
+
+
+
+
+
+
+// src/pages/Dashboard.jsx
+import React, { useEffect, useState } from 'react';
+import { Container, Box, Typography, Skeleton } from '@mui/material';
+import GroupIcon          from '@mui/icons-material/Group';
+import TrackChangesIcon   from '@mui/icons-material/TrackChanges';
+import PeopleIcon         from '@mui/icons-material/People';
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
+
+import Header         from '../components/Header';
+import Footer         from '../components/Footer';
+import SummaryCard    from '../components/SummaryCard';
+import ChartCard      from '../components/ChartCard';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+import { summaryPartitionGroup } from '../utils/partitionGroups';
+
+// flags & mappings as before…
+import { partitionList, displayName, flagMap, colorsMap } from '../config/dashboardConfig';
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) {
+    return (
+      <Box py={4}>
+        <Typography color="error" align="center">
+          Error loading live data
+        </Typography>
+      </Box>
+    );
+  }
+
+  const regions = data?.realtime || {};
+
+  //
+  // 1) Build summaryCards data by grouping Vilnius GAMA+Delta under one “Vilnius” card
+  //
+  const summaryItems = [];
+
+  // First handle all “fixed” group keys
+  Object.entries(summaryPartitionGroup).forEach(([label, suffixes]) => {
+    // For each suffix, find the matching floor entries under LT.Vilnius.floors
+    // Gama vs Delta live numbers are in floors
+    const floors = regions['LT.Vilnius']?.floors || {};
+    let total = 0, emp = 0, cont = 0;
+    suffixes.forEach(suf => {
+      Object.entries(floors).forEach(([floorName, cnt]) => {
+        if (floorName.toUpperCase().includes(suf.toUpperCase())) {
+          total += cnt;
+        }
+      });
+      // we don’t have per-floor breakdown by type in liveSummary, so
+      // approximate by proportion:
+      const parent = regions['LT.Vilnius'];
+      if (parent && parent.total) {
+        const frac = total / parent.total;
+        emp  += Math.round(parent.Employee   * frac);
+        cont += Math.round(parent.Contractor * frac);
+      }
+    });
+    summaryItems.push({ label, total, emp, cont });
+  });
+
+  // Then all other partitions (excluding Vilnius) → still treat full
+  partitionList.forEach(p => {
+    if (p === 'LT.Vilnius') return;
+    const r = regions[p] || {};
+    summaryItems.push({
+      label: displayName[p],
+      total:     r.total      || 0,
+      emp:       r.Employee   || 0,
+      cont:      r.Contractor || 0,
+      flag:      flagMap[p],
+      colors:    colorsMap[p]
+    });
+  });
+
+  //
+  // 2) Build chart data: split Vilnius into separate GAMA vs Delta bars + the others
+  //
+  const chartData = [];
+
+  // 2a) GAMA + Delta individually
+  Object.entries(summaryPartitionGroup).forEach(([groupLabel, suffixes]) => {
+    const floors = regions['LT.Vilnius']?.floors || {};
+    suffixes.forEach(suf => {
+      const name = `${groupLabel} ${suf}`;
+      const value = Object.entries(floors)
+        .filter(([floorName]) => floorName.toUpperCase().includes(suf.toUpperCase()))
+        .reduce((sum,[,cnt]) => sum + cnt, 0);
+      chartData.push({
+        name,
+        value,
+        breakdown: {} // if you want further breakdown, you’d need per-floor type data
+      });
+    });
+  });
+
+  // 2b) Other partitions as whole
+  partitionList.forEach(p => {
+    if (p === 'LT.Vilnius') return;
+    const r = regions[p] || {};
+    chartData.push({
+      name: displayName[p],
+      value:     r.total      || 0,
+      breakdown: { Employees: r.Employee || 0, Contractors: r.Contractor || 0 }
+    });
+  });
+
+  // Top summary totals (unchanged):
+  const todayTot  = data?.today.total    || 0;
+  const todayEmp  = data?.today.Employee || 0;
+  const todayCon  = data?.today.Contractor || 0;
+  const realtimeTot = summaryItems.reduce((s,i) => s + i.total, 0);
+  const realtimeEmp = summaryItems.reduce((s,i) => s + i.emp,   0);
+  const realtimeCon = summaryItems.reduce((s,i) => s + i.cont,  0);
+
+  return (
+    <>
+      <Header />
+
+      <Container maxWidth={false} disableGutters sx={{ px:2, py:1 }}>
+        {/* Top six summary cards */}
+        <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
+          {[
+            { title: "Today's Total Headcount",     value: todayTot,   icon: <GroupIcon sx={{ color:'#E57373', fontSize:36 }}/>,  border:'#FFD666' },
+            { title: "Today's Employees Count",     value: todayEmp,   icon: <PeopleIcon sx={{ color:'#81C784', fontSize:36 }}/>,    border:'#81C784' },
+            { title: "Today's Contractors Count",   value: todayCon,   icon: <BusinessCenterIcon sx={{ color:'#64B5F6', fontSize:36 }}/>, border:'#FFE599' },
+            { title: "Realtime Headcount",          value: realtimeTot,icon: <TrackChangesIcon sx={{ color:'#BA68C8', fontSize:36 }}/>, border:'#FFF2CC' },
+            { title: "Realtime Employees Count",    value: realtimeEmp,icon: <PeopleIcon sx={{ color:'#FFB74D', fontSize:36 }}/>,    border:'#FFD666' },
+            { title: "Realtime Contractors Count",  value: realtimeCon,icon: <BusinessCenterIcon sx={{ color:'#4DB6AC', fontSize:36 }}/>, border:'#FFE599' },
+          ].map(c => (
+            <Box key={c.title} sx={{ flex:'1 1 calc(16.66% - 8px)' }}>
+              <SummaryCard
+                title={c.title}
+                total={c.value}
+                stats={[]}
+                icon={c.icon}
+                sx={{ height:140, border:`2px solid ${c.border}` }}
+              />
+            </Box>
+          ))}
+        </Box>
+
+        {/* Partition summary cards */}
+        <Box display="flex" flexWrap="wrap" gap={1} mb={4}>
+          {loading
+            ? <LoadingSpinner/>
+            : summaryItems.map(item => {
+                const [tc, totc, ec, cc] = item.colors || ['#FFE599','#fcf3cf','#2ecc71','#ec7063'];
+                return (
+                  <Box key={item.label} sx={{ flex:'1 1 calc(16.66% - 8px)' }}>
+                    <SummaryCard
+                      title={item.label}
+                      total={item.total}
+                      stats={[
+                        { label:'Employees',   value:item.emp },
+                        { label:'Contractors', value:item.cont }
+                      ]}
+                      icon={item.flag ? (
+                        <Box component="img" src={item.flag} sx={{ width:50, height:30, border:'1px solid #fff' }}/>
+                      ) : null}
+                      titleColor={tc}
+                      totalColor={totc}
+                      statColors={[ec,cc]}
+                      sx={{
+                        height:160,
+                        border:`2px solid ${tc}`,
+                        '& .MuiTypography-subtitle1': { fontSize:'1.3rem' },
+                        '& .MuiTypography-h4': { fontSize:'1.7rem' },
+                        '& .MuiTypography-caption': { fontSize:'0.875rem' }
+                      }}
+                    />
+                  </Box>
+                );
+              })
+          }
+        </Box>
+
+        {/* Live totals bar chart (GAMA vs Delta & others) */}
+        <Box p={2} sx={{ border:'2px solid #FFC107' }}>
+          <Box display="flex" justifyContent="space-between" mb={1}>
+            <Typography variant="h6">Live Totals by Site</Typography>
+            <Typography variant="body2">Last updated: {lastUpdate}</Typography>
+          </Box>
+          {loading
+            ? <Skeleton variant="rectangular" height={240}/>
+            : <ChartCard
+                data={chartData}
+                dataKey="value"
+                colors={{ head:'#FFC107', cap:'#B0BEC5' }}
+                chartHeight={320}
+              />
+          }
+        </Box>
+      </Container>
+
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
 C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\utils\partitionGroups.js
 
 export const summaryPartitionGroup = {
