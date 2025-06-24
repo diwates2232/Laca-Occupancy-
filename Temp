@@ -1,3 +1,45 @@
+   //
+   // 1) Build summaryCards data by grouping Vilnius GAMA+Delta under one “Vilnius” card
+   //
+   const summaryItems = [];
+
+   // First handle all “fixed” group keys
+   Object.entries(summaryPartitionGroup).forEach(([label, suffixes]) => {
+     // For each suffix, find the matching floor entries under LT.Vilnius.floors
+     const floors = regions['LT.Vilnius']?.floors || {};
+     let total = 0, emp = 0, cont = 0;
+     suffixes.forEach(suf => {
+       Object.entries(floors).forEach(([floorName, cnt]) => {
+         if (floorName.toUpperCase().includes(suf.toUpperCase())) {
+           total += cnt;
+         }
+       });
+       // approximate Employees/Contractors by proportion
+       const parent = regions['LT.Vilnius'];
+       if (parent && parent.total) {
+         const frac = total / parent.total;
+         emp  += Math.round(parent.Employee   * frac);
+         cont += Math.round(parent.Contractor * frac);
+       }
+     });
+-    summaryItems.push({ label, total, emp, cont });
++    // now include the Vilnius flag and use its color scheme
++    summaryItems.push({
++      label,
++      total,
++      emp,
++      cont,
++      flag:   flagMap['LT.Vilnius'],
++      colors: colorsMap['LT.Vilnius']
++    });
+   });
+
+   // Then all other partitions (excluding Vilnius) → still treat full
+   partitionList.forEach(p => {
+
+
+
+
 
 
 
