@@ -1,3 +1,272 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+
+import Dashboard              from '../pages/Dashboard';
+import History                from '../pages/History';
+import PartitionDetail        from '../pages/PartitionDetail';
+import PartitionDetailDetails from '../pages/PartitionDetailDetails';
+
+export default function AppRoutes() {
+  return (
+    <BrowserRouter>
+      <Routes>
+
+        {/* Home dashboard */}
+        <Route path="/" element={<Dashboard />} />
+
+        {/* Global history */}
+        <Route path="/history" element={<History />} />
+
+        {/* Partition-scoped history */}
+        <Route path="/partition/:partition/history" element={<History />} />
+
+        {/* Partition overview (live) */}
+        <Route path="/partition/:partition" element={<PartitionDetail />} />
+
+        {/* Partition “see details” sub-page */}
+        <Route
+          path="/partition/:partition/details"
+          element={<PartitionDetailDetails />}
+        />
+
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+
+
+
+
+
+
+
+import React, { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Container,
+  Box,
+  Typography,
+  Button,
+  TextField,
+  TableContainer,
+  Paper,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+} from '@mui/material';
+
+import Header         from '../components/Header';
+import Footer         from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import DataTable      from '../components/DataTable';
+import { fetchLiveSummary } from '../api/occupancy.service';
+import { lookupFloor }      from '../utils/floorLookup';
+
+export default function PartitionDetailDetails() {
+  const { partition } = useParams();
+  const navigate = useNavigate();
+
+  const [details, setDetails]     = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [lastUpdate, setLast]     = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expandedFloor, setExpandedFloor] = useState(null);
+
+  // Initial load & poll every second
+  useEffect(() => {
+    let mounted = true;
+
+    async function load() {
+      const json = await fetchLiveSummary();
+      if (!mounted) return;
+      const det = json.details
+        .filter(r => r.PartitionName2 === partition && r.Direction === 'InDirection')
+        .map(r => ({
+          ...r,
+          floor: lookupFloor(r.PartitionName2, r.Door, r.Direction),
+        }));
+      setDetails(det);
+      setLast(new Date().toLocaleTimeString());
+      setLoading(false);
+    }
+
+    load();
+    const iv = setInterval(load, 1000);
+    return () => {
+      mounted = false;
+      clearInterval(iv);
+    };
+  }, [partition]);
+
+  // Group by floor
+  const floorMap = useMemo(() => {
+    return details.reduce((map, r) => {
+      map[r.floor] = map[r.floor] || [];
+      map[r.floor].push(r);
+      return map;
+    }, {});
+  }, [details]);
+
+  // Filter + sort
+  const displayed = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return Object.entries(floorMap)
+      .filter(([floor, emps]) => {
+        if (!term) return true;
+        if (floor.toLowerCase().includes(term)) return true;
+        return emps.some(r =>
+          r.ObjectName1.toLowerCase().includes(term) ||
+          r.EmployeeID.toLowerCase().includes(term)
+        );
+      })
+      .sort((a, b) => b[1].length - a[1].length);
+  }, [floorMap, searchTerm]);
+
+  const columns = [
+    { field: 'EmployeeID',      headerName: 'Emp ID' },
+    { field: 'ObjectName1',     headerName: 'Name' },
+    { field: 'LocaleMessageTime', headerName: 'Swipe Time' },
+    { field: 'PersonnelType',   headerName: 'Type' },
+    { field: 'CardNumber',      headerName: 'Card' },
+    { field: 'Door',            headerName: 'Door' },
+  ];
+
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <Box sx={{ px: 2, py: 8 }}>
+          <LoadingSpinner />
+        </Box>
+        <Footer />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Header />
+
+      <Container maxWidth={false} disableGutters sx={{ px: '20px', pt: 1, pb: 4 }}>
+        {/* Back */}
+        <Box mb={2}>
+          <Button size="small" onClick={() => navigate(-1)}>
+            ← Back to Overview
+          </Button>
+        </Box>
+
+        {/* Header + Search */}
+        <Box display="flex" alignItems="center" gap={2} mb={2}>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            Floor Details
+          </Typography>
+          <Typography variant="body2" color="textSecondary">
+            Last updated: {lastUpdate}
+          </Typography>
+          <TextField
+            size="small"
+            placeholder="Search floor / emp…"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            sx={{ width: 200 }}
+          />
+        </Box>
+
+        {/* Floor cards */}
+        <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
+          {displayed.map(([floor, emps]) => (
+            <Box key={floor} sx={{ width: '50%', p: 1 }}>
+              <Paper sx={{ border: '2px solid #FFC107', p: 2 }}>
+                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                  {floor} (Total {emps.length})
+                </Typography>
+
+                <TableContainer component={Paper} variant="outlined">
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        {columns.map(c => (
+                          <TableCell key={c.field} sx={{ fontWeight: 'bold', py: 0.5 }}>
+                            {c.headerName}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {emps.slice(0, 10).map((r, i) => {
+                        const match =
+                          searchTerm &&
+                          (r.ObjectName1.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           r.EmployeeID.includes(searchTerm));
+                        return (
+                          <TableRow
+                            key={`${r.PersonGUID}-${i}`}
+                            sx={ match ? { backgroundColor: 'rgba(255,235,59,0.3)' } : {} }
+                          >
+                            <TableCell sx={{ py: 0.5 }}>{r.EmployeeID}</TableCell>
+                            <TableCell sx={{ py: 0.5 }}>{r.ObjectName1}</TableCell>
+                            <TableCell sx={{ py: 0.5 }}>
+                              {new Date(r.LocaleMessageTime).toLocaleTimeString()}
+                            </TableCell>
+                            <TableCell sx={{ py: 0.5 }}>{r.PersonnelType}</TableCell>
+                            <TableCell sx={{ py: 0.5 }}>{r.CardNumber}</TableCell>
+                            <TableCell sx={{ py: 0.5 }}>{r.Door}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+
+                <Box textAlign="right" mt={1}>
+                  <Button
+                    size="small"
+                    onClick={() => setExpandedFloor(expandedFloor === floor ? null : floor)}
+                  >
+                    {expandedFloor === floor ? 'Hide' : 'See more…'}
+                  </Button>
+                </Box>
+              </Paper>
+            </Box>
+          ))}
+        </Box>
+
+        {/* Expanded table */}
+        {expandedFloor && (
+          <Box sx={{ px: '20px' }}>
+            <Typography variant="h6" gutterBottom>
+              {expandedFloor} — All Entries
+            </Typography>
+            <DataTable
+              columns={columns}
+              rows={floorMap[expandedFloor].map(r => ({
+                ...r,
+                LocaleMessageTime: new Date(r.LocaleMessageTime).toLocaleTimeString()
+              }))}
+            />
+          </Box>
+        )}
+      </Container>
+
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
 Now Update routes file and page Refer same laca files and update same for emea pages carefully.
 update both files as per laca dashboard and give me updated files carefully
 
