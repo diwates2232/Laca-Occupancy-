@@ -1,3 +1,274 @@
+// src/pages/History.jsx
+import React, { useEffect, useState, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
+import {
+  Container,
+  Box,
+  Typography,
+  Paper,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  Button,
+  TextField
+} from '@mui/material';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+
+import Header         from '../components/Header';
+import Footer         from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { fetchHistory } from '../api/occupancy.service';
+
+const codeToCountry = {
+  AUT: 'Austria',
+  DU:  'UAE',
+  IE:  'Ireland',
+  IT:  'Italy',
+  LT:  'Lithuania',
+  MA:  'Morocco',
+  RU:  'Russia',
+  UK:  'United Kingdom',
+  ES:  'Spain'
+};
+
+export default function History() {
+  const { partition } = useParams();
+  const decoded       = partition ? decodeURIComponent(partition) : null;
+  const filterCode    = decoded?.split('.')[0] || null;
+
+  const [data, setData]             = useState(null);
+  const [loading, setLoading]       = useState(true);
+  const [pickedDate, setPickedDate] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+
+  // fetch history once
+  useEffect(() => {
+    fetchHistory().then(json => {
+      setData(json);
+      setLoading(false);
+    });
+  }, []);
+
+  // find summary row
+  const summary = useMemo(() => {
+    if (!data || !pickedDate) return null;
+    const d = format(pickedDate, 'yyyy-MM-dd');
+    return data.summaryByDate.find(r => r.date === d) || null;
+  }, [data, pickedDate]);
+
+  // build partition summary rows
+  const partitionRows = useMemo(() => {
+    if (!summary) return [];
+    return Object.entries(summary.partitions)
+      .filter(([key]) => !filterCode || key.startsWith(filterCode + '.'))
+      .map(([key, vals]) => {
+        const [code, siteRaw] = key.split('.');
+        return {
+          country:    codeToCountry[code] || code,
+          site:       siteRaw,
+          employee:   vals.Employee  ?? vals.EmployeeCount  ?? 0,
+          contractor: vals.Contractor ?? vals.ContractorCount ?? 0,
+          total:      vals.total      ?? 0
+        };
+      });
+  }, [summary, filterCode]);
+
+  // build detail rows
+  const detailRows = useMemo(() => {
+    if (!data || !pickedDate) return [];
+    const d = format(pickedDate, 'yyyy-MM-dd');
+    return data.details
+      .filter(r => r.SwipeDate.slice(0,10) === d)
+      .filter(r => !filterCode || r.PartitionName2.startsWith(filterCode + '.'));
+  }, [data, pickedDate, filterCode]);
+
+  // excel export
+  const handleExport = () => {
+    const sheet = XLSX.utils.json_to_sheet(
+      detailRows.map((r,i) => ({
+        Sr: i+1,
+        Date: r.SwipeDate.slice(0,10),
+        Time: r.LocaleMessageTime.slice(11,19),
+        EmployeeID: r.EmployeeID,
+        Name: r.ObjectName1,
+        Type: r.PersonnelType,
+        Door: r.Door,
+        Partition: r.PartitionName2
+      }))
+    );
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, sheet, 'Details');
+    const buf = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+    saveAs(new Blob([buf]), `emea_history_${format(pickedDate,'yyyyMMdd')}.xlsx`);
+  };
+
+  if (loading) return <LoadingSpinner />;
+  return (
+    <>
+      <Header />
+      <Container maxWidth={false} disableGutters sx={{ px: 2, py: 2 }}>
+        {/* Date picker */}
+        <Box mb={2} sx={{ px: '20px' }}>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DatePicker
+              label="Select date"
+              value={pickedDate}
+              onChange={d => { setPickedDate(d); setShowDetails(false); }}
+              renderInput={params => <TextField fullWidth {...params} />}
+            />
+          </LocalizationProvider>
+        </Box>
+
+        {pickedDate && summary ? (
+          <>
+            {/* Summary table */}
+            <Paper elevation={3} sx={{ mb:2, mx:'20px', p:2, border:'3px solid #000', borderRadius:2 }}>
+              <Table sx={{ border:'2px solid #000' }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      align="center"
+                      sx={{
+                        fontWeight:'bold',
+                        fontSize:16,
+                        bgcolor:'#000',
+                        color:'#fff',
+                        border:'2px solid #000'
+                      }}
+                    >
+                      {format(pickedDate,'EEEE, d MMMM, yyyy')}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow sx={{ bgcolor:'#FFC107' }}>
+                    {['Country','Site','Employees','Contractors','Total'].map(h => (
+                      <TableCell
+                        key={h}
+                        align={['Employees','Contractors','Total'].includes(h)?'right':'left'}
+                        sx={{ color:'#000', fontWeight:'bold', fontSize:14, border:'2px solid #000' }}
+                      >
+                        {h}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {partitionRows.map((r,i) => (
+                    <TableRow key={i}>
+                      <TableCell sx={{ border:'2px solid #000' }}>{r.country}</TableCell>
+                      <TableCell sx={{ border:'2px solid #000' }}>{r.site}</TableCell>
+                      <TableCell align="right" sx={{ border:'2px solid #000' }}>{r.employee}</TableCell>
+                      <TableCell align="right" sx={{ border:'2px solid #000' }}>{r.contractor}</TableCell>
+                      <TableCell align="right" sx={{
+                        border:'2px solid #000',
+                        backgroundColor:'#FFC107',
+                        fontWeight:'bold'
+                      }}>
+                        {r.total}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {/* Total row */}
+                  <TableRow sx={{ bgcolor:'#666' }}>
+                    <TableCell colSpan={2} align="right" sx={{ color:'#fff', fontWeight:'bold', border:'2px solid #000' }}>
+                      Total
+                    </TableCell>
+                    <TableCell align="right" sx={{ color:'#fff', fontWeight:'bold', border:'2px solid #000' }}>
+                      {partitionRows.reduce((s,r)=>s+r.employee,0)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ color:'#fff', fontWeight:'bold', border:'2px solid #000' }}>
+                      {partitionRows.reduce((s,r)=>s+r.contractor,0)}
+                    </TableCell>
+                    <TableCell align="right" sx={{ color:'#fff', fontWeight:'bold', border:'2px solid #000' }}>
+                      {partitionRows.reduce((s,r)=>s+r.total,0)}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+
+              {/* Toggle & Export */}
+              <Box textAlign="center" mt={1}>
+                <Button
+                  variant="contained"
+                  sx={{ bgcolor:'#FFC107', color:'#000' }}
+                  onClick={() => setShowDetails(v=>!v)}
+                >
+                  {showDetails ? 'Hide Details' : 'See Details'}
+                </Button>
+                {showDetails && (
+                  <Button
+                    variant="outlined"
+                    sx={{ ml:2, borderColor:'#FFC107', color:'#FFC107' }}
+                    onClick={handleExport}
+                  >
+                    Export to Excel
+                  </Button>
+                )}
+              </Box>
+            </Paper>
+
+            {/* Details table */}
+            {showDetails && (
+              <Paper elevation={1} sx={{ mx:'20px', p:2, border:'3px solid #000', borderRadius:2 }}>
+                <Table sx={{ border:'2px solid #000', borderCollapse:'collapse' }}>
+                  <TableHead>
+                    <TableRow sx={{ bgcolor:'#000' }}>
+                      {['Sr','Time','ID','Name','Type','Door','Partition'].map(h => (
+                        <TableCell
+                          key={h}
+                          align="center"
+                          sx={{ color:'#FFC107', fontWeight:'bold', fontSize:14, border:'2px solid #000' }}
+                        >
+                          {h}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {detailRows.map((r,i) => (
+                      <TableRow key={`${r.PersonGUID}-${i}`}>
+                        <TableCell sx={{ border:'2px solid #000' }}>{i+1}</TableCell>
+                        <TableCell sx={{ border:'2px solid #000' }}>{r.LocaleMessageTime.slice(11,19)}</TableCell>
+                        <TableCell sx={{ border:'2px solid #000' }}>{r.EmployeeID}</TableCell>
+                        <TableCell sx={{ border:'2px solid #000' }}>{r.ObjectName1}</TableCell>
+                        <TableCell sx={{ border:'2px solid #000' }}>{r.PersonnelType}</TableCell>
+                        <TableCell sx={{ border:'2px solid #000' }}>{r.Door}</TableCell>
+                        <TableCell sx={{ border:'2px solid #000' }}>{r.PartitionName2}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Paper>
+            )}
+          </>
+        ) : (
+          // no date picked
+          <Typography color="textSecondary" align="center" sx={{ mt:2 }}>
+            Please select a date to view history.
+          </Typography>
+        )}
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
 Now Update same structure for History page refer history page of laca and update same for emea
 
 
