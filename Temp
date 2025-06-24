@@ -1,4 +1,22 @@
-   //
+// src/utils/partitionGroups.js
+
+export const summaryPartitionGroup = {
+  // match “GAMA” doors
+  'Vilnius Gama':  ['GAMA'],
+  // match “Delta” doors
+  'Vilnius Delta': ['DELTA'],
+  // …you can add more multi‐building groups later
+};
+
+
+
+
+
+
+
+
+
+//
    // 1) Build summaryCards data by grouping Vilnius GAMA+Delta under one “Vilnius” card
    //
    const summaryItems = [];
