@@ -1,260 +1,7 @@
---- a/src/pages/PartitionDetail.jsx
-+++ b/src/pages/PartitionDetail.jsx
-@@ (around the chartData definition)
--  // Chart data: floors for non‐Vilnius, or GAMA/Delta bars for Vilnius
--  const chartData = partition === 'LT.Vilnius'
--    ? [
--        { name:'Vilnius GAMA',  value: vilniusCounts.GAMA,  breakdown:{} },
--        { name:'Vilnius Delta', value: vilniusCounts.Delta, breakdown:{} }
--      ]
--    : Object.entries(siteLive.floors).map(([floor,cnt])=>({
--        name: floor,
--        value: cnt
--      }));
-+  // Chart data:   
-+  // - For non‐Vilnius, one bar per floor (as before)  
-+  // - For Vilnius, one bar per building+floor (e.g. "Delta 1st Floor", "GAMA 10th Floor")
-+  let chartData;
-+  if (partition === 'LT.Vilnius') {
-+    // build a floor‐level map by building
-+    const byBuilding = { GAMA: {}, Delta: {} };
-+    (live.details || []).forEach(r => {
-+      if (r.PartitionName2==='LT.Vilnius' && r.Direction==='InDirection') {
-+        const b = vilniusDoorToBuilding[r.Door];
-+        const entry = doorMapRaw.find(d => d.partition==='LT.Vilnius' && d.door===r.Door);
-+        const fl = entry?.inDirectionFloor || 'Unknown';
-+        if (b) {
-+          byBuilding[b][fl] = (byBuilding[b][fl]||0) + 1;
-+        }
-+      }
-+    });
-+    // flatten into array of {name, value}
-+    chartData = [];
-+    Object.entries(byBuilding).forEach(([building, floors]) => {
-+      Object.entries(floors).forEach(([floor, cnt]) => {
-+        chartData.push({
-+          name: `${building} ${floor}`,
-+          value: cnt,
-+          breakdown: {}
-+        });
-+      });
-+    });
-+  } else {
-+    chartData = Object.entries(siteLive.floors).map(([floor,cnt]) => ({
-+      name: floor,
-+      value: cnt
-+    }));
-+  }
-
-
-
-
-
-
-
-
-
-// src/pages/PartitionDetail.jsx
-
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Box, Typography, Button } from '@mui/material';
-
-import Header         from '../components/Header';
-import Footer         from '../components/Footer';
-import SummaryCard    from '../components/SummaryCard';
-import ChartCard      from '../components/ChartCard';
-import LoadingSpinner from '../components/LoadingSpinner';
-
-import GroupIcon          from '@mui/icons-material/Group';
-import TrackChangesIcon   from '@mui/icons-material/TrackChanges';
-import PeopleIcon         from '@mui/icons-material/People';
-import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
-
-import { fetchLiveSummary, fetchHistory } from '../api/occupancy.service';
-import doorMapRaw                        from '../utils/doorMap';
-
-// Map each Vilnius door to its building block
-const vilniusDoorToBuilding = doorMapRaw.reduce((acc, { partition, door }) => {
-  if (partition === 'LT.Vilnius') {
-    acc[door] = door.toUpperCase().includes('GAMA') ? 'GAMA' : 'Delta';
-  }
-  return acc;
-}, {});
-
-export default function PartitionDetail() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-
-  const [live, setLive]       = useState(null);
-  const [history, setHistory] = useState(null);
-  const [lastUpdate, setLast] = useState('');
-  const [loading, setLoading] = useState(true);
-
-  // Poll live summary
-  useEffect(() => {
-    let mounted = true;
-    async function load() {
-      const js = await fetchLiveSummary();
-      if (!mounted) return;
-      setLive(js);
-      setLast(new Date().toLocaleTimeString());
-      setLoading(false);
-    }
-    load();
-    const iv = setInterval(load, 1000);
-    return () => {
-      mounted = false;
-      clearInterval(iv);
-    };
-  }, [partition]);
-
-  // Fetch history once
-  useEffect(() => {
-    fetchHistory(partition).then(js => setHistory(js));
-  }, [partition]);
-
-  if (!live || !history) {
-    return <LoadingSpinner />;
-  }
-
-  // Base region data
-  const today    = history.summaryByDate.at(-1).region;
-  const siteLive = live.realtime[partition] || { total:0, Employee:0, Contractor:0, floors:{} };
-
-  // Always‐visible summary metrics
-  const topItems = [
-    { title:'Today Total',      value:today.total,      icon:<GroupIcon/>,         border:'#FFD666' },
-    { title:'Today Employees',  value:today.Employee,   icon:<PeopleIcon/>,        border:'#81C784' },
-    { title:'Today Contractors',value:today.Contractor, icon:<BusinessCenterIcon/>,border:'#FFE599' },
-    { title:'RT Total',         value:siteLive.total,   icon:<TrackChangesIcon/>,  border:'#FFF2CC' },
-    { title:'RT Employees',     value:siteLive.Employee,icon:<PeopleIcon/>,        border:'#FFD666' },
-    { title:'RT Contractors',   value:siteLive.Contractor,icon:<BusinessCenterIcon/>,border:'#FFE599' }
-  ];
-
-  // Build summary row: replace the last 3 RT cards with GAMA/Delta for Vilnius
-  let summaryCards = topItems;
-  if (partition === 'LT.Vilnius') {
-    // Count per‐building totals
-    const vilniusTotals = { GAMA:0, Delta:0 };
-    (live.details || []).forEach(r => {
-      if (r.PartitionName2==='LT.Vilnius' && r.Direction==='InDirection') {
-        const b = vilniusDoorToBuilding[r.Door];
-        if (b) vilniusTotals[b]++;
-      }
-    });
-    summaryCards = [
-      ...topItems.slice(0,3),
-      { title:'Vilnius GAMA',  value:vilniusTotals.GAMA,  icon:<TrackChangesIcon/>, border:'#FFE599' },
-      { title:'Vilnius Delta', value:vilniusTotals.Delta, icon:<TrackChangesIcon/>, border:'#FFD666' }
-    ];
-  }
-
-  // Build chartData
-  let chartData;
-  if (partition === 'LT.Vilnius') {
-    // Per‐floor counts within each building
-    const floorCounts = { GAMA:{}, Delta:{} };
-    live.details.forEach(r => {
-      if (r.PartitionName2==='LT.Vilnius' && r.Direction==='InDirection') {
-        const b = vilniusDoorToBuilding[r.Door];
-        const entry = doorMapRaw.find(d=>d.partition==='LT.Vilnius' && d.door===r.Door);
-        const floor = entry?.inDirectionFloor || 'Unknown';
-        if (b) {
-          floorCounts[b][floor] = (floorCounts[b][floor]||0) + 1;
-        }
-      }
-    });
-    // Flatten into chart bars
-    chartData = Object.entries(floorCounts)
-      .flatMap(([building, floors]) =>
-        Object.entries(floors).map(([floor, cnt]) => ({
-          name: `Vilnius ${building} • ${floor}`,
-          value: cnt,
-          breakdown: {}
-        }))
-      )
-      // optional: sort by building then floor
-      .sort((a,b) => a.name.localeCompare(b.name));
-  } else {
-    // Non‐Vilnius: just per‐floor
-    chartData = Object.entries(siteLive.floors).map(([floor, cnt]) => ({
-      name: floor,
-      value: cnt,
-    }));
-  }
-
-  return (
-    <>
-      <Header/>
-      <Container maxWidth={false} disableGutters sx={{ px:2, py:1 }}>
-
-        {/* Summary cards single row */}
-        <Box display="flex" flexWrap="nowrap" overflow="auto" gap={1} mb={2}>
-          {summaryCards.map(c=>(
-            <Box key={c.title} sx={{ flex:'0 0 180px' }}>
-              <SummaryCard
-                title={c.title}
-                total={c.value}
-                stats={[]}
-                icon={c.icon}
-                sx={{ height:100, border:`1px solid ${c.border}` }}
-              />
-            </Box>
-          ))}
-        </Box>
-
-        {/* Chart */}
-        <Box p={2} sx={{ border:'1px solid #FFC107' }}>
-          <Box display="flex" justifyContent="space-between" mb={1}>
-            <Typography variant="h6">
-              {partition==='LT.Vilnius' ? 'Vilnius Breakdown by Floor' : 'Live Floor Counts'}
-            </Typography>
-            <Typography variant="body2">Last updated: {lastUpdate}</Typography>
-          </Box>
-          <ChartCard
-            data={chartData}
-            dataKey="value"
-            colors={ partition==='LT.Vilnius'
-              ? { head:'#FFC107', cap:'#B0BEC5' }
-              : undefined }
-            chartHeight={300}
-          />
-
-          {/* Always show Details button */}
-          <Box textAlign="right" mt={1}>
-            <Button onClick={()=>navigate(`/partition/${encodeURIComponent(partition)}/details`)}>
-              See Details
-            </Button>
-          </Box>
-        </Box>
-      </Container>
-      <Footer/>
-    </>
-  );
-}
-
-
-
-
-
-
-
-
-
-
-
-Lets Understand What exactly i want
-
-We need chart details like
-Vilinus Delta Floor o1 
-Vilinus Gama 02  
-like in chart data 
-Currently in a chart er are displaying only vilinus Delta and Gama
-in this page use building as well Floor logic and 
-in chart display building Floor wise chart.
-
-
+Now Only Update need here is 
+for Vilinus We need Today total , Employee, Contractor, realtime Total , Realtime Employee, Realtime Contractor like ....
+in this page for Vilinus realtime total and breakdown are not visible,
+Kindly add this files carefully
 
 // src/pages/PartitionDetail.jsx
 
@@ -365,15 +112,39 @@ export default function PartitionDetail() {
     : topItems;
 
   // Chart data: floors for non‐Vilnius, or GAMA/Delta bars for Vilnius
-  const chartData = partition === 'LT.Vilnius'
-    ? [
-        { name:'Vilnius GAMA',  value: vilniusCounts.GAMA,  breakdown:{} },
-        { name:'Vilnius Delta', value: vilniusCounts.Delta, breakdown:{} }
-      ]
-    : Object.entries(siteLive.floors).map(([floor,cnt])=>({
-        name: floor,
-        value: cnt
-      }));
+
+  let chartData;
+  if (partition === 'LT.Vilnius') {
+    // build a floor‐level map by building
+    const byBuilding = { GAMA: {}, Delta: {} };
+    (live.details || []).forEach(r => {
+      if (r.PartitionName2==='LT.Vilnius' && r.Direction==='InDirection') {
+        const b = vilniusDoorToBuilding[r.Door];
+        const entry = doorMapRaw.find(d => d.partition==='LT.Vilnius' && d.door===r.Door);
+        const fl = entry?.inDirectionFloor || 'Unknown';
+        if (b) {
+          byBuilding[b][fl] = (byBuilding[b][fl]||0) + 1;
+        }
+      }
+    });
+    // flatten into array of {name, value}
+    chartData = [];
+    Object.entries(byBuilding).forEach(([building, floors]) => {
+      Object.entries(floors).forEach(([floor, cnt]) => {
+        chartData.push({
+          name: `${building} ${floor}`,
+          value: cnt,
+          breakdown: {}
+        });
+      });
+    });
+  } else {
+    chartData = Object.entries(siteLive.floors).map(([floor,cnt]) => ({
+      name: floor,
+      value: cnt
+    }));
+  }
+
 
   return (
     <>
@@ -431,9 +202,3 @@ export default function PartitionDetail() {
     </>
   );
 }
-
-
-
-
-
-
