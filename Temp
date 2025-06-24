@@ -1,63 +1,43 @@
-// src/utils/partitionGroups.js
+Vilinus Partation in API Responce
+"realtime": {
+    "LT.Vilnius": {
+      "total": 70,
+      "Employee": 69,
+      "Contractor": 1,
+      "floors": {
+        "9th Floor": 14,
+        "7th Floor": 10,
+        "10th Floor": 15,
+        "1st Floor": 10,
+        "3rd Floor": 5,
+        "8th Floor": 2,
+        "6th Floor": 7,
+        "4th Floor": 1,
+        "2nd Floor": 5,
+        "5th Floor": 1
+      }
 
-export const summaryPartitionGroup = {
-  // match “GAMA” doors
-  'Vilnius Gama':  ['GAMA'],
-  // match “Delta” doors
-  'Vilnius Delta': ['DELTA'],
-  // …you can add more multi‐building groups later
-};
 
+C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\utils\doorMap.js
+door list 
 
-
-
-
-
-
-
-
-//
-   // 1) Build summaryCards data by grouping Vilnius GAMA+Delta under one “Vilnius” card
-   //
-   const summaryItems = [];
-
-   // First handle all “fixed” group keys
-   Object.entries(summaryPartitionGroup).forEach(([label, suffixes]) => {
-     // For each suffix, find the matching floor entries under LT.Vilnius.floors
-     const floors = regions['LT.Vilnius']?.floors || {};
-     let total = 0, emp = 0, cont = 0;
-     suffixes.forEach(suf => {
-       Object.entries(floors).forEach(([floorName, cnt]) => {
-         if (floorName.toUpperCase().includes(suf.toUpperCase())) {
-           total += cnt;
-         }
-       });
-       // approximate Employees/Contractors by proportion
-       const parent = regions['LT.Vilnius'];
-       if (parent && parent.total) {
-         const frac = total / parent.total;
-         emp  += Math.round(parent.Employee   * frac);
-         cont += Math.round(parent.Contractor * frac);
-       }
-     });
--    summaryItems.push({ label, total, emp, cont });
-+    // now include the Vilnius flag and use its color scheme
-+    summaryItems.push({
-+      label,
-+      total,
-+      emp,
-+      cont,
-+      flag:   flagMap['LT.Vilnius'],
-+      colors: colorsMap['LT.Vilnius']
-+    });
-   });
-
-   // Then all other partitions (excluding Vilnius) → still treat full
-   partitionList.forEach(p => {
+{
+    partition: 'LT.Vilnius',
+    door: `EMEA_LTU_VNO_Delta_1st Floor_Speedgate Middle IN`, -------Here door name includes Delta
+    inDirectionFloor: '1st Floor',
+    outDirectionFloor: 'Out of office',
+  },
+{
+    partition: 'LT.Vilnius',
+    door: `EMEA_LTU_VNO_GAMA_10th floor_Stairwell`, ------here door name includes GAMA
+    inDirectionFloor: '10th Floor',
+    outDirectionFloor: 'Out of office',
+  },
 
 
 
-
+in partation Summary card we need only Vilinus count and in chart we need partation like 
+delta 1 st floor , gama 2nd Floor like .......
 
 
 
@@ -182,7 +162,19 @@ export default function Dashboard() {
         cont += Math.round(parent.Contractor * frac);
       }
     });
-    summaryItems.push({ label, total, emp, cont });
+    // summaryItems.push({ label, total, emp, cont });
+
+    // now include the Vilnius flag and use its color scheme
+    summaryItems.push({
+      label,
+      total,
+      emp,
+      cont,
+      flag:   flagMap['LT.Vilnius'],
+      colors: colorsMap['LT.Vilnius']
+    });
+
+
   });
 
   // Then all other partitions (excluding Vilnius) → still treat full
@@ -323,4 +315,5 @@ export default function Dashboard() {
     </>
   );
 }
+
 
