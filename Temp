@@ -1,3 +1,80 @@
+  // If Vilnius, render two columns: GAMA and Delta, each grouped by floor
+  if (partition === 'LT.Vilnius') {
+    // group per building then floor
+    const byBuilding = details.reduce((acc, r) => {
+      const b = r.building || 'Unknown';
+      const f = r.floor   || 'Unknown';
+      acc[b] = acc[b] || {};
+      acc[b][f] = acc[b][f] || [];
+      acc[b][f].push(r);
+      return acc;
+    }, {});
+ 
+    return (
+      <>
+        <Header/>
+        <Container maxWidth={false} disableGutters sx={{ px:'20px', pt:1, pb:4 }}>
+          <Box mb={2}>
+            <Button size="small" onClick={()=>navigate(-1)}>← Back to Overview</Button>
+          </Box>
+          <Box display="flex" gap={1}>
+            {['GAMA','Delta'].map(building => (
+              <Box key={building} sx={{ width:'50%' }}>
+                <Typography variant="h6" gutterBottom>
+                  {building}
+                </Typography>
+                {Object.entries(byBuilding[building]||{}).map(([floor, rows]) => (
+                  <Paper key={floor} sx={{ mb:2, border:'2px solid #FFC107', p:2 }}>
+                    <Typography variant="subtitle1" gutterBottom>
+                      {floor} (Total {rows.length})
+                    </Typography>
+                    <TableContainer component={Paper} variant="outlined">
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            {['Emp ID','Name','Time','Type','Card','Door'].map(h=>(
+                              <TableCell key={h} sx={{ fontWeight:'bold', py:0.5 }}>{h}</TableCell>
+                            ))}
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {rows.map((r,i)=>(
+                            <TableRow key={`${r.PersonGUID}-${i}`}>
+                              <TableCell sx={{py:0.5}}>{r.EmployeeID}</TableCell>
+                              <TableCell sx={{py:0.5}}>{r.ObjectName1}</TableCell>
+                              <TableCell sx={{py:0.5}}>
+                                {new Date(r.LocaleMessageTime).toLocaleTimeString()}
+                              </TableCell>
+                              <TableCell sx={{py:0.5}}>{r.PersonnelType}</TableCell>
+                              <TableCell sx={{py:0.5}}>{r.CardNumber}</TableCell>
+                              <TableCell sx={{py:0.5}}>{r.Door}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </Paper>
+                ))}
+              </Box>
+            ))}
+          </Box>
+        </Container>
+        <Footer/>
+      </>
+    );
+  }
+
+
+
+
+
+
+
+
+
+
+
+
 --- a/src/pages/PartitionDetailDetails.jsx
 +++ b/src/pages/PartitionDetailDetails.jsx
 @@ -1,6 +1,8 @@
