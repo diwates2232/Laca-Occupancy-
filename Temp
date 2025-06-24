@@ -1,3 +1,281 @@
+// src/pages/PartitionDetailDetails.jsx
+
+import React, { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Container, Box, Typography, Button, TextField,
+  TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody
+} from '@mui/material';
+
+import Header         from '../components/Header';
+import Footer         from '../components/Footer';
+import LoadingSpinner from '../components/LoadingSpinner';
+import DataTable      from '../components/DataTable';
+import { fetchLiveSummary } from '../api/occupancy.service';
+import { lookupFloor }      from '../utils/floorLookup';
+import doorMapRaw         from '../utils/doorMap';
+
+export default function PartitionDetailDetails() {
+  const { partition } = useParams();
+  const navigate = useNavigate();
+
+  const [details, setDetails]         = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [lastUpdate, setLastUpdate]   = useState('');
+  const [searchTerm, setSearchTerm]   = useState('');
+  const [expandedFloor, setExpandedFloor] = useState(null);
+
+  // 1) Build Vilnius door lookup once
+  const vilniusDoorInfo = useMemo(() => {
+    return doorMapRaw.reduce((acc, { partition: p, door, inDirectionFloor }) => {
+      if (p === 'LT.Vilnius') {
+        acc[door] = {
+          building: door.toUpperCase().includes('GAMA') ? 'GAMA' : 'Delta',
+          floor: inDirectionFloor
+        };
+      }
+      return acc;
+    }, {});
+  }, []);
+
+  // 2) Poll live details every second
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      const json = await fetchLiveSummary();
+      if (!mounted) return;
+      const det = json.details
+        .filter(r => r.PartitionName2 === partition && r.Direction === 'InDirection')
+        .map(r => {
+          const info = vilniusDoorInfo[r.Door];
+          return {
+            ...r,
+            building: info?.building,
+            floor: info?.floor ?? lookupFloor(r.PartitionName2, r.Door, r.Direction)
+          };
+        });
+      setDetails(det);
+      setLastUpdate(new Date().toLocaleTimeString());
+      setLoading(false);
+    };
+    load();
+    const iv = setInterval(load, 1000);
+    return () => {
+      mounted = false;
+      clearInterval(iv);
+    };
+  }, [partition, vilniusDoorInfo]);
+
+  // 3) Prepare non-Vilnius floor maps & filtered lists (always run hooks)
+  const floorMap = useMemo(() => {
+    return details.reduce((map, r) => {
+      map[r.floor] = map[r.floor] || [];
+      map[r.floor].push(r);
+      return map;
+    }, {});
+  }, [details]);
+
+  const displayed = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return Object.entries(floorMap)
+      .filter(([floor, emps]) => {
+        if (!term) return true;
+        if (floor.toLowerCase().includes(term)) return true;
+        return emps.some(e =>
+          e.ObjectName1.toLowerCase().includes(term) ||
+          e.EmployeeID.includes(term)
+        );
+      })
+      .sort((a, b) => b[1].length - a[1].length);
+  }, [floorMap, searchTerm]);
+
+  // 4) Loading state
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <Box sx={{ p: 4 }}><LoadingSpinner/></Box>
+        <Footer />
+      </>
+    );
+  }
+
+  // 5a) Vilnius — two side-by-side GAMA & Delta
+  if (partition === 'LT.Vilnius') {
+    const byBuilding = details.reduce((acc, r) => {
+      const b = r.building || 'Unknown';
+      const f = r.floor   || 'Unknown';
+      acc[b] = acc[b] || {};
+      acc[b][f] = acc[b][f] || [];
+      acc[b][f].push(r);
+      return acc;
+    }, {});
+
+    return (
+      <>
+        <Header />
+        <Container maxWidth={false} disableGutters sx={{ px:'20px', pt:1, pb:4 }}>
+          <Box mb={2}>
+            <Button size="small" onClick={() => navigate(-1)}>
+              ← Back to Overview
+            </Button>
+          </Box>
+          <Box display="flex" gap={1}>
+            {['GAMA','Delta'].map(building => (
+              <Box key={building} sx={{ width:'50%', pr:1 }}>
+                <Typography variant="h6" gutterBottom>{building}</Typography>
+                {Object.entries(byBuilding[building] || {}).map(([floor, rows]) => (
+                  <Paper key={floor} sx={{ mb:2, border:'2px solid #FFC107', p:2 }}>
+                    <Typography variant="subtitle1" gutterBottom>
+                      {floor} (Total {rows.length})
+                    </Typography>
+                    <TableContainer component={Paper} variant="outlined">
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            {['Emp ID','Name','Time','Type','Card','Door'].map(h => (
+                              <TableCell key={h} sx={{ fontWeight:'bold', py:0.5 }}>
+                                {h}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {rows.map((r,i) => (
+                            <TableRow key={`${r.PersonGUID}-${i}`}>
+                              <TableCell sx={{ py:0.5 }}>{r.EmployeeID}</TableCell>
+                              <TableCell sx={{ py:0.5 }}>{r.ObjectName1}</TableCell>
+                              <TableCell sx={{ py:0.5 }}>
+                                {new Date(r.LocaleMessageTime).toLocaleTimeString()}
+                              </TableCell>
+                              <TableCell sx={{ py:0.5 }}>{r.PersonnelType}</TableCell>
+                              <TableCell sx={{ py:0.5 }}>{r.CardNumber}</TableCell>
+                              <TableCell sx={{ py:0.5 }}>{r.Door}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </Paper>
+                ))}
+              </Box>
+            ))}
+          </Box>
+        </Container>
+        <Footer />
+      </>
+    );
+  }
+
+  // 5b) Other partitions — floor cards + expandable
+  const columns = [
+    { field:'EmployeeID', headerName:'Emp ID' },
+    { field:'ObjectName1', headerName:'Name' },
+    { field:'LocaleMessageTime', headerName:'Swipe Time' },
+    { field:'PersonnelType', headerName:'Type' },
+    { field:'CardNumber', headerName:'Card' },
+    { field:'Door', headerName:'Door' }
+  ];
+
+  return (
+    <>
+      <Header />
+      <Container maxWidth={false} disableGutters sx={{ px:'20px', pt:1, pb:4 }}>
+        <Box mb={2}>
+          <Button size="small" onClick={()=>navigate(-1)}>← Back to Overview</Button>
+        </Box>
+        <Box display="flex" alignItems="center" gap={2} mb={2}>
+          <Typography variant="h6" sx={{ flexGrow:1 }}>Floor Details</Typography>
+          <Typography variant="body2" color="textSecondary">
+            Last updated: {lastUpdate}
+          </Typography>
+          <TextField
+            size="small"
+            placeholder="Search floor / emp…"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+        </Box>
+
+        {/* Floor cards */}
+        <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
+          {displayed.map(([floor, emps])=>(
+            <Box key={floor} sx={{ width:'50%', p:1 }}>
+              <Paper sx={{ border:'2px solid #FFC107', p:2 }}>
+                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                  {floor} (Total {emps.length})
+                </Typography>
+                <TableContainer component={Paper} variant="outlined">
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        {columns.map(c=>(
+                          <TableCell key={c.field} sx={{ fontWeight:'bold', py:0.5 }}>
+                            {c.headerName}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {emps.slice(0,10).map((r,i)=>(
+                        <TableRow key={`${r.PersonGUID}-${i}`}>
+                          <TableCell sx={{py:0.5}}>{r.EmployeeID}</TableCell>
+                          <TableCell sx={{py:0.5}}>{r.ObjectName1}</TableCell>
+                          <TableCell sx={{py:0.5}}>
+                            {new Date(r.LocaleMessageTime).toLocaleTimeString()}
+                          </TableCell>
+                          <TableCell sx={{py:0.5}}>{r.PersonnelType}</TableCell>
+                          <TableCell sx={{py:0.5}}>{r.CardNumber}</TableCell>
+                          <TableCell sx={{py:0.5}}>{r.Door}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+                <Box textAlign="right" mt={1}>
+                  <Button
+                    size="small"
+                    onClick={()=>setExpandedFloor(expandedFloor===floor?null:floor)}
+                  >
+                    {expandedFloor===floor?'Hide':'See more…'}
+                  </Button>
+                </Box>
+              </Paper>
+            </Box>
+          ))}
+        </Box>
+
+        {/* Expanded table */}
+        {expandedFloor && (
+          <Box sx={{ px:'20px', mt:2 }}>
+            <Typography variant="h6" gutterBottom>
+              {expandedFloor} — All Entries
+            </Typography>
+            <DataTable
+              columns={columns}
+              rows={floorMap[expandedFloor].map(r=>({
+                ...r,
+                LocaleMessageTime: new Date(r.LocaleMessageTime).toLocaleTimeString()
+              }))}
+            />
+          </Box>
+        )}
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
 ERROR
 [eslint] 
 src\pages\PartitionDetailDetails.jsx
