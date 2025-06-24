@@ -1,3 +1,5 @@
+C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\utils\partitionGroups.js
+
 export const summaryPartitionGroup = {
   'Vilnius': ['Vilnius Delta', 'Vilnius Gama'],
   // Add more as needed
@@ -7,591 +9,243 @@ export const summaryPartitionGroup = {
 
 
 
-
-
-
-
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-
-import Dashboard              from '../pages/Dashboard';
-import History                from '../pages/History';
-import PartitionDetail        from '../pages/PartitionDetail';
-import PartitionDetailDetails from '../pages/PartitionDetailDetails';
-
-export default function AppRoutes() {
-  return (
-    <BrowserRouter>
-      <Routes>
-
-        {/* Home dashboard */}
-        <Route path="/" element={<Dashboard />} />
-
-        {/* Global history */}
-        <Route path="/history" element={<History />} />
-
-        {/* Partition-scoped history */}
-        <Route path="/partition/:partition/history" element={<History />} />
-
-        {/* Partition overview (live) */}
-        <Route path="/partition/:partition" element={<PartitionDetail />} />
-
-        {/* Partition “see details” sub-page */}
-        <Route
-          path="/partition/:partition/details"
-          element={<PartitionDetailDetails />}
-        />
-
-      </Routes>
-    </BrowserRouter>
-  );
-}
-
-
-
-
-
-
-
-
-import React, { useEffect, useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+// src/pages/Dashboard.jsx
+import React, { useEffect, useState } from 'react';
 import {
   Container,
   Box,
   Typography,
-  Button,
-  TextField,
-  TableContainer,
-  Paper,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
+  Skeleton
 } from '@mui/material';
+
+import GroupIcon          from '@mui/icons-material/Group';
+import TrackChangesIcon   from '@mui/icons-material/TrackChanges';
+import PeopleIcon         from '@mui/icons-material/People';
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 
 import Header         from '../components/Header';
 import Footer         from '../components/Footer';
+import SummaryCard    from '../components/SummaryCard';
+import ChartCard      from '../components/ChartCard';
 import LoadingSpinner from '../components/LoadingSpinner';
-import DataTable      from '../components/DataTable';
-import { fetchLiveSummary } from '../api/occupancy.service';
-import { lookupFloor }      from '../utils/floorLookup';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
 
-export default function PartitionDetailDetails() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
+// Flags
+import austriaFlag    from '../assets/flags/austria.png';
+import uaeFlag        from '../assets/flags/uae.png';
+import irelandFlag    from '../assets/flags/ireland.png';
+import italyFlag      from '../assets/flags/italy.png';
+import lithuaniaFlag  from '../assets/flags/lithuania.png';
+import moroccoFlag    from '../assets/flags/morocco.png';
+import russiaFlag     from '../assets/flags/russia.png';
+import ukFlag         from '../assets/flags/uk.png';
+import spainFlag      from '../assets/flags/spain.png';
 
-  const [details, setDetails]     = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [lastUpdate, setLast]     = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [expandedFloor, setExpandedFloor] = useState(null);
+const partitionList = [
+  'AUT.Vienna','DU.Abu Dhab','IE.Dublin','IT.Rome',
+  'LT.Vilnius','MA.Casablanca','RU.Moscow','UK.London','ES.Madrid'
+];
 
-  // Initial load & poll every second
+const displayName = {
+  'AUT.Vienna':    'Vienna',
+  'DU.Abu Dhab':   'Abu Dhabi',
+  'IE.Dublin':     'Dublin',
+  'IT.Rome':       'Rome',
+  'LT.Vilnius':    'Vilnius',
+  'MA.Casablanca': 'Casablanca',
+  'RU.Moscow':     'Moscow',
+  'UK.London':     'London',
+  'ES.Madrid':     'Madrid'
+};
+
+const flagMap = {
+  'AUT.Vienna':    austriaFlag,
+  'DU.Abu Dhab':   uaeFlag,
+  'IE.Dublin':     irelandFlag,
+  'IT.Rome':       italyFlag,
+  'LT.Vilnius':    lithuaniaFlag,
+  'MA.Casablanca': moroccoFlag,
+  'RU.Moscow':     russiaFlag,
+  'UK.London':     ukFlag,
+  'ES.Madrid':     spainFlag
+};
+
+const colorsMap = {
+  'AUT.Vienna':    ['#FFD666','#fcf3cf','#2ecc71','#ec7063'],
+  'DU.Abu Dhab':   ['#FFE599','#fcf3cf','#2ecc71','#ec7063'],
+  'IE.Dublin':     ['#FFF2CC','#fcf3cf','#2ecc71','#ec7063'],
+  'IT.Rome':       ['#FFD666','#fcf3cf','#2ecc71','#ec7063'],
+  'LT.Vilnius':    ['#FFE599','#fcf3cf','#2ecc71','#ec7063'],
+  'MA.Casablanca': ['#FFF2CC','#fcf3cf','#2ecc71','#ec7063'],
+  'RU.Moscow':     ['#FFD666','#fcf3cf','#2ecc71','#ec7063'],
+  'UK.London':     ['#FFE599','#fcf3cf','#2ecc71','#ec7063'],
+  'ES.Madrid':     ['#FFC0CB','#ffe5ec','#ff4081','#d50065']
+};
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+
   useEffect(() => {
-    let mounted = true;
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
 
-    async function load() {
-      const json = await fetchLiveSummary();
-      if (!mounted) return;
-      const det = json.details
-        .filter(r => r.PartitionName2 === partition && r.Direction === 'InDirection')
-        .map(r => ({
-          ...r,
-          floor: lookupFloor(r.PartitionName2, r.Door, r.Direction),
-        }));
-      setDetails(det);
-      setLast(new Date().toLocaleTimeString());
-      setLoading(false);
-    }
-
-    load();
-    const iv = setInterval(load, 1000);
-    return () => {
-      mounted = false;
-      clearInterval(iv);
-    };
-  }, [partition]);
-
-  // Group by floor
-  const floorMap = useMemo(() => {
-    return details.reduce((map, r) => {
-      map[r.floor] = map[r.floor] || [];
-      map[r.floor].push(r);
-      return map;
-    }, {});
-  }, [details]);
-
-  // Filter + sort
-  const displayed = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    return Object.entries(floorMap)
-      .filter(([floor, emps]) => {
-        if (!term) return true;
-        if (floor.toLowerCase().includes(term)) return true;
-        return emps.some(r =>
-          r.ObjectName1.toLowerCase().includes(term) ||
-          r.EmployeeID.toLowerCase().includes(term)
-        );
-      })
-      .sort((a, b) => b[1].length - a[1].length);
-  }, [floorMap, searchTerm]);
-
-  const columns = [
-    { field: 'EmployeeID',      headerName: 'Emp ID' },
-    { field: 'ObjectName1',     headerName: 'Name' },
-    { field: 'LocaleMessageTime', headerName: 'Swipe Time' },
-    { field: 'PersonnelType',   headerName: 'Type' },
-    { field: 'CardNumber',      headerName: 'Card' },
-    { field: 'Door',            headerName: 'Door' },
-  ];
-
-  if (loading) {
+  if (error) {
     return (
-      <>
-        <Header />
-        <Box sx={{ px: 2, py: 8 }}>
-          <LoadingSpinner />
-        </Box>
-        <Footer />
-      </>
+      <Box py={4}>
+        <Typography color="error" align="center">
+          Error loading live data
+        </Typography>
+      </Box>
     );
   }
+
+  // Today's and real‐time totals
+  const todayTot  = data?.today.total    ?? 0;
+  const todayEmp  = data?.today.Employee ?? 0;
+  const todayCon  = data?.today.Contractor ?? 0;
+
+  const regions = data?.realtime || {};
+  const partitions = partitionList
+    .map(p => ({
+      name:      p,
+      total:     regions[p]?.total       || 0,
+      Employee:  regions[p]?.Employee    || 0,
+      Contractor:regions[p]?.Contractor  || 0,
+      floors:    regions[p]?.floors      || {}
+    }))
+    .sort((a, b) => b.total - a.total);
+
+  const realtimeTot = partitions.reduce((sum, p) => sum + p.total, 0);
+  const realtimeEmp = partitions.reduce((sum, p) => sum + p.Employee, 0);
+  const realtimeCon = partitions.reduce((sum, p) => sum + p.Contractor, 0);
 
   return (
     <>
       <Header />
 
-      <Container maxWidth={false} disableGutters sx={{ px: '20px', pt: 1, pb: 4 }}>
-        {/* Back */}
-        <Box mb={2}>
-          <Button size="small" onClick={() => navigate(-1)}>
-            ← Back to Overview
-          </Button>
-        </Box>
-
-        {/* Header + Search */}
-        <Box display="flex" alignItems="center" gap={2} mb={2}>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Floor Details
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            Last updated: {lastUpdate}
-          </Typography>
-          <TextField
-            size="small"
-            placeholder="Search floor / emp…"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            sx={{ width: 200 }}
-          />
-        </Box>
-
-        {/* Floor cards */}
+      <Container maxWidth={false} disableGutters sx={{ px: 2, py: 1 }}>
+        {/* Top six summary cards (LACA style) */}
         <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
-          {displayed.map(([floor, emps]) => (
-            <Box key={floor} sx={{ width: '50%', p: 1 }}>
-              <Paper sx={{ border: '2px solid #FFC107', p: 2 }}>
-                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                  {floor} (Total {emps.length})
-                </Typography>
-
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        {columns.map(c => (
-                          <TableCell key={c.field} sx={{ fontWeight: 'bold', py: 0.5 }}>
-                            {c.headerName}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {emps.slice(0, 10).map((r, i) => {
-                        const match =
-                          searchTerm &&
-                          (r.ObjectName1.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           r.EmployeeID.includes(searchTerm));
-                        return (
-                          <TableRow
-                            key={`${r.PersonGUID}-${i}`}
-                            sx={ match ? { backgroundColor: 'rgba(255,235,59,0.3)' } : {} }
-                          >
-                            <TableCell sx={{ py: 0.5 }}>{r.EmployeeID}</TableCell>
-                            <TableCell sx={{ py: 0.5 }}>{r.ObjectName1}</TableCell>
-                            <TableCell sx={{ py: 0.5 }}>
-                              {new Date(r.LocaleMessageTime).toLocaleTimeString()}
-                            </TableCell>
-                            <TableCell sx={{ py: 0.5 }}>{r.PersonnelType}</TableCell>
-                            <TableCell sx={{ py: 0.5 }}>{r.CardNumber}</TableCell>
-                            <TableCell sx={{ py: 0.5 }}>{r.Door}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-
-                <Box textAlign="right" mt={1}>
-                  <Button
-                    size="small"
-                    onClick={() => setExpandedFloor(expandedFloor === floor ? null : floor)}
-                  >
-                    {expandedFloor === floor ? 'Hide' : 'See more…'}
-                  </Button>
-                </Box>
-              </Paper>
+          {[
+            {
+              title: "Today's Total Headcount",
+              value: todayTot,
+              icon: <GroupIcon sx={{ color: '#E57373', fontSize: 36 }} />,
+              border: '#FFD666'
+            },
+            {
+              title: "Today's Employees Count",
+              value: todayEmp,
+              icon: <PeopleIcon sx={{ color: '#81C784', fontSize: 36 }} />,
+              border: '#81C784'
+            },
+            {
+              title: "Today's Contractors Count",
+              value: todayCon,
+              icon: <BusinessCenterIcon sx={{ color: '#64B5F6', fontSize: 36 }} />,
+              border: '#FFE599'
+            },
+            {
+              title: "Realtime Headcount",
+              value: realtimeTot,
+              icon: <TrackChangesIcon sx={{ color: '#BA68C8', fontSize: 36 }} />,
+              border: '#FFF2CC'
+            },
+            {
+              title: "Realtime Employees Count",
+              value: realtimeEmp,
+              icon: <PeopleIcon sx={{ color: '#FFB74D', fontSize: 36 }} />,
+              border: '#FFD666'
+            },
+            {
+              title: "Realtime Contractors Count",
+              value: realtimeCon,
+              icon: <BusinessCenterIcon sx={{ color: '#4DB6AC', fontSize: 36 }} />,
+              border: '#FFE599'
+            }
+          ].map(card => (
+            <Box key={card.title} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+              <SummaryCard
+                title={card.title}
+                total={card.value}
+                stats={[]}
+                icon={card.icon}
+                sx={{
+                  height: 140,
+                  border: `2px solid ${card.border}`
+                }}
+              />
             </Box>
           ))}
         </Box>
 
-        {/* Expanded table */}
-        {expandedFloor && (
-          <Box sx={{ px: '20px' }}>
-            <Typography variant="h6" gutterBottom>
-              {expandedFloor} — All Entries
-            </Typography>
-            <DataTable
-              columns={columns}
-              rows={floorMap[expandedFloor].map(r => ({
-                ...r,
-                LocaleMessageTime: new Date(r.LocaleMessageTime).toLocaleTimeString()
-              }))}
-            />
-          </Box>
-        )}
-      </Container>
-
-      <Footer />
-    </>
-  );
-}
-
-
-
-
-
-
-
-
-
-
-
-
-Now Update routes file and page Refer same laca files and update same for emea pages carefully.
-update both files as per laca dashboard and give me updated files carefully
-
-C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\routes\AppRoutes.jsx
-
-// src/routes/AppRoutes.jsx
-
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Dashboard                from '../pages/Dashboard';
-import RealtimeDetails          from '../pages/RealtimeDetails';
-import History                  from '../pages/History';
-import PartitionDetail          from '../pages/PartitionDetail';
-import PartitionDetailDetails   from '../pages/PartitionDetailDetails';
-
-export default function AppRoutes() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        {/* Home dashboard */}
-        <Route path="/" element={<Dashboard />} />
-
-        {/* History (global) */}
-        <Route path="/history" element={<History />} />
-
-        {/* Partition‐scoped history */}
-        <Route path="/partition/:partition/history" element={<History />} />
-
-        {/* Real-time details */}
-        <Route path="/realtime/:partition" element={<RealtimeDetails />} />
-
-        {/* Partition overview */}
-        <Route path="/partition/:partition" element={<PartitionDetail />} />
-
-        {/* Partition details sub-page */}
-        <Route path="/partition/:partition/details" element={<PartitionDetailDetails />} />
-      </Routes>
-    </BrowserRouter>
-  );
-}
-
-
-
-
-C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\routes\AppRoutes.jsx
-
-
-
-// src/routes/AppRoutes.jsx
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-
-import Dashboard               from '../pages/Dashboard';
-import History                 from '../pages/History';
-import PartitionDetail         from '../pages/PartitionDetail';
-import PartitionDetailDetails  from '../pages/PartitionDetailDetails';
-
-export default function AppRoutes() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Dashboard/>} />
-        <Route path="/history" element={<History/>} />
-        <Route path="/partition/:partition" element={<PartitionDetail/>} />
-        <Route path="/partition/:partition/details" element={<PartitionDetailDetails/>} />
-      </Routes>
-    </BrowserRouter>
-  );
-}
-
-
-
-//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\PartitionDetailDetails.jsx
-
-// src/pages/PartitionDetailDetails.jsx
-import React, { useEffect, useState, useMemo } from "react";
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  TextField,
-  TableContainer,
-  Paper,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-} from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import LoadingSpinner from "../components/LoadingSpinner";
-import DataTable from "../components/DataTable";
-import { fetchLiveSummary } from "../api/occupancy.service";
-import { lookupFloor } from "../utils/floorLookup";
-
-export default function PartitionDetailDetails() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-
-  const [details, setDetails] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [expandedFloor, setExpandedFloor] = useState(null);
-
-  // Initial load on partition change: show spinner
-  useEffect(() => {
-    let isMounted = true;
-    setLoading(true);
-    fetchLiveSummary().then(json => {
-      if (!isMounted) return;
-      const det = json.details
-        .filter(r => r.PartitionName2 === partition && r.Direction === "InDirection")
-        .map(r => ({
-          ...r,
-          floor: lookupFloor(r.PartitionName2, r.Door, r.Direction),
-        }));
-      setDetails(det);
-      setLastUpdate(new Date().toLocaleTimeString());
-      setLoading(false);
-    });
-    return () => {
-      isMounted = false;
-    };
-  }, [partition]);
-
-  // Subsequent refresh every second, without spinner
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      const json = await fetchLiveSummary();
-      const det = json.details
-        .filter(r => r.PartitionName2 === partition && r.Direction === "InDirection")
-        .map(r => ({
-          ...r,
-          floor: lookupFloor(r.PartitionName2, r.Door, r.Direction),
-        }));
-      setDetails(det);
-      setLastUpdate(new Date().toLocaleTimeString());
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [partition]);
-
-  // Group by floor
-  const floorMap = useMemo(() => {
-    const m = {};
-    details.forEach(r => {
-      m[r.floor] = m[r.floor] || [];
-      m[r.floor].push(r);
-    });
-    return m;
-  }, [details]);
-
-  // Filter + sort
-  const displayed = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    return Object.entries(floorMap)
-      .filter(([floor, emps]) => {
-        if (!term) return true;
-        if (floor.toLowerCase().includes(term)) return true;
-        return emps.some(r =>
-          r.ObjectName1.toLowerCase().includes(term) ||
-          r.EmployeeID.toLowerCase().includes(term)
-        );
-      })
-      .sort((a, b) => b[1].length - a[1].length);
-  }, [floorMap, searchTerm]);
-
-  const columns = [
-    { field: "EmployeeID", headerName: "Emp ID" },
-    { field: "ObjectName1", headerName: "Name" },
-    { field: "LocaleMessageTime", headerName: "Swipe Time" },
-    { field: "PersonnelType", headerName: "Type" },
-    { field: "CardNumber", headerName: "Card" },
-    { field: "Door", headerName: "Door" },
-  ];
-
-  return (
-    <>
-      <Header />
-
-      <Box component="main" sx={{ pt: 1, pb: 1 }}>
-        <Container maxWidth={false} disableGutters>
-          {/* Back */}
-          <Box display="flex" alignItems="center" mb={2} sx={{ px: "20px" }}>
-            <Button size="small" onClick={() => navigate(-1)}>
-              ← Back to Overview
-            </Button>
-          </Box>
-
-          {/* Floor Details + Search */}
-          <Box display="flex" alignItems="center" gap={2} mb={2} sx={{ px: "20px" }}>
-            <Typography variant="h6">Floor Details</Typography>
-            <Typography variant="body2" color="textSecondary">
-              Last updated: {lastUpdate}
-            </Typography>
-            <TextField
-              size="small"
-              placeholder="Search floor / emp…"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
-          </Box>
-
-          {/* Show spinner only during initial load */}
+        {/* Partition cards (LACA style) */}
+        <Box display="flex" flexWrap="wrap" gap={1} mb={4}>
           {loading ? (
-            <Box sx={{ px: "20px", py: 8 }}>
-              <LoadingSpinner />
-            </Box>
+            <Skeleton variant="rectangular" width="100%" height={200} />
           ) : (
-            <>
-              {/* Edge-to-edge cards */}
-              <Box
-                component="section"
-                sx={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  width: "100%",
-                  margin: 0,
-                  padding: 0,
-                }}
-              >
-                {displayed.map(([floor, emps]) => (
-                  <Box
-                    key={floor}
+            partitions.map(p => {
+              const [titleC, totalC, stat1C, stat2C] = colorsMap[p.name] || [];
+              return (
+                <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+                  <SummaryCard
+                    title={displayName[p.name]}
+                    total={p.total}
+                    stats={[
+                      { label: 'Employees',   value: p.Employee },
+                      { label: 'Contractors', value: p.Contractor }
+                    ]}
+                    icon={
+                      <Box
+                        component="img"
+                        src={flagMap[p.name]}
+                        alt={`${p.name} flag`}
+                        sx={{ width: 50, height: 30, border: '1px solid #fff' }}
+                      />
+                    }
+                    titleColor={titleC}
+                    totalColor={totalC}
+                    statColors={[stat1C, stat2C]}
                     sx={{
-                      width: "50%",
-                      boxSizing: "border-box",
-                      p: "20px",
+                      height: 160,
+                      border: `2px solid ${titleC}`,
+                      '& .MuiTypography-subtitle1': { fontSize: '1.25rem' },
+                      '& .MuiTypography-h4':         { fontSize: '1.75rem' },
+                      '& .MuiTypography-caption':    { fontSize: '0.875rem' }
                     }}
-                  >
-                    <Box
-                      sx={{
-                        border: "1px solid #FFC107",
-                        borderRadius: 2,
-                        height: "100%",
-                      }}
-                    >
-                      <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                        {floor} (Total {emps.length})
-                      </Typography>
-                      <TableContainer component={Paper} variant="outlined" sx={{ mb: 1 }}>
-                        <Table size="small">
-                          <TableHead>
-                            <TableRow>
-                              {["Emp ID", "Name", "Swipe Time", "Type", "Card", "Door"].map(h => (
-                                <TableCell key={h} sx={{ fontWeight: "bold" }}>
-                                  {h}
-                                </TableCell>
-                              ))}
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {emps.slice(0, 10).map((r, i) => {
-                              const term = searchTerm.trim().toLowerCase();
-                              const isMatch =
-                                term &&
-                                (r.ObjectName1.toLowerCase().includes(term) ||
-                                  r.EmployeeID.toLowerCase().includes(term));
-                              return (
-                                <TableRow
-                                  key={`${r.PersonGUID}-${i}`}
-                                  sx={isMatch ? { backgroundColor: "rgba(255, 235, 59, 0.3)" } : {}}
-                                >
-                                  <TableCell>{r.EmployeeID}</TableCell>
-                                  <TableCell>{r.ObjectName1}</TableCell>
-                                  <TableCell>
-                                    {new Date(r.LocaleMessageTime).toLocaleTimeString()}
-                                  </TableCell>
-                                  <TableCell>{r.PersonnelType}</TableCell>
-                                  <TableCell>{r.CardNumber}</TableCell>
-                                  <TableCell>{r.Door}</TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                      <Button
-                        size="small"
-                        onClick={() =>
-                          setExpandedFloor(expandedFloor === floor ? null : floor)
-                        }
-                      >
-                        {expandedFloor === floor ? "Hide" : "See more…"}
-                      </Button>
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
-
-              {/* Expanded full-width table */}
-              {expandedFloor && (
-                <Box sx={{ px: "20px", mt: 2 }}>
-                  <Typography variant="h6" gutterBottom>
-                    {expandedFloor} — All Entries
-                  </Typography>
-                  <DataTable
-                    columns={columns}
-                    rows={floorMap[expandedFloor].map(r => ({
-                      ...r,
-                      LocaleMessageTime: new Date(r.LocaleMessageTime).toLocaleTimeString(),
-                    }))}
                   />
                 </Box>
-              )}
-            </>
+              );
+            })
           )}
-        </Container>
-      </Box>
+        </Box>
+
+        {/* Live totals bar chart */}
+        <Box p={2} sx={{ border: '2px solid #FFC107' }}>
+          <Box display="flex" justifyContent="space-between" mb={1}>
+            <Typography variant="h6">Live Totals by Site</Typography>
+            <Typography variant="body2">Last updated: {lastUpdate}</Typography>
+          </Box>
+          {loading ? (
+            <Skeleton variant="rectangular" height={240} />
+          ) : (
+            <ChartCard
+              data={partitions.map(p => ({
+                name: displayName[p.name],
+                value: p.total,
+                breakdown: {
+                  Employees:   p.Employee,
+                  Contractors: p.Contractor
+                }
+              }))}
+              dataKey="value"
+              colors={{ head: '#FFC107', cap: '#B0BEC5' }}
+              chartHeight={320}
+            />
+          )}
+        </Box>
+      </Container>
 
       <Footer />
     </>
@@ -600,109 +254,129 @@ export default function PartitionDetailDetails() {
 
 
 
+// src/components/SummaryCard.jsx
+import React from 'react';
+import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
 
-
-
-C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages\PartitionDetailDetails.jsx
-
-
-
-// src/pages/PartitionDetailDetails.jsx
-import React, { useEffect, useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import {
-  Container, Box, Typography, Button, TextField,
-  Paper, TableContainer, Table, TableHead, TableRow, TableCell, TableBody
-} from '@mui/material';
-
-import Header         from '../components/Header';
-import Footer         from '../components/Footer';
-import LoadingSpinner from '../components/LoadingSpinner';
-import DataTable      from '../components/DataTable';
-import { fetchLiveSummary } from '../api/occupancy.service';
-import { lookupFloor }      from '../utils/floorLookup';
-
-export default function PartitionDetailDetails() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-
-  const [details, setDetails] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [lastUpdate, setLast] = useState('');
-  const [search, setSearch]   = useState('');
-
-  useEffect(() => {
-    fetchLiveSummary().then(js => {
-      const det = js.details
-        .filter(r=>r.PartitionName2===partition && r.Direction==='InDirection')
-        .map(r=>({ ...r, floor: lookupFloor(partition,r.Door,r.Direction) }));
-      setDetails(det);
-      setLast(new Date().toLocaleTimeString());
-      setLoading(false);
-    });
-  },[partition]);
-
-  const grouped = useMemo(() => {
-    const m = {};
-    details.forEach(r => {
-      m[r.floor] = m[r.floor]||[];
-      m[r.floor].push(r);
-    });
-    return m;
-  }, [details]);
-
-  const filtered = useMemo(() => {
-    const term = search.toLowerCase();
-    return Object.entries(grouped).map(([floor,emps])=>[
-      floor,
-      emps.filter(e=> e.ObjectName1.toLowerCase().includes(term)||e.EmployeeID.includes(term))
-    ]).filter(([,emps])=>emps.length);
-  }, [grouped,search]);
-
-  if (loading) return <LoadingSpinner/>;
-
-  const columns = [
-    { field:'EmployeeID', headerName:'Emp ID'},
-    { field:'ObjectName1', headerName:'Name'},
-    { field:'LocaleMessageTime', headerName:'Swipe Time'},
-    { field:'PersonnelType', headerName:'Type'},
-    { field:'CardNumber', headerName:'Card'},
-    { field:'Door', headerName:'Door'}
-  ];
-
+export default function SummaryCard({
+  title,
+  total,
+  stats = [],
+  icon,
+  titleColor,
+  totalColor,
+  statColors = [],
+  sx = {}
+}) {
   return (
-    <>
-      <Header/>
-      <Container maxWidth={false} disableGutters sx={{ p:2 }}>
-        <Button onClick={()=>navigate(-1)}>← Back to Overview</Button>
-        <Box display="flex" alignItems="center" my={2}>
-          <Typography variant="h6" sx={{ mr:2 }}>Floor Details</Typography>
-          {lastUpdate && <Typography variant="body2">Last updated: {lastUpdate}</Typography>}
-          <TextField
-            size="small"
-            placeholder="Search…"
-            value={search}
-            onChange={e=>setSearch(e.target.value)}
-            sx={{ ml:2 }}
-          />
+    <Card variant="outlined" sx={{ background: 'inherit', ...sx }}>
+      <CardContent sx={{ textAlign: 'center', p: 2 }}>
+        <Box display="flex" justifyContent="center" alignItems="center" mb={1}>
+          {icon && (
+            <Box component="span" sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
+              {icon}
+            </Box>
+          )}
+          <Typography
+            variant="subtitle1"
+            sx={{ fontSize: '1.2rem', ...(titleColor && { color: titleColor }) }}
+          >
+            {title}
+          </Typography>
         </Box>
-
-        {filtered.map(([floor,emps])=>(
-          <Box key={floor} mb={3}>
-            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-              {floor} (Total {emps.length})
-            </Typography>
-            <DataTable columns={columns} rows={emps.map((r,i)=>({
-              ...r,
-              LocaleMessageTime: r.LocaleMessageTime.slice(11,19)
-            }))}/>
-          </Box>
-        ))}
-      </Container>
-      <Footer/>
-    </>
+        <Typography
+          variant="h4"
+          gutterBottom
+          sx={{ fontSize: '2rem', ...(totalColor && { color: totalColor }) }}
+        >
+          {total}
+        </Typography>
+        {stats.length > 0 && (
+          <Grid container spacing={1} justifyContent="center">
+            {stats.map((s, i) => (
+              <Grid key={s.label} item xs={6}>
+                <Typography
+                  variant="caption"
+                  sx={{ fontSize: '0.875rem', ...(statColors[i] && { color: statColors[i] }) }}
+                >
+                  {s.label}
+                </Typography>
+                <Typography
+                  variant="h6"
+                  sx={{ fontSize: '1rem', ...(statColors[i] && { color: statColors[i] }) }}
+                >
+                  {s.value}
+                </Typography>
+              </Grid>
+            ))}
+          </Grid>
+        )}
+      </CardContent>
+    </Card>
   );
 }
+
+
+
+
+// C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\api\occupancy.service.js
+
+const BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3005';
+
+export async function fetchLiveSummary() {
+  const res = await fetch(`${BASE}/api/occupancy/live-summary`);
+  if (!res.ok) throw new Error(`Live summary fetch failed: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchHistory(location) {
+  const url = location
+    ? `${BASE}/api/occupancy/history/${encodeURIComponent(location)}`
+    : `${BASE}/api/occupancy/history`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`History fetch failed: ${res.status}`);
+  return res.json();
+}
+
+// --- NEW: list of EMEA partitions for Dashboard
+export const partitionList = [
+  'AUT.Vienna',
+  'DU.Abu Dhab',
+  'IE.Dublin',
+  'IT.Rome',
+  'LT.Vilnius',
+  'MA.Casablanca',
+  'RU.Moscow',
+  'UK.London',
+  'ES.Madrid'
+];
+
+
+
+
+
+
+
+also check door name of doors to identify delta and gama
+
+ {
+    partition: 'LT.Vilnius',
+    door: `EMEA_LTU_VNO_GAMA_1st Floor_Main Entrance`, -------see door name  includes GAMA here
+    inDirectionFloor: '1st Floor',
+    outDirectionFloor: 'Out of office',
+  },
+
+
+{
+    partition: 'LT.Vilnius',
+    door: `EMEA_LTU_VNO_Delta_7th Floor_West Side Emergency Exit`,  ----------see here door name includes Delta
+    inDirectionFloor: '7th Floor',
+    outDirectionFloor: 'Out of office',
+  },
+
+
+
+
 
 
 
