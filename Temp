@@ -1,3 +1,59 @@
+--- a/src/pages/PartitionDetail.jsx
++++ b/src/pages/PartitionDetail.jsx
+@@ (around the chartData definition)
+-  // Chart data: floors for non‐Vilnius, or GAMA/Delta bars for Vilnius
+-  const chartData = partition === 'LT.Vilnius'
+-    ? [
+-        { name:'Vilnius GAMA',  value: vilniusCounts.GAMA,  breakdown:{} },
+-        { name:'Vilnius Delta', value: vilniusCounts.Delta, breakdown:{} }
+-      ]
+-    : Object.entries(siteLive.floors).map(([floor,cnt])=>({
+-        name: floor,
+-        value: cnt
+-      }));
++  // Chart data:   
++  // - For non‐Vilnius, one bar per floor (as before)  
++  // - For Vilnius, one bar per building+floor (e.g. "Delta 1st Floor", "GAMA 10th Floor")
++  let chartData;
++  if (partition === 'LT.Vilnius') {
++    // build a floor‐level map by building
++    const byBuilding = { GAMA: {}, Delta: {} };
++    (live.details || []).forEach(r => {
++      if (r.PartitionName2==='LT.Vilnius' && r.Direction==='InDirection') {
++        const b = vilniusDoorToBuilding[r.Door];
++        const entry = doorMapRaw.find(d => d.partition==='LT.Vilnius' && d.door===r.Door);
++        const fl = entry?.inDirectionFloor || 'Unknown';
++        if (b) {
++          byBuilding[b][fl] = (byBuilding[b][fl]||0) + 1;
++        }
++      }
++    });
++    // flatten into array of {name, value}
++    chartData = [];
++    Object.entries(byBuilding).forEach(([building, floors]) => {
++      Object.entries(floors).forEach(([floor, cnt]) => {
++        chartData.push({
++          name: `${building} ${floor}`,
++          value: cnt,
++          breakdown: {}
++        });
++      });
++    });
++  } else {
++    chartData = Object.entries(siteLive.floors).map(([floor,cnt]) => ({
++      name: floor,
++      value: cnt
++    }));
++  }
+
+
+
+
+
+
+
+
+
 // src/pages/PartitionDetail.jsx
 
 import React, { useEffect, useState } from 'react';
