@@ -1,3 +1,253 @@
+// src/pages/Dashboard.jsx
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Typography,
+  Skeleton
+} from '@mui/material';
+
+import GroupIcon          from '@mui/icons-material/Group';
+import TrackChangesIcon   from '@mui/icons-material/TrackChanges';
+import PeopleIcon         from '@mui/icons-material/People';
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
+
+import Header         from '../components/Header';
+import Footer         from '../components/Footer';
+import SummaryCard    from '../components/SummaryCard';
+import ChartCard      from '../components/ChartCard';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+// Flags
+import austriaFlag    from '../assets/flags/austria.png';
+import uaeFlag        from '../assets/flags/uae.png';
+import irelandFlag    from '../assets/flags/ireland.png';
+import italyFlag      from '../assets/flags/italy.png';
+import lithuaniaFlag  from '../assets/flags/lithuania.png';
+import moroccoFlag    from '../assets/flags/morocco.png';
+import russiaFlag     from '../assets/flags/russia.png';
+import ukFlag         from '../assets/flags/uk.png';
+import spainFlag      from '../assets/flags/spain.png';
+
+const partitionList = [
+  'AUT.Vienna','DU.Abu Dhab','IE.Dublin','IT.Rome',
+  'LT.Vilnius','MA.Casablanca','RU.Moscow','UK.London','ES.Madrid'
+];
+
+const displayName = {
+  'AUT.Vienna':    'Vienna',
+  'DU.Abu Dhab':   'Abu Dhabi',
+  'IE.Dublin':     'Dublin',
+  'IT.Rome':       'Rome',
+  'LT.Vilnius':    'Vilnius',
+  'MA.Casablanca': 'Casablanca',
+  'RU.Moscow':     'Moscow',
+  'UK.London':     'London',
+  'ES.Madrid':     'Madrid'
+};
+
+const flagMap = {
+  'AUT.Vienna':    austriaFlag,
+  'DU.Abu Dhab':   uaeFlag,
+  'IE.Dublin':     irelandFlag,
+  'IT.Rome':       italyFlag,
+  'LT.Vilnius':    lithuaniaFlag,
+  'MA.Casablanca': moroccoFlag,
+  'RU.Moscow':     russiaFlag,
+  'UK.London':     ukFlag,
+  'ES.Madrid':     spainFlag
+};
+
+const colorsMap = {
+  'AUT.Vienna':    ['#FFD666','#fcf3cf','#2ecc71','#ec7063'],
+  'DU.Abu Dhab':   ['#FFE599','#fcf3cf','#2ecc71','#ec7063'],
+  'IE.Dublin':     ['#FFF2CC','#fcf3cf','#2ecc71','#ec7063'],
+  'IT.Rome':       ['#FFD666','#fcf3cf','#2ecc71','#ec7063'],
+  'LT.Vilnius':    ['#FFE599','#fcf3cf','#2ecc71','#ec7063'],
+  'MA.Casablanca': ['#FFF2CC','#fcf3cf','#2ecc71','#ec7063'],
+  'RU.Moscow':     ['#FFD666','#fcf3cf','#2ecc71','#ec7063'],
+  'UK.London':     ['#FFE599','#fcf3cf','#2ecc71','#ec7063'],
+  'ES.Madrid':     ['#FFC0CB','#ffe5ec','#ff4081','#d50065']
+};
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) {
+    return (
+      <Box py={4}>
+        <Typography color="error" align="center">
+          Error loading live data
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Today's and real‐time totals
+  const todayTot  = data?.today.total    ?? 0;
+  const todayEmp  = data?.today.Employee ?? 0;
+  const todayCon  = data?.today.Contractor ?? 0;
+
+  const regions = data?.realtime || {};
+  const partitions = partitionList
+    .map(p => ({
+      name:      p,
+      total:     regions[p]?.total       || 0,
+      Employee:  regions[p]?.Employee    || 0,
+      Contractor:regions[p]?.Contractor  || 0,
+      floors:    regions[p]?.floors      || {}
+    }))
+    .sort((a, b) => b.total - a.total);
+
+  const realtimeTot = partitions.reduce((sum, p) => sum + p.total, 0);
+  const realtimeEmp = partitions.reduce((sum, p) => sum + p.Employee, 0);
+  const realtimeCon = partitions.reduce((sum, p) => sum + p.Contractor, 0);
+
+  return (
+    <>
+      <Header />
+
+      <Container maxWidth={false} disableGutters sx={{ px: 2, py: 1 }}>
+        {/* Top six summary cards (LACA style) */}
+        <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
+          {[
+            {
+              title: "Today's Total Headcount",
+              value: todayTot,
+              icon: <GroupIcon sx={{ color: '#E57373', fontSize: 36 }} />,
+              border: '#FFD666'
+            },
+            {
+              title: "Today's Employees Count",
+              value: todayEmp,
+              icon: <PeopleIcon sx={{ color: '#81C784', fontSize: 36 }} />,
+              border: '#81C784'
+            },
+            {
+              title: "Today's Contractors Count",
+              value: todayCon,
+              icon: <BusinessCenterIcon sx={{ color: '#64B5F6', fontSize: 36 }} />,
+              border: '#FFE599'
+            },
+            {
+              title: "Realtime Headcount",
+              value: realtimeTot,
+              icon: <TrackChangesIcon sx={{ color: '#BA68C8', fontSize: 36 }} />,
+              border: '#FFF2CC'
+            },
+            {
+              title: "Realtime Employees Count",
+              value: realtimeEmp,
+              icon: <PeopleIcon sx={{ color: '#FFB74D', fontSize: 36 }} />,
+              border: '#FFD666'
+            },
+            {
+              title: "Realtime Contractors Count",
+              value: realtimeCon,
+              icon: <BusinessCenterIcon sx={{ color: '#4DB6AC', fontSize: 36 }} />,
+              border: '#FFE599'
+            }
+          ].map(card => (
+            <Box key={card.title} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+              <SummaryCard
+                title={card.title}
+                total={card.value}
+                stats={[]}
+                icon={card.icon}
+                sx={{
+                  height: 140,
+                  border: `2px solid ${card.border}`
+                }}
+              />
+            </Box>
+          ))}
+        </Box>
+
+        {/* Partition cards (LACA style) */}
+        <Box display="flex" flexWrap="wrap" gap={1} mb={4}>
+          {loading ? (
+            <Skeleton variant="rectangular" width="100%" height={200} />
+          ) : (
+            partitions.map(p => {
+              const [titleC, totalC, stat1C, stat2C] = colorsMap[p.name] || [];
+              return (
+                <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+                  <SummaryCard
+                    title={displayName[p.name]}
+                    total={p.total}
+                    stats={[
+                      { label: 'Employees',   value: p.Employee },
+                      { label: 'Contractors', value: p.Contractor }
+                    ]}
+                    icon={
+                      <Box
+                        component="img"
+                        src={flagMap[p.name]}
+                        alt={`${p.name} flag`}
+                        sx={{ width: 50, height: 30, border: '1px solid #fff' }}
+                      />
+                    }
+                    titleColor={titleC}
+                    totalColor={totalC}
+                    statColors={[stat1C, stat2C]}
+                    sx={{
+                      height: 160,
+                      border: `2px solid ${titleC}`,
+                      '& .MuiTypography-subtitle1': { fontSize: '1.25rem' },
+                      '& .MuiTypography-h4':         { fontSize: '1.75rem' },
+                      '& .MuiTypography-caption':    { fontSize: '0.875rem' }
+                    }}
+                  />
+                </Box>
+              );
+            })
+          )}
+        </Box>
+
+        {/* Live totals bar chart */}
+        <Box p={2} sx={{ border: '2px solid #FFC107' }}>
+          <Box display="flex" justifyContent="space-between" mb={1}>
+            <Typography variant="h6">Live Totals by Site</Typography>
+            <Typography variant="body2">Last updated: {lastUpdate}</Typography>
+          </Box>
+          {loading ? (
+            <Skeleton variant="rectangular" height={240} />
+          ) : (
+            <ChartCard
+              data={partitions.map(p => ({
+                name: displayName[p.name],
+                value: p.total,
+                breakdown: {
+                  Employees:   p.Employee,
+                  Contractors: p.Contractor
+                }
+              }))}
+              dataKey="value"
+              colors={{ head: '#FFC107', cap: '#B0BEC5' }}
+              chartHeight={320}
+            />
+          )}
+        </Box>
+      </Container>
+
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
 refer laca Dashboard structure and update same dashboard file for emea , update Same Summary cards layout and partation card layout for the emea page 
 //C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\Dashboard.jsx
 // src/pages/Dashboard.jsx
