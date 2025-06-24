@@ -1,3 +1,16 @@
+export const summaryPartitionGroup = {
+  'Vilnius': ['Vilnius Delta', 'Vilnius Gama'],
+  // Add more as needed
+};
+
+
+
+
+
+
+
+
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
