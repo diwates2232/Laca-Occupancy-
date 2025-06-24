@@ -1,3 +1,36 @@
+ERROR in [eslint]
+src\pages\PartitionDetailDetails.jsx
+  Line 402:  Parsing error: Unexpected token (402:0)
+
+webpack compiled with 2 errors and 1 warning
+Compiling...
+Failed to compile.
+
+[eslint]
+src\pages\PartitionDetailDetails.jsx
+  Line 387:20:  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks 
+  Line 395:21:  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks 
+
+Search for the keywords to learn more about each error.
+WARNING in [eslint]
+src\pages\Dashboard.jsx
+  Line 275:10:  'summaryPartitionGroup' is defined but never used  no-unused-vars
+
+src\pages\PartitionDetail.jsx
+  Line 165:10:  'loading' is assigned a value but never used  no-unused-vars
+
+ERROR in [eslint]
+src\pages\PartitionDetailDetails.jsx
+  Line 387:20:  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks 
+  Line 395:21:  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks 
+
+Search for the keywords to learn more about each error.
+
+webpack compiled with 1 error and 1 warning
+
+
+
+
 // src/pages/PartitionDetailDetails.jsx
 
 import React, { useEffect, useState, useMemo } from 'react';
@@ -274,250 +307,3 @@ export default function PartitionDetailDetails() {
   );
 }
 
-
-
-Now Read all files carefully and give me fully updated files carefdully.
-
-
-src\pages\PartitionDetail.jsx
-  Line 165:10:  'loading' is assigned a value but never used  no-unused-vars
-
-ERROR in ./src/pages/PartitionDetailDetails.jsx
-Module build failed (from ./node_modules/babel-loader/lib/index.js):
-SyntaxError: C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages\PartitionDetailDetails.jsx: Unexpected token (402:0)
-
-  400 |   }
-  401 |
-> 402 |
-      | ^
-    at constructor (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:363:19)
-    at FlowParserMixin.raise (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:6609:19)
-    at FlowParserMixin.unexpected (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:6629:16)
-    at FlowParserMixin.parseExprAtom (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:11378:16)
-    at FlowParserMixin.parseExprAtom (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:4776:20)
-    at FlowParserMixin.parseExprSubscripts (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:11012:23)
-    at FlowParserMixin.parseUpdate (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:10997:21)
-    at FlowParserMixin.parseMaybeUnary (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:10977:23)
-    at FlowParserMixin.parseMaybeUnaryOrPrivate (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:10830:61)
-    at FlowParserMixin.parseExprOps (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:10835:23)
-    at FlowParserMixin.parseMaybeConditional (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:10812:23)
-    at FlowParserMixin.parseMaybeAssign (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:10765:21)
-    at FlowParserMixin.parseMaybeAssign (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:3561:18)
-    at FlowParserMixin.parseExpressionBase (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:10718:23)
-    at C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:10714:39
-    at FlowParserMixin.allowInAnd (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:12356:16)
-    at FlowParserMixin.parseExpression (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:10714:17)
-    at FlowParserMixin.parseStatementContent (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:12814:23)
-    at FlowParserMixin.parseStatementLike (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:12685:17)
-    at FlowParserMixin.parseStatementLike (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:2928:24)
-    at FlowParserMixin.parseStatementListItem (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:12665:17)
-    at FlowParserMixin.parseBlockOrModuleBlockBody (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:13235:61)
-    at FlowParserMixin.parseBlockBody (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:13228:10)
-    at FlowParserMixin.parseBlock (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:13216:10)
-    at FlowParserMixin.parseFunctionBody (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:12035:24)
-    at FlowParserMixin.parseFunctionBody (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:2905:11)
-    at FlowParserMixin.parseFunctionBodyAndFinish (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:12021:10)
-    at FlowParserMixin.parseFunctionBodyAndFinish (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:2913:18)
-    at C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:13360:12
-    at FlowParserMixin.withSmartMixTopicForbiddingContext (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:12338:14)
-    at FlowParserMixin.parseFunction (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:13359:10)
-    at FlowParserMixin.parseExportDefaultExpression (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:13822:19)
-    at FlowParserMixin.parseExportDefaultExpression (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:2976:18)
-    at FlowParserMixin.parseExport (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:13743:25)
-    at FlowParserMixin.parseStatementContent (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:12797:27)
-    at FlowParserMixin.parseStatementLike (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:12685:17)
-    at FlowParserMixin.parseStatementLike (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:2928:24)
-    at FlowParserMixin.parseModuleItem (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:12662:17)
-    at FlowParserMixin.parseBlockOrModuleBlockBody (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:13235:36)
-    at FlowParserMixin.parseBlockBody (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:13228:10)
-    at FlowParserMixin.parseProgram (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:12541:10)
-    at FlowParserMixin.parseTopLevel (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:12531:25)
-    at FlowParserMixin.parseTopLevel (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:3697:28)
-    at FlowParserMixin.parse (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:14410:10)
-    at parse (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\parser\lib\index.js:14444:38)
-    at parser (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\core\lib\parser\index.js:41:34)
-    at parser.next (<anonymous>)
-    at normalizeFile (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\core\lib\transformation\normalize-file.js:64:37)
-    at normalizeFile.next (<anonymous>)
-    at run (C:\Users\W0024618\Desktop\emea-occupancy-frontend\node_modules\@babel\core\lib\transformation\index.js:22:50)
-
-ERROR in [eslint]
-src\pages\PartitionDetailDetails.jsx
-  Line 402:  Parsing error: Unexpected token (402:0)
-
-webpack compiled with 2 errors and 1 warning
-
-
-
-
-// src/pages/PartitionDetailDetails.jsx
-
-import React, { useEffect, useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import {
-  Container, Box, Typography, Button, TextField,
-  TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody
-} from '@mui/material';
-
-
-
-
-import Header         from '../components/Header';
-import Footer         from '../components/Footer';
-import LoadingSpinner from '../components/LoadingSpinner';
-import DataTable      from '../components/DataTable';
-import { fetchLiveSummary } from '../api/occupancy.service';
-import { lookupFloor }      from '../utils/floorLookup';
-import doorMapRaw         from '../utils/doorMap';
-
-
-export default function PartitionDetailDetails() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-
-  const [details, setDetails] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [lastUpdate, setLast] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [expandedFloor, setExpandedFloor] = useState(null);
-
-
-  // build lookup: door → { building: "GAMA"|"Delta", floor }
-  const vilniusDoorInfo = useMemo(()=>{
-    return doorMapRaw.reduce((acc, { partition: p, door, inDirectionFloor })=>{
-      if(p==='LT.Vilnius'){
-        acc[door] = {
-          building: door.toUpperCase().includes('GAMA')?'GAMA':'Delta',
-          floor: inDirectionFloor
-        };
-      }
-      return acc;
-    },{});
-  },[]);
-
-
-
-  useEffect(() => {
-    let mounted = true;
-    async function load() {
-      const json = await fetchLiveSummary();
-      if (!mounted) return;
-      const det = json.details
-        .filter(r => r.PartitionName2 === partition && r.Direction==='InDirection')
-        // .map(r => ({ ...r, floor: lookupFloor(r.PartitionName2, r.Door, r.Direction) }));
-
-                .map(r => {
-          const info = vilniusDoorInfo[r.Door];
-          return {
-            ...r,
-            building: info?.building,
-            floor: info?.floor || lookupFloor(r.PartitionName2, r.Door, r.Direction)
-          };
-        });
-
-
-
-
-      setDetails(det);
-      setLast(new Date().toLocaleTimeString());
-      setLoading(false);
-    }
-    load();
-    const iv = setInterval(load, 1000);
-    return () => { mounted = false; clearInterval(iv); };
-  }, [partition]);
-
-  const floorMap = useMemo(() => {
-    return details.reduce((map,r)=>{
-      map[r.floor] = map[r.floor]||[];
-      map[r.floor].push(r);
-      return map;
-    },{});
-  }, [details]);
-
-  const displayed = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-    return Object.entries(floorMap)
-      .filter(([floor,emps]) =>
-        !term ||
-        floor.toLowerCase().includes(term) ||
-        emps.some(e=> e.ObjectName1.toLowerCase().includes(term) || e.EmployeeID.includes(term))
-      )
-      .sort((a,b)=>b[1].length - a[1].length);
-  }, [floorMap, searchTerm]);
-
-  const columns = [
-    { field:'EmployeeID', headerName:'Emp ID' },
-    { field:'ObjectName1', headerName:'Name' },
-    { field:'LocaleMessageTime', headerName:'Swipe Time' },
-    { field:'PersonnelType', headerName:'Type' },
-    { field:'CardNumber', headerName:'Card' },
-    { field:'Door', headerName:'Door' }
-  ];
-
-
- // If Vilnius, render two columns: GAMA and Delta, each grouped by floor
-  if (partition === 'LT.Vilnius') {
-    // group per building then floor
-    const byBuilding = details.reduce((acc, r) => {
-      const b = r.building || 'Unknown';
-      const f = r.floor   || 'Unknown';
-      acc[b] = acc[b] || {};
-      acc[b][f] = acc[b][f] || [];
-      acc[b][f].push(r);
-      return acc;
-    }, {});
- 
-    return (
-      <>
-        <Header/>
-        <Container maxWidth={false} disableGutters sx={{ px:'20px', pt:1, pb:4 }}>
-          <Box mb={2}>
-            <Button size="small" onClick={()=>navigate(-1)}>← Back to Overview</Button>
-          </Box>
-          <Box display="flex" gap={1}>
-            {['GAMA','Delta'].map(building => (
-              <Box key={building} sx={{ width:'50%' }}>
-                <Typography variant="h6" gutterBottom>
-                  {building}
-                </Typography>
-                {Object.entries(byBuilding[building]||{}).map(([floor, rows]) => (
-                  <Paper key={floor} sx={{ mb:2, border:'2px solid #FFC107', p:2 }}>
-                    <Typography variant="subtitle1" gutterBottom>
-                      {floor} (Total {rows.length})
-                    </Typography>
-                    <TableContainer component={Paper} variant="outlined">
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            {['Emp ID','Name','Time','Type','Card','Door'].map(h=>(
-                              <TableCell key={h} sx={{ fontWeight:'bold', py:0.5 }}>{h}</TableCell>
-                            ))}
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {rows.map((r,i)=>(
-                            <TableRow key={`${r.PersonGUID}-${i}`}>
-                              <TableCell sx={{py:0.5}}>{r.EmployeeID}</TableCell>
-                              <TableCell sx={{py:0.5}}>{r.ObjectName1}</TableCell>
-                              <TableCell sx={{py:0.5}}>
-                                {new Date(r.LocaleMessageTime).toLocaleTimeString()}
-                              </TableCell>
-                              <TableCell sx={{py:0.5}}>{r.PersonnelType}</TableCell>
-                              <TableCell sx={{py:0.5}}>{r.CardNumber}</TableCell>
-                              <TableCell sx={{py:0.5}}>{r.Door}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </Paper>
-                ))}
-              </Box>
-            ))}
-          </Box>
-        </Container>
-        <Footer/>
-      </>
-    );
-  }
