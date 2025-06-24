@@ -1,3 +1,143 @@
+{/* Summary table */}
+<Paper
+  elevation={3}
+  sx={{
+    p: 2,
+    border: '3px solid #000',
+    borderRadius: 2,
+  }}
+>
+  <Typography
+    variant="h6"
+    align="center"
+    sx={{
+      bgcolor: '#000',
+      color: '#fff',
+      py: 1,
+      border: '2px solid #000',
+      fontWeight: 'bold',
+      mb: 1,
+      fontSize: '1rem',
+    }}
+  >
+    {format(pickedDate, 'EEEE, d MMMM yyyy')}
+  </Typography>
+
+  <Table size="small" sx={{ borderCollapse: 'collapse' }}>
+    <TableHead>
+      <TableRow sx={{ bgcolor: '#FFC107', height: 32 }}>
+        {['Country','Site','Employees','Contractors','Total'].map(h => (
+          <TableCell
+            key={h}
+            align={h==='Country'||h==='Site' ? 'left' : 'right'}
+            sx={{
+              color: '#000',
+              fontWeight: 'bold',
+              fontSize: '0.75rem',
+              border: '2px solid #000',
+              py: 0.5,
+              px: 1
+            }}
+          >
+            {h}
+          </TableCell>
+        ))}
+      </TableRow>
+    </TableHead>
+    <TableBody>
+      {partitionRows.map((r,i) => (
+        <TableRow key={i} sx={{ height: 28 }}>
+          <TableCell sx={{ border: '2px solid #000', py: 0.5, px: 1, fontSize: '0.75rem' }}>
+            {r.country}
+          </TableCell>
+          <TableCell sx={{ border: '2px solid #000', py: 0.5, px: 1, fontSize: '0.75rem' }}>
+            {r.site}
+          </TableCell>
+          <TableCell align="right" sx={{ border: '2px solid #000', py: 0.5, px: 1, fontSize: '0.75rem' }}>
+            {r.employee}
+          </TableCell>
+          <TableCell align="right" sx={{ border: '2px solid #000', py: 0.5, px: 1, fontSize: '0.75rem' }}>
+            {r.contractor}
+          </TableCell>
+          <TableCell
+            align="right"
+            sx={{
+              bgcolor: '#FFC107',
+              fontWeight: 'bold',
+              border: '2px solid #000',
+              py: 0.5,
+              px: 1,
+              fontSize: '0.75rem'
+            }}
+          >
+            {r.total}
+          </TableCell>
+        </TableRow>
+      ))}
+
+      {/* Grand total row */}
+      <TableRow sx={{ bgcolor: '#666', height: 28 }}>
+        <TableCell colSpan={2} align="right"
+          sx={{
+            color: '#fff',
+            fontWeight: 'bold',
+            border: '2px solid #000',
+            py: 0.5,
+            px: 1,
+            fontSize: '0.75rem'
+          }}
+        >
+          Total
+        </TableCell>
+        <TableCell align="right"
+          sx={{
+            color: '#fff',
+            fontWeight: 'bold',
+            border: '2px solid #000',
+            py: 0.5,
+            px: 1,
+            fontSize: '0.75rem'
+          }}
+        >
+          {partitionRows.reduce((s, r) => s + r.employee, 0)}
+        </TableCell>
+        <TableCell align="right"
+          sx={{
+            color: '#fff',
+            fontWeight: 'bold',
+            border: '2px solid #000',
+            py: 0.5,
+            px: 1,
+            fontSize: '0.75rem'
+          }}
+        >
+          {partitionRows.reduce((s, r) => s + r.contractor, 0)}
+        </TableCell>
+        <TableCell align="right"
+          sx={{
+            color: '#fff',
+            fontWeight: 'bold',
+            bgcolor: '#333',
+            border: '2px solid #000',
+            py: 0.5,
+            px: 1,
+            fontSize: '0.75rem'
+          }}
+        >
+          {partitionRows.reduce((s, r) => s + r.total, 0)}
+        </TableCell>
+      </TableRow>
+    </TableBody>
+  </Table>
+</Paper>
+
+
+
+
+
+
+
+
 // src/pages/History.jsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
