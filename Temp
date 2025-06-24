@@ -1,5 +1,38 @@
 --- a/src/pages/PartitionDetail.jsx
 +++ b/src/pages/PartitionDetail.jsx
+@@ line  forty-something (around summaryCards definition)
+-  // If Vilnius, override summary to show GAMA/Delta instead of the last three:
+-  const summaryCards = partition === 'LT.Vilnius'
+-    ? [
+-        // keep first three (today’s metrics)
+-        ...topItems.slice(0,3),
+-        // then GAMA & Delta in real time
+-        {
+-          title: 'Vilnius GAMA',
+-          value: vilniusCounts.GAMA,
+-          icon: <TrackChangesIcon/>,
+-          border: '#FFE599'
+-        },
+-        {
+-          title: 'Vilnius Delta',
+-          value: vilniusCounts.Delta,
+-          icon: <TrackChangesIcon/>,
+-          border: '#FFD666'
+-        }
+-      ]
+-    : topItems;
++  // Always show the full six top‐level cards
++  const summaryCards = topItems;
+
+
+
+
+
+
+
+
+--- a/src/pages/PartitionDetail.jsx
++++ b/src/pages/PartitionDetail.jsx
 @@
 -  // If Vilnius, override summary to show GAMA/Delta instead of the last three:
 -  const summaryCards = partition === 'LT.Vilnius'
