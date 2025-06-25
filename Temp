@@ -1,3 +1,32 @@
+// before:
+Object.values(last).forEach(r => {
+  if (r.Direction !== 'InDirection') return;
+  // … count …
+// after:
+Object.values(last).forEach(r => {
+  // 1) true exits: skip non-InDirection _unless_ it's an allowed outer area
+  if (r.Direction === 'OutDirection') {
+    const doorKey = normalizeDoorName(r.Door) + '___' + r.Direction;
+    const zone = doorZoneMap[doorKey];
+    // if it's not the real "Out of office" and map says it's an outer area, treat as In
+    if (zone !== 'Out of office' && /Outer Area$/i.test(zone)) {
+      // allow as an “In” event
+    } else {
+      return; // true exit → evict
+    }
+  }
+  // 2) proceed for InDirection or allowed outer-area OutDirection
+  // … count …
+});
+
+
+
+
+
+
+
+
+
 C:\Users\W0024618\Desktop\apac-occupancy-backend\src\services\occupancy.service.js
 // src/services/occupancy.service.js
 const { poolPromise, sql } = require('../config/db');
