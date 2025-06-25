@@ -1,963 +1,169 @@
-// src/utils/timezones.js
 
-module.exports = {
-  'APAC.Default':       'Asia/Manila',
-  'CN.Beijing':         'Asia/Shanghai',
-  'JP.Tokyo':           'Asia/Tokyo',
-  'PH.Manila':          'Asia/Manila',
-  'MY.Kuala Lumpur':    'Asia/Kuala_Lumpur',
-  'IN.Pune':            'Asia/Kolkata',
+This is Pune Door details zone and Floor Details , now read excel sheet and below responce and give me fully full apac door floor details carefully
+// data/doorZoneMap.js
+
+
+const doorZoneMap = {
+
+
+  // Podium / Red
+  "APAC_IN_PUN_PODIUM_RED_IDF ROOM-02-RESTRICTED DOOR___InDirection":                 "Red Zone",
+  "APAC_IN_PUN_PODIUM_ST2 DOOR 1 (RED)___InDirection":                            "Red Zone",
+  "APAC_IN_PUN_PODIUM_ST2 DOOR 1 (RED)___OutDirection":                           "Red Zone",
+  "APAC_IN_PUN_PODIUM_RED_MAIN LIFT LOBBY ENTRY 1-DOOR___InDirection":                 "Red Zone",
+  "APAC_IN_PUN_PODIUM_RED_MAIN LIFT LOBBY ENTRY 1-DOOR___OutDirection":                "Out of office",
+  "APAC_IN_PUN_PODIUM_ST 1-DOOR 1 (RED)___InDirection":                                "Red Zone",
+  "APAC_IN_PUN_PODIUM_ST 1-DOOR 1 (RED)___OutDirection":                               "Red Zone - Outer Area",
+  "APAC_IN_PUN_PODIUM_RED_RECEPTION TO WS ENTRY 1-DOOR NEW___InDirection":             "Red Zone",
+  "APAC_IN_PUN_PODIUM_RED_RECEPTION TO WS ENTRY 1-DOOR NEW___OutDirection":            "Reception Area",
+  "APAC_IN_PUN_PODIUM_RED_RECREATION AREA FIRE EXIT 1-DOOR NEW___InDirection":         "Red Zone",
+  "APAC_IN_PUN_PODIUM_RED_RECREATION AREA FIRE EXIT 1-DOOR NEW___OutDirection":        "Yellow Zone - Outer Area",
+
+  // Podium / Yellow
+  "APAC_IN_PUN_PODIUM_ST2 DOOR 2 (YELLOW)___InDirection":                              "Yellow Zone",
+  "APAC_IN_PUN_PODIUM_ST2 DOOR 2 (YELLOW)___OutDirection":                             "Yellow Zone - Outer Area",
+  "APAC_IN_PUN_PODIUM_YELLOW_MDF RESTRICTED DOOR___InDirection":                       "Yellow Zone",
+  "APAC_IN_PUN_PODIUM_YELLOW_IT STORE ROOM-DOOR RESTRICTED DOOR___InDirection":        "Yellow Zone",
+  "APAC_IN_PUN_PODIUM_YELLOW_REPRO STORE-DOOR RESTRICTED DOOR___InDirection":           "Yellow Zone",
+  "APAC_IN_PUN_PODIUM_YELLOW_CONTROL PANEL ROOM-DOOR RESTRICTED DOOR___InDirection":   "Yellow Zone",
+  "APAC_IN_PUN_PODIUM_YELLOW_PREACTION ROOM-DOOR RESTRICTED DOOR___InDirection":        "Yellow Zone",
+  "APAC_IN_PUN_PODIUM_YELLOW_TESTING LAB-DOOR RESTRICTED DOOR___InDirection":           "Yellow Zone",
+  "APAC_IN_PUN_PODIUM_YELLOW_RECEPTION ENTRY-DOOR___InDirection":                       "Yellow Zone",
+  "APAC_IN_PUN_PODIUM_YELLOW_RECEPTION ENTRY-DOOR___OutDirection":                      "Reception Area",
+  "APAC_IN_PUN_PODIUM_YELLOW_MAIN LIFT LOBBY-DOOR NEW___InDirection":                   "Yellow Zone",
+  "APAC_IN_PUN_PODIUM_YELLOW_MAIN LIFT LOBBY-DOOR NEW___OutDirection":                  "Out of office",
+  "APAC_IN_PUN_PODIUM_ST 1 DOOR 2 (YELLOW)___InDirection":                               "Yellow Zone",
+  "APAC_IN_PUN_PODIUM_ST 1 DOOR 2 (YELLOW)___OutDirection":                              "Yellow Zone - Outer Area",
+  "APAC_IN_PUN_PODIUM_YELLOW_FIRE EXIT 1-DOOR NEW___InDirection":                       "Yellow Zone",
+  "APAC_IN_PUN_PODIUM_YELLOW_FIRE EXIT 1-DOOR NEW___OutDirection":                      "Yellow Zone - Outer Area",
+
+  // Podium / Green
+  "APAC_IN_PUN_PODIUM_GREEN-_IDF ROOM 1-RESTRICTED DOOR___InDirection":                "Green Zone",
+  "APAC_IN_PUN_PODIUM_GREEN_UPS ENTRY 1-DOOR RESTRICTED DOOR___InDirection":            "Green Zone",
+  "APAC_IN_PUN_PODIUM_GREEN_UPS ENTRY 2-DOOR RESTRICTED DOOR___InDirection":            "Green Zone",
+  "APAC_IN_PUN_PODIUM_GREEN_LOCKER HR STORE 3-DOOR RESTRICTED DOOR___InDirection":      "Green Zone",
+  "APAC_IN_PUN_PODIUM_ST4 DOOR 2 (GREEN)___InDirection":                                "Green Zone",
+  "APAC_IN_PUN_PODIUM_GREEN-MAIN LIFT LOBBY-DOOR___InDirection":                        "Green Zone",
+  "APAC_IN_PUN_PODIUM_GREEN-MAIN LIFT LOBBY-DOOR___OutDirection":                       "Green Zone - Outer Area",
+  "APAC_IN_PUN_PODIUM_ST3 DOOR 2 (GREEN)___InDirection":                                "Green Zone",
+  "APAC_IN_PUN_PODIUM_ST3 DOOR 2 (GREEN)___OutDirection":                               "Green Zone - Outer Area",
+  "APAC_IN_PUN_PODIUM_GREEN_RECEPTION ENTRY-DOOR___InDirection":                        "Green Zone",
+  "APAC_IN_PUN_PODIUM_GREEN_RECEPTION ENTRY-DOOR___OutDirection":                       "Reception Area",
+
+  // Podium / Orange
+  "APAC_IN_PUN_PODIUM_ST4 DOOR 1 (ORANGE)___InDirection":                               "Orange Zone",
+  "APAC_IN_PUN_PODIUM_ORANGE_RECEPTION ENTRY-DOOR___InDirection":                      "Orange Zone",
+  "APAC_IN_PUN_PODIUM_ORANGE_RECEPTION ENTRY-DOOR___OutDirection":                     "Reception Area",
+  "APAC_IN_PUN_PODIUM_ST3_DOOR 1 (ORANGE)___InDirection":                              "Orange Zone",
+  "APAC_IN_PUN_PODIUM_ST3_DOOR 1 (ORANGE)___OutDirection":                             "Orange Zone",
+  "APAC_IN_PUN_PODIUM_ORANGE_MAIN LIFT LOBBY-DOOR___InDirection":                       "Orange Zone",
+  "APAC_IN_PUN_PODIUM_ORANGE_MAIN LIFT LOBBY-DOOR___OutDirection":                      "Orange Zone - Outer Area",
+  "APAC_IN_PUN_PODIUM_ORANGE-IDF ROOM 3-RESTRICTED DOOR___InDirection":                "Orange Zone",
+  "APAC_IN_PUN_PODIUM_ORANGE_KITCHENETTE FIRE EXIT-DOOR NEW___InDirection":            "Orange Zone",
+  "APAC_IN_PUN_PODIUM_ORANGE_KITCHENETTE FIRE EXIT-DOOR NEW___OutDirection":           "Orange Zone - Outer Area",
+
+  // Podium / GSOC door
+  "APAC_IN_PUN_PODIUM_GSOC DOOR RESTRICTED DOOR___InDirection":                         "Yellow Zone",
+
+  // Podium / Main Right & Left Entry
+  "APAC_IN_PUN_PODIUM_MAIN PODIUM RIGHT ENTRY-DOOR NEW___InDirection":                  "Reception Area",
+  "APAC_IN_PUN_PODIUM_MAIN PODIUM RIGHT ENTRY-DOOR NEW___OutDirection":                 "Assembly Area",
+  "APAC_IN_PUN_PODIUM_MAIN PODIUM LEFT ENTRY-DOOR NEW___InDirection":                   "Reception Area",
+  "APAC_IN_PUN_PODIUM_MAIN PODIUM LEFT ENTRY-DOOR NEW___OutDirection":                  "Assembly Area",
+
+  // Podium / Turnstiles
+  "APAC_IN_PUN_PODIUM_P-1 TURNSTILE 1-DOOR___InDirection":                               "Reception Area",
+  "APAC_IN_PUN_PODIUM_P-1 TURNSTILE 2-DOOR___InDirection":                               "Reception Area",
+  "APAC_IN_PUN_PODIUM_P-1 TURNSTILE 3-DOOR___InDirection":                               "Reception Area",
+  "APAC_IN_PUN_PODIUM_P-1 TURNSTILE 4-DOOR___InDirection":                               "Reception Area",
+  "APAC_IN_PUN_PODIUM_P-1 TURNSTILE 2 -OUT DOOR___OutDirection":                         "Out of office",
+  "APAC_IN_PUN-PODIUM_P-1 TURNSTILE 3 -OUT DOOR___OutDirection":                         "Out of office",
+  "APAC_IN_PUN_PODIUM_P-1 TURNSTILE 4 -OUT DOOR___OutDirection":                         "Out of office",
+  "APAC_IN_PUN_PODIUM_P-1 TURNSTILE 1-OUT DOOR___OutDirection":                          "Out of office",
+
+  // 2nd-Floor / IDF + UPS/ELEC + Reception→Workstation + LiftLobby→Reception
+  "APAC_IN_PUN_2NDFLR_IDF ROOM_10:05:86 RESTRICTED DOOR___InDirection":                  "2nd Floor, Pune",
+  "APAC_IN_PUN_2NDFLR_UPS/ELEC ROOM RESTRICTED DOOR___InDirection":                      "2nd Floor, Pune",
+  "APAC_IN_PUN_2NDFLR_RECPTION TO WORKSTATION DOOR___InDirection":                       "2nd Floor, Pune",
+  "APAC_IN_PUN_2NDFLR_RECPTION TO WORKSTATION DOOR___OutDirection":                      "Out of office",
+  "APAC_IN_PUN_2NDFLR_LIFTLOBBY TO RECEPTION EMTRY DOOR___InDirection":                   "2nd Floor, Pune",
+  "APAC_IN_PUN_2NDFLR_LIFTLOBBY TO RECEPTION EMTRY DOOR___OutDirection":                  "2nd Floor, Pune",
+
+  // Tower B
+  "APAC_IN_PUN_TOWER B_MAIN RECEPTION DOOR___InDirection":                               "Tower B",
+  "APAC_IN_PUN_TOWER B_MAIN RECEPTION DOOR___OutDirection":                              "Out of office",
+  "APAC_IN_PUN_TOWER B_LIFT LOBBY DOOR___InDirection":                                   "Tower B",
+  "APAC_IN_PUN_TOWER B_LIFT LOBBY DOOR___OutDirection":                                  "Out of office",
+  "APAC_IN_PUN_TOWER B_ST6_GYM SIDE DOOR___InDirection":                                 "Tower B",
+  "APAC_IN_PUN_TOWER B_ST6_GYM SIDE DOOR___OutDirection":                                "Tower B",
+  "APAC_IN_PUN_TOWER B_ST6_WKS SIDE DOOR___InDirection":                                 "Tower B",
+  "APAC_IN_PUN_TOWER B_ST6_WKS SIDE DOOR___OutDirection":                                "Tower B",
+  "APAC_IN_PUN_TOWER B_ST5_KAPIL DEV DOOR___InDirection":                                "Tower B",
+  "APAC_IN_PUN_TOWER B_ST5_KAPIL DEV DOOR___OutDirection":                               "Tower B",
+  "APAC_IN_PUN_TOWER B_ST5_WKS SIDE DOOR___InDirection":                                 "Tower B",
+  "APAC_IN_PUN_TOWER B_ST5_WKS SIDE DOOR___OutDirection":                                "Tower B",
+  "APAC_IN_PUN_TOWER B_RECEPTION LEFT DOOR___InDirection":                               "Tower B",
+  "APAC_IN_PUN_TOWER B_RECEPTION LEFT DOOR___OutDirection":                              "Tower B",
+  "APAC_IN_PUN_TOWER B_RECEPTION RIGHT DOOR___InDirection":                              "Tower B",
+  "APAC_IN_PUN_TOWER B_RECEPTION RIGHT DOOR___OutDirection":                             "Tower B",
+  "APAC_IN_PUN_TOWER B_IBMS ROOM___InDirection":                                         "Tower B",
+  "APAC_IN_PUN_TOWER B_UPS ROOM___InDirection":                                          "Tower B",
+  "APAC_IN_PUN_TOWER B_MDF ROOM___InDirection":                                          "Tower B",
+  "APAC_IN_PUN_TOWER B_PAC ROOM___InDirection":                                          "Tower B",
+  "APAC_IN_PUN_TOWER B_IT STORE ROOM___InDirection":                                    "Tower B",
+  "APAC_IN_PUN_TOWER B_GYM ROOM___InDirection":                                          "Tower B GYM",
+  "APAC_IN_PUN_TOWER B_GYM ROOM___OutDirection":                                         "Tower B GYM",
+  "APAC_IN_PUN_TOWER B_SITE OPS STORE___InDirection":                    "Tower B",
 };
 
+module.exports = doorZoneMap;
 
 
 
 
 
 
-// src/config/db.js
-require('dotenv').config();
-const sql = require('mssql');
 
-// Pull in and trim env-vars
-const DB_USER     = (process.env.DB_USER     || '').trim();
-const DB_PASSWORD = (process.env.DB_PASSWORD || '').trim();
-const DB_SERVER   = (process.env.DB_SERVER   || '').trim();
-const DB_DATABASE = (process.env.DB_DATABASE || '').trim();
-const DB_PORT     = parseInt((process.env.DB_PORT || '').trim(), 10);
 
-const dbConfig = {
-  user:     DB_USER,
-  password: DB_PASSWORD,
-  server:   DB_SERVER,
-  port:     DB_PORT,
-  database: DB_DATABASE,
-  options: { encrypt:false, trustServerCertificate:true, enableArithAbort:true },
-  pool: { max:10, min:0, idleTimeoutMillis:30000 }
+
+// data/zoneFloorMap.js
+
+const zoneFloorMap = {
+  // Podium Floor
+  "Red Zone":                    "Podium Floor",
+  "Yellow Zone":                 "Podium Floor",
+  "Reception Area":              "Podium Floor",
+  "Green Zone":                  "Podium Floor",
+  "Orange Zone":                 "Podium Floor",
+  "Gsoc Zone":                   "Podium Floor",
+  "Assembly Area":               "Podium Floor",
+  "Red":"Podium Floor",
+
+  // 2nd Floor
+  "2nd Floor, Pune":             "2nd Floor",
+
+  // Tower B
+  "Tower B":                     "Tower B",
+  "Reception Area Tower B":      "Tower B",
+  "Tower B GYM":                 "Tower B",
+
+  // Outer‐Area variants (same floors as their base zones)
+  "Red Zone - Outer Area":               "Podium Floor",
+  "Yellow Zone - Outer Area":            "Podium Floor",
+  "Reception Area - Outer Area":         "Podium Floor",
+  "Green Zone - Outer Area":             "Podium Floor",
+  "Orange Zone - Outer Area":            "Podium Floor",
+  "Assembly Area - Outer Area":          "Podium Floor",
+  "2nd Floor, Pune - Outer Area":        "2nd Floor",
+  "Tower B - Outer Area":                "Tower B",
+  "Reception Area Tower B - Outer Area": "Tower B",
+  "Tower B GYM - Outer Area":            "Tower B",
+
+  // True “Out of office” eviction (we filter these out in the controller)
+  "Out of office":               "Podium Floor"
 };
 
-const poolPromise = sql.connect(dbConfig)
-  .then(pool => {
-    console.log('✅ MSSQL (APAC) connected');
-    return pool;
-  })
-  .catch(err => {
-    console.error('❌ MSSQL (APAC) connection failed', err);
-    process.exit(1);
-  });
-
-module.exports = { sql, poolPromise };
-
-
-
-
-
-
-
-
-
-// src/utils/doorMap.js
-//
-// Map your APAC doors→floors here, e.g.
-// [
-//   { partition:'APAC.Default', door:'APAC_PI_A01', inDirectionFloor:'Floor 1', outDirectionFloor:null },
-//   ...
-// ]
-//
-// Example stub:
-module.exports = [
-  { partition:'APAC.Default', door:'APAC_PI_A01', inDirectionFloor:'Floor 1', outDirectionFloor:'Floor 1' },
-  { partition:'CN.Beijing',   door:'CN_BJ_01',   inDirectionFloor:'Floor 1', outDirectionFloor:null },
-  { partition:'JP.Tokyo',     door:'JP_TK_01',   inDirectionFloor:'Floor 2', outDirectionFloor:null },
-  { partition:'PH.Manila',    door:'APAC_PH_G01',inDirectionFloor:'Ground',  outDirectionFloor:null },
-  { partition:'MY.Kuala Lumpur',door:'APAC_MY_L01',inDirectionFloor:'Level 1',outDirectionFloor:null },
-  { partition:'IN.Pune',      door:'APAC_PUN_01',inDirectionFloor:'Floor 1', outDirectionFloor:null }
-];
-
-
-
-
-
-
-
-
-
-
-// src/services/occupancy.service.js
-const { poolPromise, sql } = require('../config/db');
-
-const partitionList = [
-  'APAC.Default',
-  'CN.Beijing',
-  'JP.Tokyo',
-  'PH.Manila',
-  'MY.Kuala Lumpur',
-  'IN.Pune'
-];
-
-/**
- * Live occupancy (today) for APAC
- */
-exports.fetchLiveOccupancy = async () => {
-  const pool = await poolPromise;
-  const parts = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
-
-  const query = `
-    WITH CombinedEmployeeData AS (
-      SELECT
-        t1.ObjectName1,
-        t1.ObjectName2,
-        CASE WHEN t2.Int1 = 0 THEN t2.Text12 ELSE CAST(t2.Int1 AS NVARCHAR) END AS EmployeeID,
-        t2.PersonnelTypeID,
-        t3.Name AS PersonnelType,
-        t1.ObjectIdentity1 AS PersonGUID,
-        CASE
-          WHEN t1.ObjectName2 LIKE 'APAC_PI%' THEN 'Taguig City'
-          WHEN t1.ObjectName2 LIKE 'APAC_PH%' THEN 'Quezon City'
-          WHEN t1.ObjectName2 LIKE '%PUN%' THEN 'Pune'
-          ELSE t1.PartitionName2
-        END AS PartitionName2,
-        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
-        t5d.value AS Direction
-      FROM ACVSUJournal_00010028.dbo.ACVSUJournalLog t1
-      JOIN ACVSCore.Access.Personnel      t2 ON t1.ObjectIdentity1 = t2.GUID
-      JOIN ACVSCore.Access.PersonnelType  t3 ON t2.PersonnelTypeID = t3.ObjectID
-      LEFT JOIN ACVSUJournal_00010028.dbo.ACVSUJournalLogxmlShred t5d
-        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
-      WHERE
-        t1.MessageType = 'CardAdmitted'
-        AND t1.PartitionName2 IN (${parts})
-        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
-            = CONVERT(DATE, GETDATE())
-    ), Ranked AS (
-      SELECT *,
-        ROW_NUMBER() OVER (PARTITION BY PersonGUID ORDER BY LocaleMessageTime DESC) AS rn
-      FROM CombinedEmployeeData
-    )
-    SELECT
-      ObjectName1,
-      PersonnelType,
-      EmployeeID,
-      PartitionName2,
-      LocaleMessageTime,
-      Direction,
-      PersonGUID
-    FROM Ranked
-    WHERE rn = 1;
-  `;
-
-  const result = await pool.request().query(query);
-  return result.recordset;
-};
-
-/**
- * Historical raw‐data fetch for the past N days, all or by location.
- */
-exports.fetchHistoricalData = async ({ days = 7, location = null }) => {
-  const pool = await poolPromise;
-  const parts = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
-  const locFilter = location
-    ? `AND PartitionName2 = @location`
-    : `AND PartitionName2 IN (${parts})`;
-
-  const query = `
-    WITH Hist AS (
-      SELECT
-        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
-        t1.ObjectName1,
-        t1.ObjectName2 AS Door,
-        CASE WHEN t2.Int1 = 0 THEN t2.Text12 ELSE CAST(t2.Int1 AS NVARCHAR) END AS EmployeeID,
-        t3.Name AS PersonnelType,
-        t1.ObjectIdentity1 AS PersonGUID,
-        t1.PartitionName2,
-        t5d.value AS Direction
-      FROM ACVSUJournal_00010028.dbo.ACVSUJournalLog t1
-      JOIN ACVSCore.Access.Personnel      t2 ON t1.ObjectIdentity1 = t2.GUID
-      JOIN ACVSCore.Access.PersonnelType  t3 ON t2.PersonnelTypeID = t3.ObjectID
-      LEFT JOIN ACVSUJournal_00010028.dbo.ACVSUJournalLogxmlShred t5d
-        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
-      WHERE
-        t1.MessageType = 'CardAdmitted'
-        ${locFilter}
-        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
-            >= DATEADD(DAY, -${days}, CONVERT(DATE, GETDATE()))
-    )
-    SELECT *
-    FROM Hist
-    ORDER BY LocaleMessageTime ASC;
-  `;
-
-  const req = pool.request();
-  if (location) req.input('location', sql.NVarChar, location);
-  const result = await req.query(query);
-  return result.recordset;
-};
-
-exports.fetchHistoricalOccupancy = async (location) =>
-  exports.fetchHistoricalData({ days:7, location: location||null });
-
-
-
-
-
-
-
-
-
-// src/controllers/occupancy.controller.js
-const service = require('../services/occupancy.service');
-const doorMap = require('../utils/doorMap');
-
-function isEmployeeType(pt) {
-  return pt === 'Employee' || pt === 'Terminated Employee' || pt === 'Terminated Personnel';
-}
-
-function lookupFloor(partition, door, direction, unmapped) {
-  const entry = doorMap.find(d => d.partition === partition && d.door === door);
-  if (!entry) { unmapped.add(`${partition}|${door}`); return 'Unknown'; }
-  return direction === 'InDirection' ? entry.inDirectionFloor : entry.outDirectionFloor;
-}
-
-exports.getLiveOccupancy = async (req,res) => {
-  try {
-    const data = await service.fetchLiveOccupancy();
-    res.json({ success:true, count:data.length, data });
-  } catch(e) {
-    console.error(e);
-    res.status(500).json({ success:false, message:'Live fetch failed' });
-  }
-};
-
-exports.getLiveSummary = async (req,res) => {
-  try {
-    const swipes = await service.fetchLiveOccupancy();
-
-    // first swipe per person = TODAY
-    const first = {};
-    swipes.forEach(r => {
-      const t = new Date(r.LocaleMessageTime).getTime();
-      if (!first[r.PersonGUID] || t < new Date(first[r.PersonGUID].LocaleMessageTime).getTime()) {
-        first[r.PersonGUID] = r;
-      }
-    });
-    const today = { total:0, Employee:0, Contractor:0 };
-    Object.values(first).forEach(r => {
-      today.total++;
-      if (isEmployeeType(r.PersonnelType)) today.Employee++;
-      else today.Contractor++;
-    });
-
-    // last swipe per person for realtime
-    const last = {};
-    swipes.forEach(r => {
-      const t = new Date(r.LocaleMessageTime).getTime();
-      if (!last[r.PersonGUID] || t > new Date(last[r.PersonGUID].LocaleMessageTime).getTime()) {
-        last[r.PersonGUID] = r;
-      }
-    });
-
-    const realtime = {};
-    const unmapped = new Set();
-    Object.values(last).forEach(r => {
-      if (r.Direction !== 'InDirection') return;
-      const p = r.PartitionName2;
-      if (!realtime[p]) realtime[p] = { total:0, Employee:0, Contractor:0, floors:{} };
-      realtime[p].total++;
-      if (isEmployeeType(r.PersonnelType)) realtime[p].Employee++;
-      else realtime[p].Contractor++;
-      const fl = lookupFloor(p, r.Door, r.Direction, unmapped);
-      realtime[p].floors[fl] = (realtime[p].floors[fl]||0)+1;
-    });
-    if (unmapped.size) console.warn('Unmapped doors:', Array.from(unmapped));
-
-    res.json({ success:true, today, realtime, details:Object.values(last) });
-  } catch(e) {
-    console.error(e);
-    res.status(500).json({ success:false, message:'Summary failed' });
-  }
-};
-
-exports.getHistoricalOccupancy = async (req,res) => {
-  const location = req.params.location || null;
-  try {
-    const raw = await service.fetchHistoricalOccupancy(location);
-    // dedupe first swipe per person per day
-    const byDate = raw.reduce((acc,r) => {
-      const date = new Date(r.LocaleMessageTime).toISOString().slice(0,10);
-      acc[date] = acc[date]||{};
-      if (!acc[date][r.PersonGUID] ||
-          new Date(r.LocaleMessageTime) < new Date(acc[date][r.PersonGUID].LocaleMessageTime)
-      ) {
-        acc[date][r.PersonGUID] = { ...r, LocaleMessageTime: r.LocaleMessageTime };
-      }
-      return acc;
-    }, {});
-
-    const summaryByDate = [], details = [];
-    Object.keys(byDate).sort().forEach(date => {
-      const recs = Object.values(byDate[date]);
-      details.push(...recs);
-      const region = { total:0, Employee:0, Contractor:0 };
-      const partitions = {};
-      recs.forEach(r => {
-        region.total++;
-        if (isEmployeeType(r.PersonnelType)) region.Employee++;
-        else region.Contractor++;
-        if (!location) {
-          partitions[r.PartitionName2] = partitions[r.PartitionName2]||{ total:0,Employee:0,Contractor:0 };
-          partitions[r.PartitionName2].total++;
-          if (isEmployeeType(r.PersonnelType)) partitions[r.PartitionName2].Employee++;
-          else partitions[r.PartitionName2].Contractor++;
-        }
-      });
-      summaryByDate.push({
-        date,
-        day: new Date(date).toLocaleDateString('en-US',{ weekday:'long' }),
-        region: location ? { name:location, ...region } : { name:'APAC', ...region },
-        partitions: location ? undefined : partitions
-      });
-    });
-
-    res.json({ success:true, summaryByDate, details });
-  } catch(e) {
-    console.error(e);
-    res.status(500).json({ success:false, message:'Historical failed' });
-  }
-};
-
-
-
-
-
-
-
-// src/routes/occupancy.routes.js
-const express    = require('express');
-const controller = require('../controllers/occupancy.controller');
-const router     = express.Router();
-
-router.get('/live',         controller.getLiveOccupancy);
-router.get('/live-summary', controller.getLiveSummary);
-router.get('/history',           controller.getHistoricalOccupancy);
-router.get('/history/:location', controller.getHistoricalOccupancy);
-
-module.exports = router;
-
-
-
-
-
-
-// src/app.js
-const express           = require('express');
-const cors              = require('cors');
-const occupancyRoutes   = require('./routes/occupancy.routes');
-
-const app = express();
-app.use(express.json());
-app.use(cors());
-
-// Health check
-app.get('/', (_req,res) => res.send('🌏 APAC Occupancy API Running'));
-
-// Mount occupancy
-app.use('/api/occupancy', occupancyRoutes);
-
-module.exports = app;
-
-
-
-
-
-// server.js
-require('dotenv').config();
-const app = require('./src/app');
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 APAC server listening on port ${PORT}`);
-});
-
-
-
-
-
-
-# APAC DB
-DB_USER=your_apac_user
-DB_PASSWORD=Westernuniongsoc@2025
-DB_SERVER=SRVWUPNQ0986V
-DB_DATABASE=ACVSUJournal_00010028
-DB_PORT=1433
-
-PORT=3000
-
-
-
-
-
-
-
-
-
-apac HeadCount query
-
-APAC SERVER - SRVWUPNQ0986V
-Password-Westernuniongsoc@2025
-
-
-
-	WITH CombinedEmployeeData AS (
-    SELECT
-        t1.[ObjectName1],
-        t1.[ObjectName2],
-        CASE
-            WHEN t2.[Int1] = 0 THEN t2.[Text12]
-            ELSE CAST(t2.[Int1] AS NVARCHAR)
-        END AS EmployeeID,
-        t2.[PersonnelTypeID],
-        t3.[Name] AS PersonnelTypeName,
-		t1.Objectidentity1 AS EmployeeIdentity,
-        CASE
-            WHEN t1.ObjectName2 LIKE 'APAC_PI%' THEN 'Taguig City'
-            WHEN t1.ObjectName2 LIKE 'APAC_PH%' THEN 'Quezon City'
-            WHEN t1.ObjectName2 LIKE '%PUN%' THEN 'Pune'
-            ELSE t1.PartitionName2
-        END AS Location,
-        t1.PartitionName2,
-        DATEADD(MINUTE, -1 * t1.[MessageLocaleOffset], t1.[MessageUTC]) AS LocaleMessageTime,
-        t1.MessageType
-    FROM
-        [ACVSUJournal_00010028].[dbo].[ACVSUJournalLog] AS t1
-        INNER JOIN [ACVSCore].[Access].[Personnel] AS t2 ON t1.ObjectIdentity1 = t2.GUID
-        INNER JOIN [ACVSCore].[Access].[PersonnelType] AS t3 ON t2.PersonnelTypeID = t3.ObjectID
-    WHERE
-        t1.MessageType = 'CardAdmitted'
-        AND t1.PartitionName2 IN ('APAC.Default', 'CN.Beijing', 'JP.Tokyo', 'PH.Manila', 'MY.Kuala Lumpur')
-        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.[MessageLocaleOffset], t1.[MessageUTC])) = '2025-06-25'
-),
-RankedEmployeeData AS (
-    SELECT *,
-        ROW_NUMBER() OVER (PARTITION BY EmployeeIdentity, CONVERT(DATE, LocaleMessageTime) ORDER BY LocaleMessageTime DESC) AS rn
-    FROM
-        CombinedEmployeeData
-)
-SELECT
-    [ObjectName1],
-    PersonnelTypeName,
-    EmployeeID,
-    Location,
-    MessageType,
-    CONVERT(DATE, LocaleMessageTime) AS Date
-FROM
-    RankedEmployeeData
-WHERE
-    rn = 1;
-
-
-
-
-
-C:\Users\W0024618\Desktop\emea-occupancy-backend\src\config\db.js
-
-
-// src/config/db.js
-require('dotenv').config();
-const sql = require('mssql');
-
-// Pull in and trim env-vars
-const DB_USER     = (process.env.DB_USER     || '').trim();
-const DB_PASSWORD = (process.env.DB_PASSWORD || '').trim();
-const DB_SERVER   = (process.env.DB_SERVER   || '').trim();
-const DB_DATABASE = (process.env.DB_DATABASE || '').trim();
-const DB_PORT     = parseInt((process.env.DB_PORT || '').trim(), 10);
-
-console.log(
-  '🔍 DB CONFIG:',
-  `user="${DB_USER}"`,
-  `server="${DB_SERVER}"`,
-  `database="${DB_DATABASE}"`,
-  `port=${DB_PORT}`
-);
-
-const dbConfig = {
-  user:     DB_USER,
-  password: DB_PASSWORD,
-  server:   DB_SERVER,
-  port:     DB_PORT,
-  database: DB_DATABASE,
-  options: {
-    encrypt: false,                // for on-prem SQL Server
-    trustServerCertificate: true,
-    enableArithAbort: true
-  },
-  pool: {
-    max: 10,
-    min: 0,
-    idleTimeoutMillis: 30000
-  }
-};
-
-// Create a single connection-pool promise and export it immediately
-const poolPromise = sql.connect(dbConfig)
-  .then(pool => {
-    console.log('✅ MSSQL connected');
-    return pool;
-  })
-  .catch(err => {
-    console.error('❌ MSSQL connection failed', err);
-    process.exit(1);
-  });
-
-module.exports = {
-  sql,
-  poolPromise
-};
-
-
-
-
-
-C:\Users\W0024618\Desktop\emea-occupancy-backend\src\controllers\occupancy.controller.js
-
-// C:\Users\W0024618\Desktop\emea-occupancy-backend\src\controllers\occupancy.controller.js
-
-const service = require('../services/occupancy.service');
- const doorMap = require('../utils/doorMap'); 
-
-/**
- * Returns true if this PersonnelType counts as Employee.
- * Everything else (including blank) counts as Contractor.
- */
-function isEmployeeType(pt) {
-  return pt === 'Employee'
-      || pt === 'Terminated Employee'
-      || pt === 'Terminated Personnel';
-}
-
-/**
- * Look up floor for a given record by matching door + partition.
- */
-function lookupFloor(partition, door, direction, unmappedSet) {
-  const entry = doorMap.find(d =>
-    d.partition === partition && d.door === door
-  );
-  if (!entry) {
-    unmappedSet.add(`${partition} | ${door}`);
-    return null;
-  }
-  return direction === 'InDirection'
-    ? entry.inDirectionFloor
-    : entry.outDirectionFloor;
-}
-
-exports.getLiveOccupancy = async (req, res) => {
-  try {
-    const data = await service.fetchLiveOccupancy();
-    res.json({ success: true, count: data.length, data });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Live occupancy fetch failed' });
-  }
-};
-
-exports.getLiveSummary = async (req, res) => {
-  try {
-    const swipes = await service.fetchLiveOccupancy();
-
-    // 1. TODAY’S HEADCOUNT: first swipe per person
-    const firstByPerson = {};
-    swipes.forEach(r => {
-      const prev = firstByPerson[r.PersonGUID];
-      const t = new Date(r.LocaleMessageTime).getTime();
-      if (!prev || t < new Date(prev.LocaleMessageTime).getTime()) {
-        firstByPerson[r.PersonGUID] = r;
-      }
-    });
-    const todayRecs = Object.values(firstByPerson);
-    const today = { total: 0, Employee: 0, Contractor: 0 };
-    todayRecs.forEach(r => {
-      today.total++;
-      if (isEmployeeType(r.PersonnelType)) today.Employee++;
-      else today.Contractor++;
-    });
-
-    // 2. REAL-TIME: last swipe per person, only InDirection
-    const lastByPerson = {};
-    swipes.forEach(r => {
-      const prev = lastByPerson[r.PersonGUID];
-      const t = new Date(r.LocaleMessageTime).getTime();
-      if (!prev || t > new Date(prev.LocaleMessageTime).getTime()) {
-        lastByPerson[r.PersonGUID] = r;
-      }
-    });
-
-    const realtime = {};
-    const unmappedDoors = new Set();
-    Object.values(lastByPerson).forEach(r => {
-      if (r.Direction !== 'InDirection') return;
-      const p = r.PartitionName2;
-      // initialize per-partition counters
-      if (!realtime[p]) {
-        realtime[p] = { total: 0, Employee: 0, Contractor: 0, floors: {} };
-      }
-      realtime[p].total++;
-      if (isEmployeeType(r.PersonnelType)) realtime[p].Employee++;
-      else realtime[p].Contractor++;
-
-      const floor = lookupFloor(p, r.Door, r.Direction, unmappedDoors) || 'Unmapped';
-      realtime[p].floors[floor] = (realtime[p].floors[floor] || 0) + 1;
-    });
-
-    if (unmappedDoors.size) {
-      console.warn('Unmapped doors:\n' + Array.from(unmappedDoors).join('\n'));
-    }
-
-    return res.json({
-      success: true,
-      today,
-      realtime,
-      details: Object.values(lastByPerson)
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, message: 'Live summary failed' });
-  }
-};
-
-exports.getHistoricalOccupancy = async (req, res) => {
-  const location = req.params.location || null;
-  try {
-    const raw = await service.fetchHistoricalOccupancy(location);
-
-    // first swipe per person per date
-    const byDate = raw.reduce((acc, r) => {
-      const iso = (r.LocaleMessageTime instanceof Date)
-        ? r.LocaleMessageTime.toISOString()
-        : r.LocaleMessageTime;
-      const date = iso.slice(0,10);
-      acc[date] = acc[date] || {};
-      const prev = acc[date][r.PersonGUID];
-      if (!prev || new Date(iso) < new Date(prev.LocaleMessageTime)) {
-        acc[date][r.PersonGUID] = { ...r, LocaleMessageTime: iso };
-      }
-      return acc;
-    }, {});
-
-    const summaryByDate = [];
-    const details = [];
-
-    Object.keys(byDate).sort().forEach(date => {
-      const recs = Object.values(byDate[date]);
-      details.push(...recs);
-
-      // initialize counts
-      const regionCounts = { total: 0, Employee: 0, Contractor: 0 };
-      const partitionCounts = {};
-
-      recs.forEach(r => {
-        regionCounts.total++;
-        if (isEmployeeType(r.PersonnelType)) regionCounts.Employee++;
-        else regionCounts.Contractor++;
-
-        if (!location) {
-          const p = r.PartitionName2;
-          if (!partitionCounts[p]) {
-            partitionCounts[p] = { total: 0, Employee: 0, Contractor: 0 };
-          }
-          partitionCounts[p].total++;
-          if (isEmployeeType(r.PersonnelType)) partitionCounts[p].Employee++;
-          else partitionCounts[p].Contractor++;
-        }
-      });
-
-      summaryByDate.push({
-        date,
-        day: new Date(date).toLocaleDateString('en-US', { weekday:'long' }),
-        region: location
-          ? { name: location, ...regionCounts }
-          : { name: 'EMEA', ...regionCounts },
-        partitions: location ? undefined : partitionCounts
-      });
-    });
-
-    return res.json({ success: true, summaryByDate, details });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, message: 'Historical fetch failed' });
-  }
-};
-
-
-
-
-
-
-
-C:\Users\W0024618\Desktop\emea-occupancy-backend\src\routes\occupancy.routes.js
-
-const express = require('express');
-const router  = express.Router();
-const controller = require('../controllers/occupancy.controller');
-
-// Live raw and summary
-router.get('/live',         controller.getLiveOccupancy);
-router.get('/live-summary', controller.getLiveSummary);
-
-// History: all partitions or a single one
-router.get('/history',           controller.getHistoricalOccupancy);
-router.get('/history/:location', controller.getHistoricalOccupancy);
-
-module.exports = router;
-
-
-
-
-
-C:\Users\W0024618\Desktop\emea-occupancy-backend\src\services\occupancy.service.js
-
-
-const { poolPromise, sql } = require('../config/db');
-
-/**
- * EMEA partition list
- */
-const partitionList = [
-  'AUT.Vienna',
-  'DU.Abu Dhab',
-  'IE.Dublin',
-  'IT.Rome',
-  'LT.Vilnius',
-  'MA.Casablanca',
-  'RU.Moscow',
-  'UK.London',
-  'ES.Madrid'
-];
-
-/**
- * Live occupancy (today)
- */
-exports.fetchLiveOccupancy = async () => {
-  const pool = await poolPromise;
-  const partitionsSql = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
-
-  const query = `
-    WITH CombinedQuery AS (
-      SELECT
-        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
-        t1.ObjectName1,
-        t1.ObjectName2            AS Door,
-        CASE
-          WHEN t3.Name IN ('Contractor','Terminated Contractor')
-            THEN t2.Text12
-          ELSE CAST(t2.Int1 AS NVARCHAR)
-        END                       AS EmployeeID,
-        t2.text5                  AS Text5,
-        t1.PartitionName2         AS PartitionName2,
-        t1.ObjectIdentity1        AS PersonGUID,
-        t3.Name                   AS PersonnelType,
-        COALESCE(
-          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]','varchar(50)'),
-          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID)[1]','varchar(50)'),
-          sc.value
-        )                         AS CardNumber,
-        t5a.value                 AS AdmitCode,
-        t5d.value                 AS Direction
-      FROM [ACVSUJournal_00011027].[dbo].[ACVSUJournalLog] AS t1
-      LEFT JOIN [ACVSCore].[Access].[Personnel]     AS t2
-        ON t1.ObjectIdentity1 = t2.GUID
-      LEFT JOIN [ACVSCore].[Access].[PersonnelType] AS t3
-        ON t2.PersonnelTypeId = t3.ObjectID
-      LEFT JOIN [ACVSUJournal_00011027].[dbo].[ACVSUJournalLogxmlShred] AS t5a
-        ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
-      LEFT JOIN [ACVSUJournal_00011027].[dbo].[ACVSUJournalLogxmlShred] AS t5d
-        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
-      LEFT JOIN [ACVSUJournal_00011027].[dbo].[ACVSUJournalLogxml] AS t_xml
-        ON t1.XmlGUID = t_xml.GUID
-      LEFT JOIN (
-        SELECT GUID, value
-        FROM [ACVSUJournal_00011027].[dbo].[ACVSUJournalLogxmlShred]
-        WHERE Name IN ('Card','CHUID')
-      ) AS sc
-        ON t1.XmlGUID = sc.GUID
-      WHERE
-        t1.MessageType = 'CardAdmitted'
-        AND t1.PartitionName2 IN (${partitionsSql})
-        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
-            = CONVERT(DATE, GETDATE())
-    )
-    SELECT
-      LocaleMessageTime,
-      CONVERT(VARCHAR(10), LocaleMessageTime, 23) AS Dateonly,
-      CONVERT(VARCHAR(8), LocaleMessageTime, 108) AS Swipe_Time,
-      EmployeeID,
-      PersonGUID,
-      ObjectName1,
-      Door,
-      PersonnelType,
-      CardNumber,
-      Text5,
-      PartitionName2,
-      AdmitCode,
-      Direction
-    FROM CombinedQuery
-    ORDER BY LocaleMessageTime ASC;
-  `;
-
-  const result = await pool.request().query(query);
-  return result.recordset;
-};
-
-/**
- * Core raw‐data fetch for the past N days, all or by location.
- */
-exports.fetchHistoricalData = async ({ days = 7, location = null }) => {
-  const pool = await poolPromise;
-  const partitionsSql = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
-  const locationFilter = location
-    ? `AND t1.PartitionName2 = @location`
-    : `AND t1.PartitionName2 IN (${partitionsSql})`;
-
-  const query = `
-    WITH Hist AS (
-      SELECT
-        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
-        t1.ObjectName1,
-        t1.ObjectName2       AS Door,
-        CASE
-          WHEN t3.Name IN ('Contractor','Terminated Contractor') THEN t2.Text12
-          ELSE CAST(t2.Int1 AS NVARCHAR)
-        END                   AS EmployeeID,
-        t2.text5             AS Text5,
-        t1.PartitionName2    AS PartitionName2,
-        t1.ObjectIdentity1   AS PersonGUID,
-        t3.Name              AS PersonnelType,
-        COALESCE(
-          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]','varchar(50)'),
-          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID)[1]','varchar(50)'),
-          sc.value
-        )                     AS CardNumber,
-        t5a.value            AS AdmitCode,
-        t5d.value            AS Direction,
-        CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC)) AS SwipeDate
-      FROM [ACVSUJournal_00011027].[dbo].[ACVSUJournalLog] AS t1
-      LEFT JOIN [ACVSCore].[Access].[Personnel]     AS t2
-        ON t1.ObjectIdentity1 = t2.GUID
-      LEFT JOIN [ACVSCore].[Access].[PersonnelType] AS t3
-        ON t2.PersonnelTypeId = t3.ObjectID
-      LEFT JOIN [ACVSUJournal_00011027].[dbo].[ACVSUJournalLogxmlShred] AS t5a
-        ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
-      LEFT JOIN [ACVSUJournal_00011027].[dbo].[ACVSUJournalLogxmlShred] AS t5d
-        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
-      LEFT JOIN [ACVSUJournal_00011027].[dbo].[ACVSUJournalLogxml] AS t_xml
-        ON t1.XmlGUID = t_xml.GUID
-      LEFT JOIN (
-        SELECT GUID, value
-        FROM [ACVSUJournal_00011027].[dbo].[ACVSUJournalLogxmlShred]
-        WHERE Name IN ('Card','CHUID')
-      ) AS sc
-        ON t1.XmlGUID = sc.GUID
-      WHERE
-        t1.MessageType = 'CardAdmitted'
-        ${locationFilter}
-        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
-            >= DATEADD(DAY, -${days}, CONVERT(DATE, GETDATE()))
-    )
-    SELECT *
-    FROM Hist
-    ORDER BY LocaleMessageTime ASC;
-  `;
-
-  const req = pool.request();
-  if (location) req.input('location', sql.NVarChar, location);
-  const result = await req.query(query);
-  return result.recordset;
-};
-
-/**
- * Public wrapper: always last 7 days, all or by location.
- */
-exports.fetchHistoricalOccupancy = async (location) => {
-  return exports.fetchHistoricalData({ days: 7, location: location || null });
-};
-
-module.exports.partitionList = partitionList;
-
-
-
-
-
-
-C:\Users\W0024618\Desktop\emea-occupancy-backend\src\utils\timezones.js
-
-module.exports = {
-  'AUT.Vienna':       'Europe/Vienna',
-  'DU.Abu Dhab':      'Asia/Dubai',
-  'IE.Dublin':        'Europe/Dublin',
-  'IT.Rome':          'Europe/Rome',
-  'LT.Vilnius':       'Europe/Vilnius',
-  'MA.Casablanca':    'Africa/Casablanca',
-  'RU.Moscow':        'Europe/Moscow',
-  'UK.London':        'Europe/London',
-  'ES.Madrid':        'Europe/Madrid',
-};
-
-
-
-
-C:\Users\W0024618\Desktop\emea-occupancy-backend\src\app.js
-
-// src/app.js
-const express = require('express');
-const cors    = require('cors');
-const occupancyRoutes = require('./routes/occupancy.routes');
-
-const app = express();
-app.use(express.json());
-app.use(cors());
-
-// Health check
-app.get('/', (req, res) => res.send('🌍 EMEA Occupancy API Running'));
-
-// Mount our occupancy routes
-app.use('/api/occupancy', occupancyRoutes);
-
-module.exports = app;
-
-
-
-
-C:\Users\W0024618\Desktop\emea-occupancy-backend\.env
-
-
-# Database config
-DB_USER=GSOC_Test
-DB_PASSWORD=Westernuniongsoc@2025
-DB_SERVER=SRVWUFRA0986V
-DB_DATABASE=ACVSUJournal_00011027
-DB_PORT=1433
-
-PORT=3005
-
-
-C:\Users\W0024618\Desktop\emea-occupancy-backend\server.js
-
-
-// server.js (at project root)
-require('dotenv').config();           // ← load .env from project root
-
-const app = require('./src/app');     // ← now points to src/app.js
-
-const PORT = process.env.PORT || 3005;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
-
-
-
-
-
-
-
+module.exports = zoneFloorMap;
 
 
 
