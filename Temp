@@ -1,556 +1,362 @@
-// src/pages/PartitionDetailDetails.jsx
+Read below file carefully ,
+i have review some issue in this file we got summary count correct but when i check manually exporting excel sheet then we got extra count for contractor plaese once check ligic 
+also backend and Summary count are exact match , only missmatch in details section
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\History.jsx
+
+// src/pages/History.jsx
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
-  Container, Box, Typography, Button, TextField,
-  TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody
+  Container,
+  Box,
+  Button,
+  Typography,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  Paper,
+  TextField
 } from '@mui/material';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
-import Header         from '../components/Header';
-import Footer         from '../components/Footer';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 import LoadingSpinner from '../components/LoadingSpinner';
-import DataTable      from '../components/DataTable';
-import { fetchLiveSummary } from '../api/occupancy.service';
-import { lookupFloor }      from '../utils/floorLookup';
-import doorMapRaw         from '../utils/doorMap';
+import { fetchHistory } from '../api/occupancy.service';
 
-export default function PartitionDetailDetails() {
+export default function History() {
+  // Grab optional partition from URL
   const { partition } = useParams();
-  const navigate = useNavigate();
+  const decodedPartition = partition ? decodeURIComponent(partition) : null;
+  // e.g. "CR" from "CR.Costa Rica Partition"
+  const filterCode = decodedPartition?.split('.')[0] || null;
 
-  const [details, setDetails]         = useState([]);
+  const [data, setData]               = useState(null);
   const [loading, setLoading]         = useState(true);
-  const [lastUpdate, setLastUpdate]   = useState('');
-  const [searchTerm, setSearchTerm]   = useState('');
-  const [expandedFloor, setExpandedFloor] = useState(null);
+  const [pickedDate, setPickedDate]   = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
 
-  // 1) Build Vilnius door lookup once
-  const vilniusDoorInfo = useMemo(() => {
-    return doorMapRaw.reduce((acc, { partition: p, door, inDirectionFloor }) => {
-      if (p === 'LT.Vilnius') {
-        acc[door] = {
-          building: door.toUpperCase().includes('GAMA') ? 'GAMA' : 'Delta',
-          floor: inDirectionFloor
+  // 1) Summary entry for the selected date
+  const summaryEntry = useMemo(() => {
+    if (!data || !pickedDate) return null;
+    const dateStr = format(pickedDate, 'yyyy-MM-dd');
+    return data.summaryByDate.find(r => r.date === dateStr) || null;
+  }, [data, pickedDate]);
+
+  // 2) Build & filter partitionRows
+  const partitionRows = useMemo(() => {
+    if (!summaryEntry) return [];
+    const codeToCountry = {
+      AR: 'Argentina',
+      BR: 'Brazil',
+      CR: 'Costa Rica',
+      MX: 'Mexico',
+      PA: 'Panama',
+      PE: 'Peru'
+    };
+
+    return Object.entries(summaryEntry.partitions)
+      .filter(([key]) =>
+        !filterCode ? true : key.startsWith(filterCode + '.')
+      )
+      .map(([key, vals]) => {
+        const [code, cityRaw] = key.split('.');
+        return {
+          country: codeToCountry[code] || code,
+          city: cityRaw.replace('Partition','').trim(),
+          employee: vals.Employee  ?? vals.EmployeeCount  ?? 0,
+          contractor: vals.Contractor ?? vals.ContractorCount ?? 0,
+          // only CR gets tempBadge
+          tempBadge: vals.TempBadge ?? 0,
+          total: vals.total ?? 0,
         };
-      }
-      return acc;
-    }, {});
+      });
+  }, [summaryEntry, filterCode]);
+
+  // 3) Build & filter detailRows
+  const detailRows = useMemo(() => {
+    if (!data || !pickedDate) return [];
+    const dateStr = format(pickedDate, 'yyyy-MM-dd');
+    return data.details
+      .filter(r =>
+        format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd') === dateStr
+      )
+      .filter(r =>
+        !filterCode
+          ? true
+          : r.PartitionName2.startsWith(filterCode + '.')
+      );
+  }, [data, pickedDate, filterCode]);
+
+  // Fetch all on mount
+  useEffect(() => {
+    setLoading(true);
+    fetchHistory()
+      .then(json => setData(json))
+      .finally(() => setLoading(false));
   }, []);
 
-  // 2) Poll live details every second
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      const json = await fetchLiveSummary();
-      if (!mounted) return;
-      const det = json.details
-        .filter(r => r.PartitionName2 === partition && r.Direction === 'InDirection')
-        .map(r => {
-          const info = vilniusDoorInfo[r.Door];
-          return {
-            ...r,
-            building: info?.building,
-            floor: info?.floor ?? lookupFloor(r.PartitionName2, r.Door, r.Direction)
-          };
-        });
-      setDetails(det);
-      setLastUpdate(new Date().toLocaleTimeString());
-      setLoading(false);
-    };
-    load();
-    const iv = setInterval(load, 1000);
-    return () => {
-      mounted = false;
-      clearInterval(iv);
-    };
-  }, [partition, vilniusDoorInfo]);
+  if (loading) return <LoadingSpinner />;
+  if (!data)    return null;
 
-  // 3) Prepare non-Vilnius floor maps & filtered lists (always run hooks)
-  const floorMap = useMemo(() => {
-    return details.reduce((map, r) => {
-      map[r.floor] = map[r.floor] || [];
-      map[r.floor].push(r);
-      return map;
-    }, {});
-  }, [details]);
-
-  const displayed = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    return Object.entries(floorMap)
-      .filter(([floor, emps]) => {
-        if (!term) return true;
-        if (floor.toLowerCase().includes(term)) return true;
-        return emps.some(e =>
-          e.ObjectName1.toLowerCase().includes(term) ||
-          e.EmployeeID.includes(term)
-        );
-      })
-      .sort((a, b) => b[1].length - a[1].length);
-  }, [floorMap, searchTerm]);
-
-  // 4) Loading state
-  if (loading) {
-    return (
-      <>
-        <Header />
-        <Box sx={{ p: 4 }}><LoadingSpinner/></Box>
-        <Footer />
-      </>
+  // Export to Excel
+  const handleExport = () => {
+    const ws = XLSX.utils.json_to_sheet(
+      detailRows.map((r, i) => ({
+        Sr: i + 1,
+        Date: format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd'),
+        Time: format(new Date(r.LocaleMessageTime), 'HH:mm:ss'),
+        EmployeeID: r.EmployeeID,
+        Name: r.ObjectName1,
+        PersonnelType: r.PersonnelType,
+        Door: r.Door,
+        Partition: r.PartitionName2
+      }))
     );
-  }
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Details');
+    const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    saveAs(new Blob([buf]), `history_${format(pickedDate, 'yyyyMMdd')}.xlsx`);
+  };
 
-  // 5a) Vilnius — two side-by-side GAMA & Delta
-  if (partition === 'LT.Vilnius') {
-    const byBuilding = details.reduce((acc, r) => {
-      const b = r.building || 'Unknown';
-      const f = r.floor   || 'Unknown';
-      acc[b] = acc[b] || {};
-      acc[b][f] = acc[b][f] || [];
-      acc[b][f].push(r);
-      return acc;
-    }, {});
-
-    return (
-      <>
-        <Header />
-        <Container maxWidth={false} disableGutters sx={{ px:'20px', pt:1, pb:4 }}>
-          <Box mb={2}>
-            <Button size="small" onClick={() => navigate(-1)}>
-              ← Back to Overview
-            </Button>
-          </Box>
-          <Box display="flex" gap={1}>
-            {['GAMA','Delta'].map(building => (
-              <Box key={building} sx={{ width:'50%', pr:1 }}>
-                <Typography variant="h6" gutterBottom>{building}</Typography>
-                {Object.entries(byBuilding[building] || {}).map(([floor, rows]) => (
-                  <Paper key={floor} sx={{ mb:2, border:'2px solid #FFC107', p:2 }}>
-                    <Typography variant="subtitle1" gutterBottom>
-                      {floor} (Total {rows.length})
-                    </Typography>
-                    <TableContainer component={Paper} variant="outlined">
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            {['Emp ID','Name','Time','Type','Card','Door'].map(h => (
-                              <TableCell key={h} sx={{ fontWeight:'bold', py:0.5 }}>
-                                {h}
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {rows.map((r,i) => (
-                            <TableRow key={`${r.PersonGUID}-${i}`}>
-                              <TableCell sx={{ py:0.5 }}>{r.EmployeeID}</TableCell>
-                              <TableCell sx={{ py:0.5 }}>{r.ObjectName1}</TableCell>
-                              <TableCell sx={{ py:0.5 }}>
-                                {new Date(r.LocaleMessageTime).toLocaleTimeString()}
-                              </TableCell>
-                              <TableCell sx={{ py:0.5 }}>{r.PersonnelType}</TableCell>
-                              <TableCell sx={{ py:0.5 }}>{r.CardNumber}</TableCell>
-                              <TableCell sx={{ py:0.5 }}>{r.Door}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </Paper>
-                ))}
-              </Box>
-            ))}
-          </Box>
-        </Container>
-        <Footer />
-      </>
-    );
-  }
-
-  // 5b) Other partitions — floor cards + expandable
-  const columns = [
-    { field:'EmployeeID', headerName:'Emp ID' },
-    { field:'ObjectName1', headerName:'Name' },
-    { field:'LocaleMessageTime', headerName:'Swipe Time' },
-    { field:'PersonnelType', headerName:'Type' },
-    { field:'CardNumber', headerName:'Card' },
-    { field:'Door', headerName:'Door' }
-  ];
+  const isCostaRica = filterCode === 'CR';
 
   return (
     <>
       <Header />
-      <Container maxWidth={false} disableGutters sx={{ px:'20px', pt:1, pb:4 }}>
-        <Box mb={2}>
-          <Button size="small" onClick={()=>navigate(-1)}>← Back to Overview</Button>
-        </Box>
-        <Box display="flex" alignItems="center" gap={2} mb={2}>
-          <Typography variant="h6" sx={{ flexGrow:1 }}>Floor Details</Typography>
-          <Typography variant="body2" color="textSecondary">
-            Last updated: {lastUpdate}
-          </Typography>
-          <TextField
-            size="small"
-            placeholder="Search floor / emp…"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-          />
-        </Box>
 
-        {/* Floor cards */}
-        <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
-          {displayed.map(([floor, emps])=>(
-            <Box key={floor} sx={{ width:'50%', p:1 }}>
-              <Paper sx={{ border:'2px solid #FFC107', p:2 }}>
-                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                  {floor} (Total {emps.length})
-                </Typography>
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        {columns.map(c=>(
-                          <TableCell key={c.field} sx={{ fontWeight:'bold', py:0.5 }}>
-                            {c.headerName}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {emps.slice(0,10).map((r,i)=>(
-                        <TableRow key={`${r.PersonGUID}-${i}`}>
-                          <TableCell sx={{py:0.5}}>{r.EmployeeID}</TableCell>
-                          <TableCell sx={{py:0.5}}>{r.ObjectName1}</TableCell>
-                          <TableCell sx={{py:0.5}}>
-                            {new Date(r.LocaleMessageTime).toLocaleTimeString()}
-                          </TableCell>
-                          <TableCell sx={{py:0.5}}>{r.PersonnelType}</TableCell>
-                          <TableCell sx={{py:0.5}}>{r.CardNumber}</TableCell>
-                          <TableCell sx={{py:0.5}}>{r.Door}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                <Box textAlign="right" mt={1}>
-                  <Button
-                    size="small"
-                    onClick={()=>setExpandedFloor(expandedFloor===floor?null:floor)}
-                  >
-                    {expandedFloor===floor?'Hide':'See more…'}
-                  </Button>
-                </Box>
-              </Paper>
+      <Container maxWidth={false} disableGutters sx={{ pt: 2, pb: 4 }}>
+        {/* DatePicker + Summary */}
+        {pickedDate && summaryEntry ? (
+          <Box display="flex" alignItems="flex-start" sx={{ px: '20px', mb: 2, gap: '10px' }}>
+            {/* Date picker */}
+            <Box sx={{ flex: '0 0 200px' }}>
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <DatePicker
+                  label="Select date"
+                  value={pickedDate}
+                  onChange={d => { setPickedDate(d); setShowDetails(false); }}
+                  renderInput={params => <TextField fullWidth {...params} />}
+                />
+              </LocalizationProvider>
             </Box>
-          ))}
-        </Box>
 
-        {/* Expanded table */}
-        {expandedFloor && (
-          <Box sx={{ px:'20px', mt:2 }}>
-            <Typography variant="h6" gutterBottom>
-              {expandedFloor} — All Entries
-            </Typography>
-            <DataTable
-              columns={columns}
-              rows={floorMap[expandedFloor].map(r=>({
-                ...r,
-                LocaleMessageTime: new Date(r.LocaleMessageTime).toLocaleTimeString()
-              }))}
-            />
+            {/* Summary & Toggle */}
+            <Box sx={{ flex: 1, maxWidth: 900, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Summary table */}
+              <Paper elevation={3} sx={{ px: 4, py: 3, border: '3px solid #000', borderRadius: 2 }}>
+                <Table sx={{ border: '2px solid #000' }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell
+                        colSpan={isCostaRica ? 6 : 5}
+                        align="center"
+                        sx={{
+                          fontWeight: 'bold',
+                          fontSize: 16,
+                          bgcolor: '#000',
+                          color: '#fff',
+                          border: '2px solid #000'
+                        }}
+                      >
+                        {format(pickedDate, 'EEEE, d MMMM, yyyy')}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow sx={{ bgcolor: '#FFC107' }}>
+                      {/* Column headers */}
+                      {[
+                        'Country','City','Employee','Contractors',
+                        ...(isCostaRica ? ['Temp Badge'] : []),
+                        'Total'
+                      ].map(h => (
+                        <TableCell
+                          key={h}
+                          align={['Country','City'].includes(h) ? 'left' : 'right'}
+                          sx={{
+                            color: '#000',
+                            fontWeight: 'bold',
+                            fontSize: 14,
+                            border: '2px solid #000'
+                          }}
+                        >
+                          {h}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+
+                  <TableBody>
+                    {partitionRows.map((row,i) => (
+                      <TableRow key={i}>
+                        <TableCell sx={{ border: '2px solid #000' }}>{row.country}</TableCell>
+                        <TableCell sx={{ border: '2px solid #000' }}>{row.city}</TableCell>
+                        <TableCell align="right" sx={{ border: '2px solid #000' }}>{row.employee}</TableCell>
+                        <TableCell align="right" sx={{ border: '2px solid #000' }}>{row.contractor}</TableCell>
+                        {isCostaRica && (
+                          <TableCell align="right" sx={{ border: '2px solid #000' }}>
+                            {row.tempBadge}
+                          </TableCell>
+                        )}
+                        <TableCell
+                          align="right"
+                          sx={{
+                            backgroundColor: '#FFC107',
+                            fontWeight: 'bold',
+                            border: '2px solid #000'
+                          }}
+                        >
+                          {row.total}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+
+                    {/* Grand total row */}
+                    <TableRow sx={{ bgcolor: '#666' }}>
+                      <TableCell colSpan={2} align="right" sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
+                        Total
+                      </TableCell>
+                      <TableCell align="right" sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
+                        {partitionRows.reduce((s, r) => s + r.employee, 0)}
+                      </TableCell>
+                      <TableCell align="right" sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
+                        {partitionRows.reduce((s, r) => s + r.contractor, 0)}
+                      </TableCell>
+                      {isCostaRica && (
+                        <TableCell align="right" sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
+                          {partitionRows.reduce((s, r) => s + r.tempBadge, 0)}
+                        </TableCell>
+                      )}
+                      <TableCell align="right" sx={{ color: '#fff', fontWeight: 'bold', bgcolor: '#333', border: '2px solid #000' }}>
+                        {partitionRows.reduce((s, r) => s + r.total, 0)}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </Paper>
+
+              {/* See/Hide Details & Export */}
+              <Box display="flex" justifyContent="center" sx={{ mt: 1 }}>
+                <Button
+                  variant="contained"
+                  sx={{ bgcolor: '#FFC107', color: '#000' }}
+                  onClick={() => setShowDetails(v => !v)}
+                >
+                  {showDetails ? 'Hide Details' : 'See Details'}
+                </Button>
+                {showDetails && (
+                  <Button
+                    variant="outlined"
+                    sx={{ ml: 2, borderColor: '#FFC107', color: '#FFC107' }}
+                    onClick={handleExport}
+                  >
+                    Export to Excel
+                  </Button>
+                )}
+              </Box>
+            </Box>
+          </Box>
+        ) : (
+          // Only date picker
+          <Box sx={{ px: '20px', mb: 3 }}>
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DatePicker
+                label="Select date"
+                value={pickedDate}
+                onChange={d => { setPickedDate(d); setShowDetails(false); }}
+                renderInput={params => <TextField fullWidth {...params} />}
+              />
+            </LocalizationProvider>
+            {!pickedDate && (
+              <Typography variant="body1" color="textSecondary" sx={{ mt: 2 }}>
+                Please pick a date to view region summary.
+              </Typography>
+            )}
           </Box>
         )}
+
+
+   {/* Details table */}
+{showDetails && (
+  <Box display="flex" justifyContent="center" mb={2} sx={{width:'100%'}}>
+    <Paper
+      elevation={1}
+      sx={{
+        px: '40px',
+        py: 1,
+        width: '100%',
+        // maxWidth: 1000,
+        border: '3px solid #000',       // outer black border
+        borderRadius: 2,
+      }}
+    >
+      {detailRows.length > 0 ? (
+        <Table sx={{ border: '2px solid #000', borderCollapse: 'collapse' }}>
+          <TableHead>
+            <TableRow sx={{ bgcolor: '#000' }}>
+              {['Sr','Date','Time','Employee ID','Name','Personnel Type','Door','Partition'].map(h => (
+                <TableCell
+                  key={h}
+                  align="center"
+                  sx={{
+                    color: '#FFC107',
+                    fontWeight: 'bold',
+                    fontSize: 14,
+                    border: '2px solid #000',
+                  }}
+                >
+                  {h}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {detailRows.map((r, i) => (
+              <TableRow key={r.PersonGUID}>
+                <TableCell sx={{ border: '2px solid #000' }}>{i + 1}</TableCell>
+                <TableCell sx={{ border: '2px solid #000' }}>
+                  {format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd')}
+                </TableCell>
+                <TableCell sx={{ border: '2px solid #000' }}>
+                  {format(new Date(r.LocaleMessageTime), 'HH:mm:ss')}
+                </TableCell>
+                <TableCell sx={{ border: '2px solid #000' }}>{r.EmployeeID}</TableCell>
+                <TableCell sx={{ border: '2px solid #000' }}>{r.ObjectName1}</TableCell>
+                <TableCell sx={{border: '2px solid #000' }}>{r.PersonnelType}</TableCell>
+                <TableCell sx={{ border: '2px solid #000' }}>{r.Door}</TableCell>
+                <TableCell sx={{ border: '2px solid #000' }}>{r.PartitionName2}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      ) : (
+        <Typography
+          variant="body2"
+          sx={{
+            color: '#666',
+            textAlign: 'center',
+            mt: 2,
+            fontStyle: 'italic',
+          }}
+        >
+          No swipe records found for this date.
+        </Typography>
+      )}
+    </Paper>
+  </Box>
+
+
+        )}
       </Container>
+
       <Footer />
     </>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-ERROR
-[eslint] 
-src\pages\PartitionDetailDetails.jsx
-  Line 373:20:  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
-  Line 381:21:  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
-
-Search for the keywords to learn more about each error.
-
-
-Solve the issue carefully and give me Updated jsx file carefully
-
-
-
-import React, { useEffect, useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import {
-  Container, Box, Typography, Button, TextField,
-  TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody
-} from '@mui/material';
-
-import Header         from '../components/Header';
-import Footer         from '../components/Footer';
-import LoadingSpinner from '../components/LoadingSpinner';
-import DataTable      from '../components/DataTable';
-import { fetchLiveSummary } from '../api/occupancy.service';
-import { lookupFloor }      from '../utils/floorLookup';
-import doorMapRaw         from '../utils/doorMap';
-
-export default function PartitionDetailDetails() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-
-  const [details, setDetails]         = useState([]);
-  const [loading, setLoading]         = useState(true);
-  const [lastUpdate, setLast]         = useState('');
-  const [searchTerm, setSearchTerm]   = useState('');
-  const [expandedFloor, setExpanded]  = useState(null);
-
-  // 1) Build Vilnius door lookup
-  const vilniusDoorInfo = useMemo(() => {
-    return doorMapRaw.reduce((acc, { partition: p, door, inDirectionFloor }) => {
-      if (p === 'LT.Vilnius') {
-        acc[door] = {
-          building: door.toUpperCase().includes('GAMA') ? 'GAMA' : 'Delta',
-          floor: inDirectionFloor
-        };
-      }
-      return acc;
-    }, {});
-  }, []);
-
-  // 2) Poll live details
-  useEffect(() => {
-    let mounted = true;
-    async function load() {
-      const json = await fetchLiveSummary();
-      if (!mounted) return;
-      const det = json.details
-        .filter(r => r.PartitionName2 === partition && r.Direction === 'InDirection')
-        .map(r => {
-          const info = vilniusDoorInfo[r.Door];
-          return {
-            ...r,
-            building: info?.building,
-            floor: info?.floor ?? lookupFloor(r.PartitionName2, r.Door, r.Direction)
-          };
-        });
-      setDetails(det);
-      setLast(new Date().toLocaleTimeString());
-      setLoading(false);
-    }
-    load();
-    const iv = setInterval(load, 1000);
-    return () => {
-      mounted = false;
-      clearInterval(iv);
-    };
-  }, [partition, vilniusDoorInfo]);
-
-  // 3) Render loading
-  if (loading) {
-    return (
-      <>
-        <Header/>
-        <Box sx={{ p:4 }}><LoadingSpinner/></Box>
-        <Footer/>
-      </>
-    );
-  }
-
-  // 4a) Vilnius: two columns side by side
-  if (partition === 'LT.Vilnius') {
-    const byBuilding = details.reduce((acc, r) => {
-      const b = r.building || 'Unknown';
-      const f = r.floor    || 'Unknown';
-      acc[b] = acc[b] || {};
-      acc[b][f] = acc[b][f] || [];
-      acc[b][f].push(r);
-      return acc;
-    }, {});
-
-    return (
-      <>
-        <Header/>
-        <Container maxWidth={false} disableGutters sx={{ px:'20px', pt:1, pb:4 }}>
-          <Box mb={2}>
-            <Button size="small" onClick={() => navigate(-1)}>
-              ← Back to Overview
-            </Button>
-          </Box>
-          <Box display="flex" gap={1}>
-            {['GAMA','Delta'].map(building => (
-              <Box key={building} sx={{ width:'50%', pr:1 }}>
-                <Typography variant="h6" gutterBottom>
-                  {building}
-                </Typography>
-                {Object.entries(byBuilding[building] || {}).map(([floor, rows]) => (
-                  <Paper key={floor} sx={{ mb:2, border:'2px solid #FFC107', p:2 }}>
-                    <Typography variant="subtitle1" gutterBottom>
-                      {floor} (Total {rows.length})
-                    </Typography>
-                    <TableContainer component={Paper} variant="outlined">
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            {['Emp ID','Name','Time','Type','Card','Door'].map(h => (
-                              <TableCell key={h} sx={{ fontWeight:'bold', py:0.5 }}>
-                                {h}
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {rows.map((r,i) => (
-                            <TableRow key={`${r.PersonGUID}-${i}`}>
-                              <TableCell sx={{ py:0.5 }}>{r.EmployeeID}</TableCell>
-                              <TableCell sx={{ py:0.5 }}>{r.ObjectName1}</TableCell>
-                              <TableCell sx={{ py:0.5 }}>
-                                {new Date(r.LocaleMessageTime).toLocaleTimeString()}
-                              </TableCell>
-                              <TableCell sx={{ py:0.5 }}>{r.PersonnelType}</TableCell>
-                              <TableCell sx={{ py:0.5 }}>{r.CardNumber}</TableCell>
-                              <TableCell sx={{ py:0.5 }}>{r.Door}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </Paper>
-                ))}
-              </Box>
-            ))}
-          </Box>
-        </Container>
-        <Footer/>
-      </>
-    );
-  }
-
-  // 4b) Other partitions: floor cards + expandable
-  const floorMap = useMemo(() => {
-    return details.reduce((map, r) => {
-      map[r.floor] = map[r.floor] || [];
-      map[r.floor].push(r);
-      return map;
-    }, {});
-  }, [details]);
-
-  const displayed = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-    return Object.entries(floorMap)
-      .filter(([floor, emps]) =>
-        !term ||
-        floor.toLowerCase().includes(term) ||
-        emps.some(e =>
-          e.ObjectName1.toLowerCase().includes(term) ||
-          e.EmployeeID.includes(term)
-        )
-      )
-      .sort((a,b) => b[1].length - a[1].length);
-  }, [floorMap, searchTerm]);
-
-  const columns = [
-    { field:'EmployeeID', headerName:'Emp ID' },
-    { field:'ObjectName1', headerName:'Name' },
-    { field:'LocaleMessageTime', headerName:'Swipe Time' },
-    { field:'PersonnelType', headerName:'Type' },
-    { field:'CardNumber', headerName:'Card' },
-    { field:'Door', headerName:'Door' }
-  ];
-
-  return (
-    <>
-      <Header/>
-      <Container maxWidth={false} disableGutters sx={{ px:'20px', pt:1, pb:4 }}>
-        <Box mb={2}>
-          <Button size="small" onClick={()=>navigate(-1)}>← Back to Overview</Button>
-        </Box>
-        <Box display="flex" alignItems="center" gap={2} mb={2}>
-          <Typography variant="h6" sx={{ flexGrow:1 }}>Floor Details</Typography>
-          <Typography variant="body2" color="textSecondary">Last updated: {lastUpdate}</Typography>
-          <TextField
-            size="small"
-            placeholder="Search floor / emp…"
-            value={searchTerm}
-            onChange={e=>setSearchTerm(e.target.value)}
-          />
-        </Box>
-
-        {/* Floor cards */}
-        <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
-          {displayed.map(([floor, emps])=>(
-            <Box key={floor} sx={{ width:'50%', p:1 }}>
-              <Paper sx={{ border:'2px solid #FFC107', p:2 }}>
-                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                  {floor} (Total {emps.length})
-                </Typography>
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        {columns.map(c=>(
-                          <TableCell key={c.field} sx={{ fontWeight:'bold', py:0.5 }}>
-                            {c.headerName}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {emps.slice(0,10).map((r,i)=>(
-                        <TableRow key={`${r.PersonGUID}-${i}`}>
-                          <TableCell sx={{py:0.5}}>{r.EmployeeID}</TableCell>
-                          <TableCell sx={{py:0.5}}>{r.ObjectName1}</TableCell>
-                          <TableCell sx={{py:0.5}}>
-                            {new Date(r.LocaleMessageTime).toLocaleTimeString()}
-                          </TableCell>
-                          <TableCell sx={{py:0.5}}>{r.PersonnelType}</TableCell>
-                          <TableCell sx={{py:0.5}}>{r.CardNumber}</TableCell>
-                          <TableCell sx={{py:0.5}}>{r.Door}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                <Box textAlign="right" mt={1}>
-                  <Button
-                    size="small"
-                    onClick={()=>setExpanded(expandedFloor===floor?null:floor)}
-                  >
-                    {expandedFloor===floor?'Hide':'See more…'}
-                  </Button>
-                </Box>
-              </Paper>
-            </Box>
-          ))}
-        </Box>
-
-        {/* Expanded full table */}
-        {expandedFloor && (
-          <Box sx={{ px:'20px', mt:2 }}>
-            <Typography variant="h6" gutterBottom>
-              {expandedFloor} — All Entries
-            </Typography>
-            <DataTable
-              columns={columns}
-              rows={floorMap[expandedFloor].map(r=>({
-                ...r,
-                LocaleMessageTime: new Date(r.LocaleMessageTime).toLocaleTimeString()
-              }))}
-            />
-          </Box>
-        )}
-      </Container>
-      <Footer/>
-    </>
-  );
-}
-
