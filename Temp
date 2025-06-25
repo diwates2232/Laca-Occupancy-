@@ -1,3 +1,38 @@
+// 3) Build & filter detailRows
+const detailRows = useMemo(() => {
+  if (!data || !pickedDate) return [];
+  const dateStr = format(pickedDate, 'yyyy-MM-dd');
+  return data.details
+    // 1) same-day only
+    .filter(r =>
+      format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd') === dateStr
+    )
+    // 2) only the partition(s) we care about
+    .filter(r =>
+      !filterCode
+        ? true
+        : r.PartitionName2.startsWith(filterCode + '.')
+    )
+    // 3) only InDirection swipes count toward headcount
+    .filter(r => r.Direction === 'InDirection')
+    // 4) dedupe by EmployeeID if you want unique per day
+    .reduce((unique, row) => {
+      const key = `${row.EmployeeID}-${row.PersonnelType}`;
+      if (!unique._seen.has(key)) {
+        unique._seen.add(key);
+        unique.rows.push(row);
+      }
+      return unique;
+    }, { _seen: new Set(), rows: [] })
+    .rows;
+}, [data, pickedDate, filterCode]);
+
+
+
+
+
+
+
 Read below file carefully ,
 i have review some issue in this file we got summary count correct but when i check manually exporting excel sheet then we got extra count for contractor plaese once check ligic 
 also backend and Summary count are exact match , only missmatch in details section
