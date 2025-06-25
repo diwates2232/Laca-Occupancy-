@@ -1,3 +1,387 @@
+// src/config/db.js
+require('dotenv').config();
+const sql = require('mssql');
+
+// Pull in and trim env-vars
+const DB_USER     = (process.env.DB_USER     || '').trim();
+const DB_PASSWORD = (process.env.DB_PASSWORD || '').trim();
+const DB_SERVER   = (process.env.DB_SERVER   || '').trim();
+const DB_DATABASE = (process.env.DB_DATABASE || '').trim();
+const DB_PORT     = parseInt((process.env.DB_PORT || '').trim(), 10);
+
+const dbConfig = {
+  user:     DB_USER,
+  password: DB_PASSWORD,
+  server:   DB_SERVER,
+  port:     DB_PORT,
+  database: DB_DATABASE,
+  options: { encrypt:false, trustServerCertificate:true, enableArithAbort:true },
+  pool: { max:10, min:0, idleTimeoutMillis:30000 }
+};
+
+const poolPromise = sql.connect(dbConfig)
+  .then(pool => {
+    console.log('✅ MSSQL (APAC) connected');
+    return pool;
+  })
+  .catch(err => {
+    console.error('❌ MSSQL (APAC) connection failed', err);
+    process.exit(1);
+  });
+
+module.exports = { sql, poolPromise };
+
+
+
+
+
+
+
+
+
+// src/utils/doorMap.js
+//
+// Map your APAC doors→floors here, e.g.
+// [
+//   { partition:'APAC.Default', door:'APAC_PI_A01', inDirectionFloor:'Floor 1', outDirectionFloor:null },
+//   ...
+// ]
+//
+// Example stub:
+module.exports = [
+  { partition:'APAC.Default', door:'APAC_PI_A01', inDirectionFloor:'Floor 1', outDirectionFloor:'Floor 1' },
+  { partition:'CN.Beijing',   door:'CN_BJ_01',   inDirectionFloor:'Floor 1', outDirectionFloor:null },
+  { partition:'JP.Tokyo',     door:'JP_TK_01',   inDirectionFloor:'Floor 2', outDirectionFloor:null },
+  { partition:'PH.Manila',    door:'APAC_PH_G01',inDirectionFloor:'Ground',  outDirectionFloor:null },
+  { partition:'MY.Kuala Lumpur',door:'APAC_MY_L01',inDirectionFloor:'Level 1',outDirectionFloor:null },
+  { partition:'IN.Pune',      door:'APAC_PUN_01',inDirectionFloor:'Floor 1', outDirectionFloor:null }
+];
+
+
+
+
+
+
+
+
+
+
+// src/services/occupancy.service.js
+const { poolPromise, sql } = require('../config/db');
+
+const partitionList = [
+  'APAC.Default',
+  'CN.Beijing',
+  'JP.Tokyo',
+  'PH.Manila',
+  'MY.Kuala Lumpur',
+  'IN.Pune'
+];
+
+/**
+ * Live occupancy (today) for APAC
+ */
+exports.fetchLiveOccupancy = async () => {
+  const pool = await poolPromise;
+  const parts = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
+
+  const query = `
+    WITH CombinedEmployeeData AS (
+      SELECT
+        t1.ObjectName1,
+        t1.ObjectName2,
+        CASE WHEN t2.Int1 = 0 THEN t2.Text12 ELSE CAST(t2.Int1 AS NVARCHAR) END AS EmployeeID,
+        t2.PersonnelTypeID,
+        t3.Name AS PersonnelType,
+        t1.ObjectIdentity1 AS PersonGUID,
+        CASE
+          WHEN t1.ObjectName2 LIKE 'APAC_PI%' THEN 'Taguig City'
+          WHEN t1.ObjectName2 LIKE 'APAC_PH%' THEN 'Quezon City'
+          WHEN t1.ObjectName2 LIKE '%PUN%' THEN 'Pune'
+          ELSE t1.PartitionName2
+        END AS PartitionName2,
+        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
+        t5d.value AS Direction
+      FROM ACVSUJournal_00010028.dbo.ACVSUJournalLog t1
+      JOIN ACVSCore.Access.Personnel      t2 ON t1.ObjectIdentity1 = t2.GUID
+      JOIN ACVSCore.Access.PersonnelType  t3 ON t2.PersonnelTypeID = t3.ObjectID
+      LEFT JOIN ACVSUJournal_00010028.dbo.ACVSUJournalLogxmlShred t5d
+        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
+      WHERE
+        t1.MessageType = 'CardAdmitted'
+        AND t1.PartitionName2 IN (${parts})
+        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
+            = CONVERT(DATE, GETDATE())
+    ), Ranked AS (
+      SELECT *,
+        ROW_NUMBER() OVER (PARTITION BY PersonGUID ORDER BY LocaleMessageTime DESC) AS rn
+      FROM CombinedEmployeeData
+    )
+    SELECT
+      ObjectName1,
+      PersonnelType,
+      EmployeeID,
+      PartitionName2,
+      LocaleMessageTime,
+      Direction,
+      PersonGUID
+    FROM Ranked
+    WHERE rn = 1;
+  `;
+
+  const result = await pool.request().query(query);
+  return result.recordset;
+};
+
+/**
+ * Historical raw‐data fetch for the past N days, all or by location.
+ */
+exports.fetchHistoricalData = async ({ days = 7, location = null }) => {
+  const pool = await poolPromise;
+  const parts = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
+  const locFilter = location
+    ? `AND PartitionName2 = @location`
+    : `AND PartitionName2 IN (${parts})`;
+
+  const query = `
+    WITH Hist AS (
+      SELECT
+        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
+        t1.ObjectName1,
+        t1.ObjectName2 AS Door,
+        CASE WHEN t2.Int1 = 0 THEN t2.Text12 ELSE CAST(t2.Int1 AS NVARCHAR) END AS EmployeeID,
+        t3.Name AS PersonnelType,
+        t1.ObjectIdentity1 AS PersonGUID,
+        t1.PartitionName2,
+        t5d.value AS Direction
+      FROM ACVSUJournal_00010028.dbo.ACVSUJournalLog t1
+      JOIN ACVSCore.Access.Personnel      t2 ON t1.ObjectIdentity1 = t2.GUID
+      JOIN ACVSCore.Access.PersonnelType  t3 ON t2.PersonnelTypeID = t3.ObjectID
+      LEFT JOIN ACVSUJournal_00010028.dbo.ACVSUJournalLogxmlShred t5d
+        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
+      WHERE
+        t1.MessageType = 'CardAdmitted'
+        ${locFilter}
+        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
+            >= DATEADD(DAY, -${days}, CONVERT(DATE, GETDATE()))
+    )
+    SELECT *
+    FROM Hist
+    ORDER BY LocaleMessageTime ASC;
+  `;
+
+  const req = pool.request();
+  if (location) req.input('location', sql.NVarChar, location);
+  const result = await req.query(query);
+  return result.recordset;
+};
+
+exports.fetchHistoricalOccupancy = async (location) =>
+  exports.fetchHistoricalData({ days:7, location: location||null });
+
+
+
+
+
+
+
+
+
+// src/controllers/occupancy.controller.js
+const service = require('../services/occupancy.service');
+const doorMap = require('../utils/doorMap');
+
+function isEmployeeType(pt) {
+  return pt === 'Employee' || pt === 'Terminated Employee' || pt === 'Terminated Personnel';
+}
+
+function lookupFloor(partition, door, direction, unmapped) {
+  const entry = doorMap.find(d => d.partition === partition && d.door === door);
+  if (!entry) { unmapped.add(`${partition}|${door}`); return 'Unknown'; }
+  return direction === 'InDirection' ? entry.inDirectionFloor : entry.outDirectionFloor;
+}
+
+exports.getLiveOccupancy = async (req,res) => {
+  try {
+    const data = await service.fetchLiveOccupancy();
+    res.json({ success:true, count:data.length, data });
+  } catch(e) {
+    console.error(e);
+    res.status(500).json({ success:false, message:'Live fetch failed' });
+  }
+};
+
+exports.getLiveSummary = async (req,res) => {
+  try {
+    const swipes = await service.fetchLiveOccupancy();
+
+    // first swipe per person = TODAY
+    const first = {};
+    swipes.forEach(r => {
+      const t = new Date(r.LocaleMessageTime).getTime();
+      if (!first[r.PersonGUID] || t < new Date(first[r.PersonGUID].LocaleMessageTime).getTime()) {
+        first[r.PersonGUID] = r;
+      }
+    });
+    const today = { total:0, Employee:0, Contractor:0 };
+    Object.values(first).forEach(r => {
+      today.total++;
+      if (isEmployeeType(r.PersonnelType)) today.Employee++;
+      else today.Contractor++;
+    });
+
+    // last swipe per person for realtime
+    const last = {};
+    swipes.forEach(r => {
+      const t = new Date(r.LocaleMessageTime).getTime();
+      if (!last[r.PersonGUID] || t > new Date(last[r.PersonGUID].LocaleMessageTime).getTime()) {
+        last[r.PersonGUID] = r;
+      }
+    });
+
+    const realtime = {};
+    const unmapped = new Set();
+    Object.values(last).forEach(r => {
+      if (r.Direction !== 'InDirection') return;
+      const p = r.PartitionName2;
+      if (!realtime[p]) realtime[p] = { total:0, Employee:0, Contractor:0, floors:{} };
+      realtime[p].total++;
+      if (isEmployeeType(r.PersonnelType)) realtime[p].Employee++;
+      else realtime[p].Contractor++;
+      const fl = lookupFloor(p, r.Door, r.Direction, unmapped);
+      realtime[p].floors[fl] = (realtime[p].floors[fl]||0)+1;
+    });
+    if (unmapped.size) console.warn('Unmapped doors:', Array.from(unmapped));
+
+    res.json({ success:true, today, realtime, details:Object.values(last) });
+  } catch(e) {
+    console.error(e);
+    res.status(500).json({ success:false, message:'Summary failed' });
+  }
+};
+
+exports.getHistoricalOccupancy = async (req,res) => {
+  const location = req.params.location || null;
+  try {
+    const raw = await service.fetchHistoricalOccupancy(location);
+    // dedupe first swipe per person per day
+    const byDate = raw.reduce((acc,r) => {
+      const date = new Date(r.LocaleMessageTime).toISOString().slice(0,10);
+      acc[date] = acc[date]||{};
+      if (!acc[date][r.PersonGUID] ||
+          new Date(r.LocaleMessageTime) < new Date(acc[date][r.PersonGUID].LocaleMessageTime)
+      ) {
+        acc[date][r.PersonGUID] = { ...r, LocaleMessageTime: r.LocaleMessageTime };
+      }
+      return acc;
+    }, {});
+
+    const summaryByDate = [], details = [];
+    Object.keys(byDate).sort().forEach(date => {
+      const recs = Object.values(byDate[date]);
+      details.push(...recs);
+      const region = { total:0, Employee:0, Contractor:0 };
+      const partitions = {};
+      recs.forEach(r => {
+        region.total++;
+        if (isEmployeeType(r.PersonnelType)) region.Employee++;
+        else region.Contractor++;
+        if (!location) {
+          partitions[r.PartitionName2] = partitions[r.PartitionName2]||{ total:0,Employee:0,Contractor:0 };
+          partitions[r.PartitionName2].total++;
+          if (isEmployeeType(r.PersonnelType)) partitions[r.PartitionName2].Employee++;
+          else partitions[r.PartitionName2].Contractor++;
+        }
+      });
+      summaryByDate.push({
+        date,
+        day: new Date(date).toLocaleDateString('en-US',{ weekday:'long' }),
+        region: location ? { name:location, ...region } : { name:'APAC', ...region },
+        partitions: location ? undefined : partitions
+      });
+    });
+
+    res.json({ success:true, summaryByDate, details });
+  } catch(e) {
+    console.error(e);
+    res.status(500).json({ success:false, message:'Historical failed' });
+  }
+};
+
+
+
+
+
+
+
+// src/routes/occupancy.routes.js
+const express    = require('express');
+const controller = require('../controllers/occupancy.controller');
+const router     = express.Router();
+
+router.get('/live',         controller.getLiveOccupancy);
+router.get('/live-summary', controller.getLiveSummary);
+router.get('/history',           controller.getHistoricalOccupancy);
+router.get('/history/:location', controller.getHistoricalOccupancy);
+
+module.exports = router;
+
+
+
+
+
+
+// src/app.js
+const express           = require('express');
+const cors              = require('cors');
+const occupancyRoutes   = require('./routes/occupancy.routes');
+
+const app = express();
+app.use(express.json());
+app.use(cors());
+
+// Health check
+app.get('/', (_req,res) => res.send('🌏 APAC Occupancy API Running'));
+
+// Mount occupancy
+app.use('/api/occupancy', occupancyRoutes);
+
+module.exports = app;
+
+
+
+
+
+// server.js
+require('dotenv').config();
+const app = require('./src/app');
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 APAC server listening on port ${PORT}`);
+});
+
+
+
+
+
+
+# APAC DB
+DB_USER=your_apac_user
+DB_PASSWORD=Westernuniongsoc@2025
+DB_SERVER=SRVWUPNQ0986V
+DB_DATABASE=ACVSUJournal_00010028
+DB_PORT=1433
+
+PORT=3000
+
+
+
+
+
+
+
+
+
 apac HeadCount query
 
 APAC SERVER - SRVWUPNQ0986V
