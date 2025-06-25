@@ -1,3 +1,79 @@
+// ... your existing imports & doorZoneMap, zoneFloorMap, partitionMap remain unchanged ...
+
+// 4) helper to normalize any door string
+function normalizeDoorName(name) {
+  return name
+    .toUpperCase()                               // case‐insensitive
+    .replace(/_(?:[0-9A-F]{2}:?)+$/i, '')        // strip trailing hex IDs like _10:05:4B
+    .replace(/EMTRY\b/, 'ENTRY')                 // fix typo “EMTRY → ENTRY”
+    .replace(/POD\s*PODIUM/i, 'PODIUM')          // normalize “POD podium” → “PODIUM”
+    .replace(/RESTRICTED DOOR/i, 'RESTRICTED DOOR')
+    .replace(/\s+/g, ' ')                        // collapse whitespace
+    .trim();
+}
+
+// 5) Build normalized map entries
+const doorMap = Object.entries(doorZoneMap).reduce((acc, [key, zone]) => {
+  const [doorName, dir] = key.split('___');
+
+  const prefix    = doorName.split('_').slice(0,3).join('_');
+  const partition = partitionMap[prefix] || prefix;
+  const floor     = zoneFloorMap[zone]  || 'Unknown';
+
+  if (!acc[doorName]) {
+    acc[doorName] = {
+      partition,
+      door: doorName,
+      inDirectionFloor:  null,
+      outDirectionFloor: null,
+      normalizedDoor:    normalizeDoorName(doorName)
+    };
+  }
+  if (dir === 'InDirection')  acc[doorName].inDirectionFloor  = floor;
+  else                         acc[doorName].outDirectionFloor = floor;
+
+  return acc;
+}, {});
+
+module.exports = Object.values(doorMap);
+
+
+
+const doorMap = require('../utils/doorMap');
+
+function normalizeDoorName(name) {
+  return name
+    .toUpperCase()
+    .replace(/_(?:[0-9A-F]{2}:?)+$/i, '')
+    .replace(/EMTRY\b/, 'ENTRY')
+    .replace(/POD\s*PODIUM/i, 'PODIUM')   // <— this line ensures consistency
+    .replace(/RESTRICTED DOOR/i, 'RESTRICTED DOOR')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function lookupFloor(_partition, rawDoor, direction, unmapped) {
+  const door = normalizeDoorName(rawDoor);
+  const entry = doorMap.find(d =>
+    d.normalizedDoor === door && d.partition === _partition
+  );
+  if (!entry) {
+    unmapped.add(`${_partition}|${rawDoor}`);
+    return 'Unknown';
+  }
+  return direction === 'InDirection'
+    ? entry.inDirectionFloor
+    : entry.outDirectionFloor;
+}
+
+
+
+
+
+
+
+
+
 sTILL We got unmapped door let fix it.
 ✅ MSSQL (APAC) connected
 Unmapped doors: [
