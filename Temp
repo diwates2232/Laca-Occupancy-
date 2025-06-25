@@ -1,3 +1,149 @@
+// src/utils/doorMap.js
+
+// 1) Raw mapping from “DOOR_NAME___Direction” → zone name
+const doorZoneMap = {
+  // … all Pune + APAC entries as before …
+};
+
+// 2) zone → floor labels (unchanged)
+const zoneFloorMap = {
+  // … same as you had …
+};
+
+// 3) prefix → PartitionName2 map (unchanged)
+const partitionMap = {
+  'APAC_IN_PUN':    'Pune',
+  'APAC_PH_Manila': 'Quezon City',
+  'APAC_JPN_Tokyo': 'JP.Tokyo',
+  'APAC_MY_KL':     'MY.Kuala Lumpur',
+  'APAC_PI_Manila': 'Taguig City'
+};
+
+// 4) helper to normalize any door string
+function normalizeDoorName(name) {
+  return name
+    .toUpperCase()                              // case‐insensitive
+    .replace(/_(?:[0-9A-F]{2}:?)+$/i, '')       // strip trailing hex IDs like _10:05:4B
+    .replace(/EMTRY\b/, 'ENTRY')                // fix typo “EMTRY → ENTRY”
+    .replace(/RESTRICTED DOOR/i, 'RESTRICTED DOOR') // unify casing
+    .replace(/\s+/g, ' ')                       // collapse spaces
+    .trim();
+}
+
+// 5) Build normalized map entries
+const doorMap = Object.entries(doorZoneMap).reduce((acc, [key, zone]) => {
+  const [doorName, dir] = key.split('___');
+
+  // partition as before
+  const prefix    = doorName.split('_').slice(0,3).join('_');
+  const partition = partitionMap[prefix] || prefix;
+
+  const floor = zoneFloorMap[zone] || 'Unknown';
+
+  // ensure single entry per doorName
+  if (!acc[doorName]) {
+    acc[doorName] = {
+      partition,
+      door: doorName,
+      inDirectionFloor:  null,
+      outDirectionFloor: null,
+      normalizedDoor:    normalizeDoorName(doorName)
+    };
+  }
+  if (dir === 'InDirection')  acc[doorName].inDirectionFloor  = floor;
+  else                         acc[doorName].outDirectionFloor = floor;
+
+  return acc;
+}, {});
+
+// Export array
+module.exports = Object.values(doorMap);
+
+
+
+
+
+
+// src/controllers/occupancy.controller.js
+
+const service = require('../services/occupancy.service');
+const doorMap = require('../utils/doorMap');
+
+// copy the same normalization helper
+function normalizeDoorName(name) {
+  return name
+    .toUpperCase()
+    .replace(/_(?:[0-9A-F]{2}:?)+$/i, '')
+    .replace(/EMTRY\b/, 'ENTRY')
+    .replace(/RESTRICTED DOOR/i, 'RESTRICTED DOOR')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isEmployeeType(pt) {
+  return ['Employee','Terminated Employee','Terminated Personnel'].includes(pt);
+}
+
+function lookupFloor(_partition, rawDoor, direction, unmapped) {
+  const door = normalizeDoorName(rawDoor);
+  // match on normalizedDoor
+  const entry = doorMap.find(d => d.normalizedDoor === door && d.partition === _partition);
+  if (!entry) {
+    unmapped.add(`${_partition}|${rawDoor}`);
+    return 'Unknown';
+  }
+  return direction === 'InDirection'
+    ? entry.inDirectionFloor
+    : entry.outDirectionFloor;
+}
+
+exports.getLiveSummary = async (req, res) => {
+  try {
+    const swipes = await service.fetchLiveOccupancy();
+
+    // … your first/last logic untouched …
+
+    const realtime = {};
+    const unmapped = new Set();
+
+    Object.values(last).forEach(r => {
+      if (r.Direction !== 'InDirection') return;
+      const p    = r.PartitionName2;
+      const doorField = r.Door;  // now defined by service
+
+      if (!realtime[p]) {
+        realtime[p] = { total:0, Employee:0, Contractor:0, floors:{} };
+      }
+      realtime[p].total++;
+      if (isEmployeeType(r.PersonnelType)) realtime[p].Employee++;
+      else realtime[p].Contractor++;
+
+      const fl = lookupFloor(p, doorField, r.Direction, unmapped);
+      realtime[p].floors[fl] = (realtime[p].floors[fl]||0) + 1;
+    });
+
+    if (unmapped.size) console.warn('Unmapped doors:', Array.from(unmapped));
+
+    res.json({ success:true, today, realtime, details:Object.values(last) });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ success:false, message:'Summary failed' });
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Now let fix this door issue carefully.
 🚀 APAC server listening on port 3007
 ✅ MSSQL (APAC) connected
