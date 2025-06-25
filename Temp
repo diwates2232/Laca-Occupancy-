@@ -1,4 +1,60 @@
-  // src/pages/History.jsx
+--- a/src/pages/History.jsx
++++ b/src/pages/History.jsx
+@@ export default function History() {
+   // ... your code above remains unchanged ...
+
+   // 3) Build & filter detailRows
+   const detailRows = useMemo(() => {
+     if (!data || !pickedDate) return [];
+     const dateStr = format(pickedDate, 'yyyy-MM-dd');
+     return data.details
+       // date filter
+       .filter(r => format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd') === dateStr)
+       // partition filter
+       .filter(r => !filterCode || r.PartitionName2.startsWith(filterCode + '.'))
+       // only entering swipes count
+       .filter(r => r.Direction === 'InDirection')
+       // dedupe per employee *and* personnel type so you still see temp badges
+       .reduce((unique, row) => {
+         const key = `${row.EmployeeID}-${row.PersonnelType}`;
+         if (!unique._seen.has(key)) {
+           unique._seen.add(key);
+           unique.rows.push(row);
+         }
+         return unique;
+       }, { _seen: new Set(), rows: [] })
+       .rows;
+   }, [data, pickedDate, filterCode]);
+
+   // ... your code in between remains unchanged ...
+
+   // Export to Excel
+   const handleExport = () => {
+     const ws = XLSX.utils.json_to_sheet(
+       detailRows.map((r, i) => ({
+         Sr: i + 1,
+         Date: format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd'),
+         Time: format(new Date(r.LocaleMessageTime), 'HH:mm:ss'),
+         EmployeeID: r.EmployeeID,
+         Name: r.ObjectName1,
+-        PersonnelType: r.PersonnelType === 'TempBadge' ? 'Contractor' : r.PersonnelType,
++        PersonnelType: r.PersonnelType,      // preserve “TempBadge”, “Visitor”, “Contractor”, etc.
+         Door: r.Door,
+         Partition: r.PartitionName2
+       }))
+     );
+     const wb = XLSX.utils.book_new();
+     XLSX.utils.book_append_sheet(wb, ws, 'Details');
+     const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+     saveAs(new Blob([buf]), `history_${format(pickedDate, 'yyyyMMdd')}.xlsx`);
+   };
+
+
+
+
+
+
+// src/pages/History.jsx
 
   import React, { useEffect, useState, useMemo } from 'react';
   import { useParams } from 'react-router-dom';
