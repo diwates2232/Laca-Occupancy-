@@ -1,3 +1,44 @@
+// src/controllers/occupancy.controller.js
+ const doorMap = require('../utils/doorMap');
++const doorZoneMap = require('../utils/doorZoneMap'); // add this
+
+ // … your existing normalizeDoorName, isEmployeeType …
+
+ function lookupFloor(/*…*/) { /* unchanged */ }
+
+ exports.getLiveSummary = async (req,res) => {
+   // … fetch swipes, build first/last …
+
+    Object.values(last).forEach(r => {
+-     // this dropped *all* OutDirection
+-     if (r.Direction !== 'InDirection') return;
++     // only drop true exits:
++     if (r.Direction === 'OutDirection') {
++       // rebuild the exact map key, e.g. "APAC_IN_PUN_PODIUM_ST 1-DOOR 1 (RED)___OutDirection"
++       const key = normalizeDoorName(r.Door) + '___' + r.Direction;
++       const zone = doorZoneMap[key];
++       // if it's not a real "Out of office" *and* ends with "Outer Area", 
++       // we treat it as a non-eviction (i.e. keep them in)
++       if (zone !== 'Out of office' && /Outer Area$/i.test(zone)) {
++         // allow counting below
++       } else {
++         return; // true exit → skip
++       }
++     }
+
+     const p = r.PartitionName2;
+     const doorField = r.Door;
+
+     // … increment totals and floor buckets …
+    });
+   // …
+
+
+
+
+
+
+
 // src/utils/doorMap.js
 
 // 1) Raw mapping from “DOOR___Direction” → zone name
