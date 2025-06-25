@@ -1,3 +1,57 @@
+--- src/pages/History.jsx
++++ src/pages/History.jsx
+@@ section "// 3) Build & filter detailRows"
+   const detailRows = useMemo(() => {
+     if (!data || !pickedDate) return [];
+     const dateStr = format(pickedDate, 'yyyy-MM-dd');
+     return data.details
+@@
+-    // 3) only InDirection swipes count toward headcount
+-    .filter(r => r.Direction === 'InDirection')
+-    // 4) dedupe by EmployeeID if you want unique per day
+-    .reduce((unique, row) => {
+-      const key = `${row.EmployeeID}-${row.PersonnelType}`;
+-      if (!unique._seen.has(key)) {
+-        unique._seen.add(key);
+-        unique.rows.push(row);
+-      }
+-      return unique;
+-    }, { _seen: new Set(), rows: [] })
+-    .rows;
++    // 3) only InDirection swipes count toward headcount
++    .filter(r => r.Direction === 'InDirection')
++    // 4) dedupe by EmployeeID+PersonnelType if you want unique per day
++    .reduce((unique, row) => {
++      const key = `${row.EmployeeID}-${row.PersonnelType}`;
++      if (!unique._seen.has(key)) {
++        unique._seen.add(key);
++        unique.rows.push(row);
++      }
++      return unique;
++    }, { _seen: new Set(), rows: [] })
++    .rows;
+ }, [data, pickedDate, filterCode]);
+@@ section "// Export to Excel"
+   const handleExport = () => {
+     const ws = XLSX.utils.json_to_sheet(
+       detailRows.map((r, i) => ({
+@@
+-        PersonnelType: r.PersonnelType === 'TempBadge' ? 'Contractor' : r.PersonnelType,
++        PersonnelType: r.PersonnelType,   // preserve exactly as API returned (visitor/temp badge/contractor/etc.)
+         Door: r.Door,
+         Partition: r.PartitionName2
+       }))
+     );
+
+
+
+
+
+
+
+
+
+
 // src/pages/History.jsx
 
 import React, { useEffect, useState, useMemo } from 'react';
