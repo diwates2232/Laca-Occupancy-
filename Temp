@@ -1,3 +1,20 @@
+// src/utils/timezones.js
+
+module.exports = {
+  'APAC.Default':       'Asia/Manila',
+  'CN.Beijing':         'Asia/Shanghai',
+  'JP.Tokyo':           'Asia/Tokyo',
+  'PH.Manila':          'Asia/Manila',
+  'MY.Kuala Lumpur':    'Asia/Kuala_Lumpur',
+  'IN.Pune':            'Asia/Kolkata',
+};
+
+
+
+
+
+
+
 // src/config/db.js
 require('dotenv').config();
 const sql = require('mssql');
