@@ -1,3 +1,68 @@
+// src/controllers/occupancy.controller.js
+
+-function lookupFloor(partition, door, direction, unmapped) {
+-  const entry = doorMap.find(d => d.partition === partition && d.door === door);
++function lookupFloor(_partition, door, direction, unmapped) {
++  // match purely on the door name
++  const entry = doorMap.find(d => d.door === door);
+   if (!entry) {
+-    unmapped.add(`${partition}|${door}`);
++    unmapped.add(door);
+     return 'Unknown';
+   }
+   return direction === 'InDirection'
+     ? entry.inDirectionFloor
+     : entry.outDirectionFloor;
+}
+
+exports.getLiveSummary = async (req, res) => {
+  try {
+    const swipes = await service.fetchLiveOccupancy();
+
+    // … your first/last logic stays identical …
+
+    const realtime = {};
+    const unmapped = new Set();
+    Object.values(last).forEach(r => {
+      if (r.Direction !== 'InDirection') return;
+
+-      const p = r.PartitionName2;
+-      // grab the door out of the correct property
+-      const door = r.Door;
++      const p = r.PartitionName2;
++      // your service actually uses `ObjectName1` for the door name
++      const door = r.ObjectName1;
+
+      if (!realtime[p]) {
+        realtime[p] = { total: 0, Employee: 0, Contractor: 0, floors: {} };
+      }
+      realtime[p].total++;
+      if (isEmployeeType(r.PersonnelType)) realtime[p].Employee++;
+      else realtime[p].Contractor++;
+
+-      const fl = lookupFloor(p, r.Door, r.Direction, unmapped);
++      const fl = lookupFloor(p, door,   r.Direction, unmapped);
+
+      realtime[p].floors[fl] = (realtime[p].floors[fl] || 0) + 1;
+    });
+
+    if (unmapped.size) console.warn('Unmapped doors:', Array.from(unmapped));
+
+    res.json({ success: true, today, realtime, details: Object.values(last) });
+  } catch (e) {
+    …
+  }
+};
+
+
+
+
+
+
+
+
+
+
 Read both file carefully and solve the issue
 
 
