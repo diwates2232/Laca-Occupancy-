@@ -1,3 +1,33 @@
+// 3) Build & filter detailRows
+const detailRows = useMemo(() => {
+  if (!data || !pickedDate) return [];
+  const dateStr = format(pickedDate, 'yyyy-MM-dd');
+  return data.details
+    .filter(r => format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd') === dateStr)
+    .filter(r =>
+      !filterCode
+        ? true
+        : r.PartitionName2.startsWith(filterCode + '.')
+    )
+    .filter(r => r.Direction === 'InDirection')
+    .reduce((unique, row) => {
+      const key = `${row.EmployeeID}-${row.PersonnelType}`;
+      if (!unique._seen.has(key)) {
+        unique._seen.add(key);
+        unique.rows.push(row);
+      }
+      return unique;
+    }, { _seen: new Set(), rows: [] })
+    .rows;
+}, [data, pickedDate, filterCode]);
+
+
+
+
+
+
+
+
 explain me both function and their diffrance 
 
      funtiion 1)
