@@ -1,4 +1,21 @@
-Now check all backend and frontend files carefully and solve the issue quickly
+--- a/src/controllers/occupancy.controller.js
++++ b/src/controllers/occupancy.controller.js
+@@
+-function isTempBadgeType(pt) {
+-  return pt === 'Temp Badge';
+-}
++function isTempBadgeType(pt) {
++  // handle both variants from the database
++  return pt === 'Temp Badge' || pt === 'TempBadge';
++}
+
+
+
+
+
+
+
+mNow check all backend and frontend files carefully and solve the issue quickly
 
 // src/services/occupancy.service.js
 
