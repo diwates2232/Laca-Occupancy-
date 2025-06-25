@@ -1,7 +1,368 @@
-Below is the fully updated History.jsx. I’ve:
-	1.	Ensured the detail-rows pipeline ends with .rows so your counts match the summary.
-	2.	Preserved PersonnelType exactly as returned by the API (so “TempBadge” rows show up in the Details table and in the Excel export).
-	3.	Left the summary logic untouched (you still get Employee, Contractors and Temp Badge columns when filterCode === 'CR').
+Now check all backend and frontend files carefully and solve the issue quickly
+
+// src/services/occupancy.service.js
+
+const { poolPromise, sql } = require('../config/db');
+
+const partitionList = [
+  'AR.Cordoba',
+  'BR.Sao Paulo',
+  'CR.Costa Rica Partition',
+  'MX.Mexico City',
+  'PA.Panama City',
+  'PE.Lima'
+];
+
+/**
+ * Live occupancy (today) query unchanged.
+ */
+exports.fetchLiveOccupancy = async () => {
+  const pool = await poolPromise;
+  const partitionsSql = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
+
+  const query = `
+    WITH CombinedQuery AS (
+      SELECT
+        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
+        t1.ObjectName1,
+        t1.ObjectName2            AS Door,
+        CASE
+          WHEN t3.Name IN ('Contractor','Terminated Contractor')
+            THEN t2.Text12
+          ELSE CAST(t2.Int1 AS NVARCHAR)
+        END                       AS EmployeeID,
+        t2.text5                  AS Text5,
+        t1.PartitionName2         AS PartitionName2,
+        t1.ObjectIdentity1        AS PersonGUID,
+        t3.Name                   AS PersonnelType,
+        COALESCE(
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]','varchar(50)'),
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID)[1]','varchar(50)'),
+          sc.value
+        )                         AS CardNumber,
+        t5a.value                 AS AdmitCode,
+        t5d.value                 AS Direction
+      FROM [ACVSUJournal_00010028].[dbo].[ACVSUJournalLog] AS t1
+      LEFT JOIN [ACVSCore].[Access].[Personnel]     AS t2
+        ON t1.ObjectIdentity1 = t2.GUID
+      LEFT JOIN [ACVSCore].[Access].[PersonnelType] AS t3
+        ON t2.PersonnelTypeId = t3.ObjectID
+      LEFT JOIN [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxmlShred] AS t5a
+        ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
+      LEFT JOIN [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxmlShred] AS t5d
+        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
+      LEFT JOIN [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxml] AS t_xml
+        ON t1.XmlGUID = t_xml.GUID
+      LEFT JOIN (
+        SELECT GUID, value
+        FROM [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxmlShred]
+        WHERE Name IN ('Card','CHUID')
+      ) AS sc
+        ON t1.XmlGUID = sc.GUID
+      WHERE
+        t1.MessageType = 'CardAdmitted'
+        AND t1.PartitionName2 IN (${partitionsSql})
+        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
+            = CONVERT(DATE, GETDATE())
+    )
+    SELECT
+      LocaleMessageTime,
+      CONVERT(VARCHAR(10), LocaleMessageTime, 23) AS Dateonly,
+      CONVERT(VARCHAR(8), LocaleMessageTime, 108) AS Swipe_Time,
+      EmployeeID,
+      PersonGUID,
+      ObjectName1,
+      Door,
+      PersonnelType,
+      CardNumber,
+      Text5,
+      PartitionName2,
+      AdmitCode,
+      Direction
+    FROM CombinedQuery
+    ORDER BY LocaleMessageTime ASC;
+  `;
+
+  const result = await pool.request().query(query);
+  return result.recordset;
+};
+
+
+/**
+ * Core raw‐data fetch for the past N days, all or by location.
+ */
+exports.fetchHistoricalData = async ({ days = 7, location = null }) => {
+  const pool = await poolPromise;
+  const partitionsSql = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
+  const locationFilter = location
+    ? `AND t1.PartitionName2 = @location`
+    : `AND t1.PartitionName2 IN (${partitionsSql})`;
+
+  const query = `
+    WITH Hist AS (
+      SELECT
+        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
+        t1.ObjectName1,
+        t1.ObjectName2       AS Door,
+        CASE
+          WHEN t3.Name IN ('Contractor','Terminated Contractor') THEN t2.Text12
+          ELSE CAST(t2.Int1 AS NVARCHAR)
+        END                   AS EmployeeID,
+        t2.text5             AS Text5,
+        t1.PartitionName2    AS PartitionName2,
+        t1.ObjectIdentity1   AS PersonGUID,
+        t3.Name              AS PersonnelType,
+        COALESCE(
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]','varchar(50)'),
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID)[1]','varchar(50)'),
+          sc.value
+        )                     AS CardNumber,
+        t5a.value            AS AdmitCode,
+        t5d.value            AS Direction,
+        CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC)) AS SwipeDate
+      FROM [ACVSUJournal_00010028].[dbo].[ACVSUJournalLog] AS t1
+      LEFT JOIN [ACVSCore].[Access].[Personnel]     AS t2
+        ON t1.ObjectIdentity1 = t2.GUID
+      LEFT JOIN [ACVSCore].[Access].[PersonnelType] AS t3
+        ON t2.PersonnelTypeId = t3.ObjectID
+      LEFT JOIN [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxmlShred] AS t5a
+        ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
+      LEFT JOIN [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxmlShred] AS t5d
+        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
+      LEFT JOIN [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxml] AS t_xml
+        ON t1.XmlGUID = t_xml.GUID
+      LEFT JOIN (
+        SELECT GUID, value
+        FROM [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxmlShred]
+        WHERE Name IN ('Card','CHUID')
+      ) AS sc
+        ON t1.XmlGUID = sc.GUID
+      WHERE
+        t1.MessageType = 'CardAdmitted'
+        ${locationFilter}
+        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
+            >= DATEADD(DAY, -${days}, CONVERT(DATE, GETDATE()))
+    )
+    SELECT *
+    FROM Hist
+    ORDER BY LocaleMessageTime ASC;
+  `;
+
+  const req = pool.request();
+  if (location) req.input('location', sql.NVarChar, location);
+  const result = await req.query(query);
+  return result.recordset;
+};
+
+
+/**
+ * Public wrapper: always last 7 days, all or by location.
+ */
+exports.fetchHistoricalOccupancy = async (location) => {
+  return exports.fetchHistoricalData({ days: 7, location: location || null });
+};
+
+module.exports.partitionList = partitionList;
+
+
+
+
+//C:\Users\W0024618\Desktop\laca-occupancy-backend\src\controllers\occupancy.controller.js
+
+
+const service = require('../services/occupancy.service');
+const doorMap = require('../utils/doorMap'); 
+
+exports.getLiveOccupancy = async (req, res) => {
+  try {
+    const data = await service.fetchLiveOccupancy();
+    res.json({ success: true, count: data.length, data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Live occupancy fetch failed' });
+  }
+};
+
+
+
+
+/**
+ * Returns true if this PersonnelType counts as Employee.
+ * Everything else (including blank) counts as Contractor.
+ */
+
+function isEmployeeType(pt) {
+  return pt === 'Employee'
+      || pt === 'Terminated Employee'
+      || pt === 'Terminated Personnel';
+}
+
+/**
+ * Returns true if this PersonnelType is a Temp Badge.
+ */
+function isTempBadgeType(pt) {
+  return pt === 'Temp Badge';
+}
+
+/**
+ * Look up floor for a given record by matching door + partition.
+ */
+function lookupFloor(partition, door, direction, unmappedSet) {
+  const entry = doorMap.find(d =>
+    d.partition === partition && d.door === door
+  );
+  if (!entry) {
+    unmappedSet.add(`${partition} | ${door}`);
+    return null;
+  }
+  return direction === 'InDirection'
+    ? entry.inDirectionFloor
+    : entry.outDirectionFloor;
+}
+
+exports.getLiveSummary = async (req, res) => {
+  try {
+    const swipes = await service.fetchLiveOccupancy();
+
+    // 1. TODAY’S HEADCOUNT: first swipe per person
+    const firstByPerson = {};
+    swipes.forEach(r => {
+      const prev = firstByPerson[r.PersonGUID];
+      const t = new Date(r.LocaleMessageTime).getTime();
+      if (!prev || t < new Date(prev.LocaleMessageTime).getTime()) {
+        firstByPerson[r.PersonGUID] = r;
+      }
+    });
+    const todayRecs = Object.values(firstByPerson);
+    const today = { total: 0, Employee: 0, Contractor: 0, TempBadge: 0 };
+    todayRecs.forEach(r => {
+      today.total++;
+      if (isTempBadgeType(r.PersonnelType)) today.TempBadge++;
+      else if (isEmployeeType(r.PersonnelType)) today.Employee++;
+      else today.Contractor++;
+    });
+
+    // 2. REAL-TIME: last swipe per person, only InDirection
+    const lastByPerson = {};
+    swipes.forEach(r => {
+      const prev = lastByPerson[r.PersonGUID];
+      const t = new Date(r.LocaleMessageTime).getTime();
+      if (!prev || t > new Date(prev.LocaleMessageTime).getTime()) {
+        lastByPerson[r.PersonGUID] = r;
+      }
+    });
+
+    const realtime = {};
+    const unmappedDoors = new Set();
+    Object.values(lastByPerson).forEach(r => {
+      if (r.Direction !== 'InDirection') return;
+      const p = r.PartitionName2;
+      // initialize, including TempBadge for CR
+      if (!realtime[p]) {
+        realtime[p] = { total: 0, Employee: 0, Contractor: 0 };
+        if (p === 'CR.Costa Rica Partition') realtime[p].TempBadge = 0;
+        realtime[p].floors = {};
+      }
+      realtime[p].total++;
+      if (isTempBadgeType(r.PersonnelType)) realtime[p].TempBadge++;
+      else if (isEmployeeType(r.PersonnelType)) realtime[p].Employee++;
+      else realtime[p].Contractor++;
+
+      const floor = lookupFloor(p, r.Door, r.Direction, unmappedDoors) || 'Unmapped';
+      realtime[p].floors[floor] = (realtime[p].floors[floor] || 0) + 1;
+    });
+
+    if (unmappedDoors.size) {
+      console.warn('Unmapped doors:\n' + Array.from(unmappedDoors).join('\n'));
+    }
+
+    return res.json({
+      success: true,
+      today,
+      realtime,
+      details: Object.values(lastByPerson)
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Live summary failed' });
+  }
+};
+
+
+exports.getHistoricalOccupancy = async (req, res) => {
+  const location = req.params.location || null;
+  try {
+    const raw = await service.fetchHistoricalOccupancy(location);
+
+    // first swipe per person per date
+    const byDate = raw.reduce((acc, r) => {
+      const iso = (r.LocaleMessageTime instanceof Date)
+        ? r.LocaleMessageTime.toISOString()
+        : r.LocaleMessageTime;
+      const date = iso.slice(0,10);
+      acc[date] = acc[date] || {};
+      const prev = acc[date][r.PersonGUID];
+      if (!prev || new Date(iso) < new Date(prev.LocaleMessageTime)) {
+        acc[date][r.PersonGUID] = { ...r, LocaleMessageTime: iso };
+      }
+      return acc;
+    }, {});
+
+    const summaryByDate = [];
+    const details = [];
+
+    Object.keys(byDate).sort().forEach(date => {
+      const recs = Object.values(byDate[date]);
+      details.push(...recs);
+
+      // initialize region counts, including TempBadge for CR location
+      const regionCounts = { total: 0, Employee: 0, Contractor: 0 };
+      if (location === 'CR.Costa Rica Partition') regionCounts.TempBadge = 0;
+
+      const partitionCounts = {};
+      recs.forEach(r => {
+        regionCounts.total++;
+        if (isTempBadgeType(r.PersonnelType)) regionCounts.TempBadge++;
+        else if (isEmployeeType(r.PersonnelType)) regionCounts.Employee++;
+        else regionCounts.Contractor++;
+
+        if (!location) {
+          const p = r.PartitionName2;
+          if (!partitionCounts[p]) {
+            partitionCounts[p] = { total: 0, Employee: 0, Contractor: 0 };
+            if (p === 'CR.Costa Rica Partition') partitionCounts[p].TempBadge = 0;
+          }
+          partitionCounts[p].total++;
+          if (isTempBadgeType(r.PersonnelType)) partitionCounts[p].TempBadge++;
+          else if (isEmployeeType(r.PersonnelType)) partitionCounts[p].Employee++;
+          else partitionCounts[p].Contractor++;
+        }
+      });
+
+      summaryByDate.push({
+        date,
+        day: new Date(date).toLocaleDateString('en-US', { weekday:'long' }),
+        region: location
+          ? { name: location, ...regionCounts }
+          : { name: 'LACA', ...regionCounts },
+        partitions: location ? undefined : partitionCounts
+      });
+    });
+
+    return res.json({ success: true, summaryByDate, details });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Historical fetch failed' });
+  }
+};
+
+
+
+
+
+
+
+
 
 // src/pages/History.jsx
 
@@ -375,419 +736,6 @@ export default function History() {
     </>
   );
 }
-
-
-
-
-
-
-
-
-Once check all files carefully and share me fully updated files carefully , 
-
-  // src/pages/History.jsx
-
-  import React, { useEffect, useState, useMemo } from 'react';
-  import { useParams } from 'react-router-dom';
-  import {
-    Container,
-    Box,
-    Button,
-    Typography,
-    Table,
-    TableHead,
-    TableBody,
-    TableRow,
-    TableCell,
-    Paper,
-    TextField
-  } from '@mui/material';
-  import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-  import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
-  import { format } from 'date-fns';
-  import * as XLSX from 'xlsx';
-  import { saveAs } from 'file-saver';
-
-  import Header from '../components/Header';
-  import Footer from '../components/Footer';
-  import LoadingSpinner from '../components/LoadingSpinner';
-  import { fetchHistory } from '../api/occupancy.service';
-
-  export default function History() {
-    // Grab optional partition from URL
-    const { partition } = useParams();
-    const decodedPartition = partition ? decodeURIComponent(partition) : null;
-    // e.g. "CR" from "CR.Costa Rica Partition"
-    const filterCode = decodedPartition?.split('.')[0] || null;
-
-    const [data, setData]               = useState(null);
-    const [loading, setLoading]         = useState(true);
-    const [pickedDate, setPickedDate]   = useState(null);
-    const [showDetails, setShowDetails] = useState(false);
-
-    // 1) Summary entry for the selected date
-    const summaryEntry = useMemo(() => {
-      if (!data || !pickedDate) return null;
-      const dateStr = format(pickedDate, 'yyyy-MM-dd');
-      return data.summaryByDate.find(r => r.date === dateStr) || null;
-    }, [data, pickedDate]);
-
-    // 2) Build & filter partitionRows
-    const partitionRows = useMemo(() => {
-      if (!summaryEntry) return [];
-      const codeToCountry = {
-        AR: 'Argentina',
-        BR: 'Brazil',
-        CR: 'Costa Rica',
-        MX: 'Mexico',
-        PA: 'Panama',
-        PE: 'Peru'
-      };
-
-      return Object.entries(summaryEntry.partitions)
-        .filter(([key]) =>
-          !filterCode ? true : key.startsWith(filterCode + '.')
-        )
-        .map(([key, vals]) => {
-          const [code, cityRaw] = key.split('.');
-          return {
-            country: codeToCountry[code] || code,
-            city: cityRaw.replace('Partition','').trim(),
-            employee: vals.Employee  ?? vals.EmployeeCount  ?? 0,
-            contractor: vals.Contractor ?? vals.ContractorCount ?? 0,
-            // only CR gets tempBadge
-            tempBadge: vals.TempBadge ?? 0,
-            total: vals.total ?? 0,
-          };
-        });
-    }, [summaryEntry, filterCode]);
-
-
-
-
-
-
-
-    // // 3) Build & filter detailRows
-    // const detailRows = useMemo(() => {
-    //   if (!data || !pickedDate) return [];
-    //   const dateStr = format(pickedDate, 'yyyy-MM-dd');
-    //   return data.details
-    //     .filter(r =>
-    //       format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd') === dateStr
-    //     )
-    //     .filter(r =>
-    //       !filterCode
-    //         ? true
-    //         : r.PartitionName2.startsWith(filterCode + '.')
-    //     );
-    // }, [data, pickedDate, filterCode]);
-
-
-
-// 3) Build & filter detailRows
-const detailRows = useMemo(() => {
-  if (!data || !pickedDate) return [];
-  const dateStr = format(pickedDate, 'yyyy-MM-dd');
-  return data.details
-    .filter(r => format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd') === dateStr)
-    .filter(r =>
-      !filterCode
-        ? true
-        : r.PartitionName2.startsWith(filterCode + '.')
-    )
-    .filter(r => r.Direction === 'InDirection')
-    .reduce((unique, row) => {
-      const key = `${row.EmployeeID}-${row.PersonnelType}`;
-      if (!unique._seen.has(key)) {
-        unique._seen.add(key);
-        unique.rows.push(row);
-      }
-      return unique;
-    }, { _seen: new Set(), rows: [] })
-    .rows;
-}, [data, pickedDate, filterCode]);
-
-
-
-    // Fetch all on mount
-    useEffect(() => {
-      setLoading(true);
-      fetchHistory()
-        .then(json => setData(json))
-        .finally(() => setLoading(false));
-    }, []);
-
-    if (loading) return <LoadingSpinner />;
-    if (!data)    return null;
-
-    // Export to Excel
-    const handleExport = () => {
-      const ws = XLSX.utils.json_to_sheet(
-        detailRows.map((r, i) => ({
-          Sr: i + 1,
-          Date: format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd'),
-          Time: format(new Date(r.LocaleMessageTime), 'HH:mm:ss'),
-          EmployeeID: r.EmployeeID,
-          Name: r.ObjectName1,
-    
-           //PersonnelType: r.PersonnelType === 'TempBadge' ? 'Contractor' : r.PersonnelType,
-            PersonnelType: r.PersonnelType,   // preserve exactly as API returned (visitor/temp badge/contractor/etc.)
-          Door: r.Door,
-          Partition: r.PartitionName2
-        }))
-      );
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Details');
-      const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-      saveAs(new Blob([buf]), `history_${format(pickedDate, 'yyyyMMdd')}.xlsx`);
-    };
-
-    const isCostaRica = filterCode === 'CR';
-
-    return (
-      <>
-        <Header />
-
-        <Container maxWidth={false} disableGutters sx={{ pt: 2, pb: 4 }}>
-          {/* DatePicker + Summary */}
-          {pickedDate && summaryEntry ? (
-            <Box display="flex" alignItems="flex-start" sx={{ px: '20px', mb: 2, gap: '10px' }}>
-              {/* Date picker */}
-              <Box sx={{ flex: '0 0 200px' }}>
-                <LocalizationProvider dateAdapter={AdapterDateFns}>
-                  <DatePicker
-                    label="Select date"
-                    value={pickedDate}
-                    onChange={d => { setPickedDate(d); setShowDetails(false); }}
-                    renderInput={params => <TextField fullWidth {...params} />}
-                  />
-                </LocalizationProvider>
-              </Box>
-
-              {/* Summary & Toggle */}
-              <Box sx={{ flex: 1, maxWidth: 900, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {/* Summary table */}
-                <Paper elevation={3} sx={{ px: 4, py: 3, border: '3px solid #000', borderRadius: 2 }}>
-                  <Table sx={{ border: '2px solid #000' }}>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell
-                          colSpan={isCostaRica ? 6 : 5}
-                          align="center"
-                          sx={{
-                            fontWeight: 'bold',
-                            fontSize: 16,
-                            bgcolor: '#000',
-                            color: '#fff',
-                            border: '2px solid #000'
-                          }}
-                        >
-                          {format(pickedDate, 'EEEE, d MMMM, yyyy')}
-                        </TableCell>
-                      </TableRow>
-                      <TableRow sx={{ bgcolor: '#FFC107' }}>
-                        {/* Column headers */}
-                        {[
-                          'Country','City','Employee','Contractors',
-                          ...(isCostaRica ? ['Temp Badge'] : []),
-                          'Total'
-                        ].map(h => (
-                          <TableCell
-                            key={h}
-                            align={['Country','City'].includes(h) ? 'left' : 'right'}
-                            sx={{
-                              color: '#000',
-                              fontWeight: 'bold',
-                              fontSize: 14,
-                              border: '2px solid #000'
-                            }}
-                          >
-                            {h}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    </TableHead>
-
-                    <TableBody>
-                      {partitionRows.map((row,i) => (
-                        <TableRow key={i}>
-                          <TableCell sx={{ border: '2px solid #000' }}>{row.country}</TableCell>
-                          <TableCell sx={{ border: '2px solid #000' }}>{row.city}</TableCell>
-                          <TableCell align="right" sx={{ border: '2px solid #000' }}>{row.employee}</TableCell>
-                          <TableCell align="right" sx={{ border: '2px solid #000' }}>{row.contractor}</TableCell>
-                          {isCostaRica && (
-                            <TableCell align="right" sx={{ border: '2px solid #000' }}>
-                              {row.tempBadge}
-                            </TableCell>
-                          )}
-                          <TableCell
-                            align="right"
-                            sx={{
-                              backgroundColor: '#FFC107',
-                              fontWeight: 'bold',
-                              border: '2px solid #000'
-                            }}
-                          >
-                            {row.total}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-
-                      {/* Grand total row */}
-                      <TableRow sx={{ bgcolor: '#666' }}>
-                        <TableCell colSpan={2} align="right" sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
-                          Total
-                        </TableCell>
-                        <TableCell align="right" sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
-                          {partitionRows.reduce((s, r) => s + r.employee, 0)}
-                        </TableCell>
-                        <TableCell align="right" sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
-                          {partitionRows.reduce((s, r) => s + r.contractor, 0)}
-                        </TableCell>
-                        {isCostaRica && (
-                          <TableCell align="right" sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
-                            {partitionRows.reduce((s, r) => s + r.tempBadge, 0)}
-                          </TableCell>
-                        )}
-                        <TableCell align="right" sx={{ color: '#fff', fontWeight: 'bold', bgcolor: '#333', border: '2px solid #000' }}>
-                          {partitionRows.reduce((s, r) => s + r.total, 0)}
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </Paper>
-
-                {/* See/Hide Details & Export */}
-                <Box display="flex" justifyContent="center" sx={{ mt: 1 }}>
-                  <Button
-                    variant="contained"
-                    sx={{ bgcolor: '#FFC107', color: '#000' }}
-                    onClick={() => setShowDetails(v => !v)}
-                  >
-                    {showDetails ? 'Hide Details' : 'See Details'}
-                  </Button>
-                  {showDetails && (
-                    <Button
-                      variant="outlined"
-                      sx={{ ml: 2, borderColor: '#FFC107', color: '#FFC107' }}
-                      onClick={handleExport}
-                    >
-                      Export to Excel
-                    </Button>
-                  )}
-                </Box>
-              </Box>
-            </Box>
-          ) : (
-            // Only date picker
-            <Box sx={{ px: '20px', mb: 3 }}>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DatePicker
-                  label="Select date"
-                  value={pickedDate}
-                  onChange={d => { setPickedDate(d); setShowDetails(false); }}
-                  renderInput={params => <TextField fullWidth {...params} />}
-                />
-              </LocalizationProvider>
-              {!pickedDate && (
-                <Typography variant="body1" color="textSecondary" sx={{ mt: 2 }}>
-                  Please pick a date to view region summary.
-                </Typography>
-              )}
-            </Box>
-          )}
-
-
-    {/* Details table */}
-  {showDetails && (
-    <Box display="flex" justifyContent="center" mb={2} sx={{width:'100%'}}>
-      <Paper
-        elevation={1}
-        sx={{
-          px: '40px',
-          py: 1,
-          width: '100%',
-          // maxWidth: 1000,
-          border: '3px solid #000',       // outer black border
-          borderRadius: 2,
-        }}
-      >
-        {detailRows.length > 0 ? (
-          <Table sx={{ border: '2px solid #000', borderCollapse: 'collapse' }}>
-            <TableHead>
-              <TableRow sx={{ bgcolor: '#000' }}>
-                {['Sr','Date','Time','Employee ID','Name','Personnel Type','Door','Partition'].map(h => (
-                  <TableCell
-                    key={h}
-                    align="center"
-                    sx={{
-                      color: '#FFC107',
-                      fontWeight: 'bold',
-                      fontSize: 14,
-                      border: '2px solid #000',
-                    }}
-                  >
-                    {h}
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {detailRows.map((r, i) => (
-                <TableRow key={r.PersonGUID}>
-                  <TableCell sx={{ border: '2px solid #000' }}>{i + 1}</TableCell>
-                  <TableCell sx={{ border: '2px solid #000' }}>
-                    {format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd')}
-                  </TableCell>
-                  <TableCell sx={{ border: '2px solid #000' }}>
-                    {format(new Date(r.LocaleMessageTime), 'HH:mm:ss')}
-                  </TableCell>
-                  <TableCell sx={{ border: '2px solid #000' }}>{r.EmployeeID}</TableCell>
-                  <TableCell sx={{ border: '2px solid #000' }}>{r.ObjectName1}</TableCell>
-                  <TableCell sx={{border: '2px solid #000' }}>{r.PersonnelType}</TableCell>
-                  <TableCell sx={{ border: '2px solid #000' }}>{r.Door}</TableCell>
-                  <TableCell sx={{ border: '2px solid #000' }}>{r.PartitionName2}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <Typography
-            variant="body2"
-            sx={{
-              color: '#666',
-              textAlign: 'center',
-              mt: 2,
-              fontStyle: 'italic',
-            }}
-          >
-            No swipe records found for this date.
-          </Typography>
-        )}
-      </Paper>
-    </Box>
-
-
-          )}
-        </Container>
-
-        <Footer />
-      </>
-    );
-  }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
