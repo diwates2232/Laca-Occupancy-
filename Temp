@@ -1,3 +1,148 @@
+export default function Dashboard() {
+  // … other imports & hooks …
+
+  // Build and sort partitions
+  const partitions = partitionList
+    .map(name => {
+      // … mapping logic …
+    })
+    .sort((a, b) => b.total - a.total);
+
+  // Totals
+  // … summary cards …
+
+  return (
+    <>
+      <Header />
+      <Container sx={{ pt:1, pb:2, px:'20px' }} disableGutters>
+        {/* … summary & partition cards … */}
+
+        {/* Live totals chart */}
+        <Box mt={4} sx={{ width:'100%', p:2, border:'1px solid #FFC107' }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6">Live Totals vs Seats</Typography>
+            <Typography variant="body2" color="textSecondary">
+              Last updated: {lastUpdate}
+            </Typography>
+          </Box>
+
+          {loading ? (
+            <Skeleton variant="rectangular" width="100%" height={360} />
+          ) : (
+            (() => {
+              const chartData = partitions.map(p => {
+                const name       = displayNameMap[p.name] || p.name.replace(' Partition','');
+                const headcount  = p.total;
+-               const Capacity   = seatCapacities[name] ?? 0;
++               const capacity   = seatCapacities[name] ?? 0;
+                const pct        = capacity ? Math.round(headcount / capacity * 100) : 0;
+                return {
+                  name,
+-                 Headcount: headcount,
+-                 Capacity:  Capacity,
++                 Headcount: headcount,
++                 Capacity:  capacity,
+                  percentage: pct,
+-                 fill: colorsMap[p.name]?.[0] || '#FFC107',
++                 fill: colorsMap[p.name]?.[0] || '#FFC107',
+                  breakdown: {
+                    Employees:   p.Employee,
+                    Contractors: p.Contractor,
++                   Capacity:    capacity,
++                   'Load %':    pct + '%',
+                    ...(p.TempBadge ? { 'Temp Badge': p.TempBadge } : {})
+                  }
+                };
+              });
+
+              return (
+                <ChartCard
+                  title="Live Totals vs Seats"
+-                 data={chartData}
+-                 dataKey="Headcount"
++                 data={chartData}
++                 dataKey="Headcount"
+                  chartHeight={360}
+                  colors={{ head: '#2E86AB', cap: '#E74C3C' }}
+                  axisProps={{
+                    xAxis: { tick: { fill: '#fff' } },
+                    yAxis: { tick: { fill: '#fff' } }
+                  }}
+                />
+              );
+            })()
+          )}
+        </Box>
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+export default function PartitionDetail() {
+  // … state, effects, summary cards …
+
+  // After computing `live.floors`:
+  const floorEntries = Object.entries(live.floors).map(([floor, cnt]) => {
+    const name     = floor.trim();
+-   const Capacity = buildingCapacities[name] ?? 0;
++   const capacity = buildingCapacities[name] ?? 0;
+    const pct      = capacity ? Math.round(cnt / capacity * 100) : 0;
+    return {
+      name,
+-     Headcount: cnt,
+-     Capacity:  Capacity,
++     Headcount: cnt,
++     Capacity:  capacity,
+      percentage: pct,
+      breakdown: {
+        Headcount: cnt,
+-       Capacity:  Capacity,
++       Capacity:  capacity,
+        'Load %':  pct + '%'
+      }
+    };
+  });
+
+  return (
+    <>
+      <Header />
+      <Container disableGutters>
+        {/* … summary cards … */}
+
+        {/* Floor‐capacity chart */}
+        <Box mt={4} sx={{ p:2, border:'2px solid #FFC107' }}>
+          <Typography variant="h6" gutterBottom>
+            Live Floor Counts vs Capacity
+          </Typography>
+          <ChartCard
+            data={floorEntries}
+            dataKey="Headcount"
+            chartHeight={320}
+            colors={{ head: '#28B463', cap: '#CB4335' }}
+            axisProps={{
+              xAxis: { angle: -45, textAnchor: 'end', tick: { fill: '#000' } },
+              yAxis: { tick: { fill: '#000' } }
+            }}
+          />
+        </Box>
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
 // src/pages/Dashboard.jsx
 import React, { useEffect, useState } from 'react';
 import {
