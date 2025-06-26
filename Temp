@@ -1,3 +1,47 @@
+    Object.values(lastByPerson).forEach(r => {
+-     if (r.Direction !== 'InDirection') return;
++     // ● only remove if this door truly maps to "Out of office"
++     if (r.Direction === 'OutDirection') {
++       const floor = lookupFloor(r.PartitionName2, r.Door, r.Direction, unmappedDoors);
++       if (floor === 'Out of office' || floor?.trim() === 'Out of office') {
++         return; // true exit → evict
++       }
++       // otherwise fall through and count them
++     }
+      const p = r.PartitionName2;
+      // … rest of your existing counting logic …
+
+
+
+
+
+
+    Object.values(lastByPerson).forEach(r => {
+-     if (r.Direction !== 'InDirection') return;
++     // only evict if the mapped outDirectionFloor is "Out of office"
++     if (r.Direction === 'OutDirection') {
++       const floor = lookupFloor(r.PartitionName2, r.Door, r.Direction, unmappedDoors);
++       if (floor === 'Out of office' || floor?.trim() === 'Out of office') {
++         return; // true exit → skip
++       }
++     }
+      const p = r.PartitionName2;
+      // … existing count logic …
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Now read each file line by line and update logic in both file remove live count only when direction == out of office strickly.
 
 //C:\Users\W0024618\Desktop\laca-occupancy-backend\src\controllers\occupancy.controller.js
