@@ -1,3 +1,243 @@
+// src/controllers/occupancy.controller.js
+const service = require('../services/occupancy.service');
+const doorMap = require('../utils/doorMap');
+const doorZoneMap = require('../utils/doorMap'); // assuming doorZoneMap is exported here
+
+function isEmployeeType(pt) {
+  return pt === 'Employee'
+      || pt === 'Terminated Employee'
+      || pt === 'Terminated Personnel';
+}
+
+function isTempBadgeType(pt) {
+  return pt === 'Temp Badge' || pt === 'TempBadge';
+}
+
+function normalizeDoorName(name) {
+  return name
+    .toUpperCase()
+    .replace(/_(?:[0-9A-F]{2}:?)+$/i, '')
+    .replace(/EMTRY\b/, 'ENTRY')
+    .replace(/POD\s*PODIUM/i, 'PODIUM')
+    .replace(/RESTRICTED DOOR/i, 'RESTRICTED DOOR')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function lookupFloor(partition, door, direction, unmappedSet) {
+  const entry = doorMap.find(d =>
+    d.partition === partition && d.door === door
+  );
+  if (!entry) {
+    unmappedSet.add(`${partition} | ${door}`);
+    return null;
+  }
+  return direction === 'InDirection'
+    ? entry.inDirectionFloor
+    : entry.outDirectionFloor;
+}
+
+exports.getLiveSummary = async (req, res) => {
+  try {
+    const swipes = await service.fetchLiveOccupancy();
+
+    // 1) Today’s headcount (first swipe per person)
+    const firstByPerson = {};
+    swipes.forEach(r => {
+      const prev = firstByPerson[r.PersonGUID];
+      const t = new Date(r.LocaleMessageTime).getTime();
+      if (!prev || t < new Date(prev.LocaleMessageTime).getTime()) {
+        firstByPerson[r.PersonGUID] = r;
+      }
+    });
+    const today = { total:0, Employee:0, Contractor:0, TempBadge:0 };
+    Object.values(firstByPerson).forEach(r => {
+      today.total++;
+      if (isTempBadgeType(r.PersonnelType)) today.TempBadge++;
+      else if (isEmployeeType(r.PersonnelType)) today.Employee++;
+      else today.Contractor++;
+    });
+
+    // 2) Real-time headcount (last swipe per person)
+    const lastByPerson = {};
+    swipes.forEach(r => {
+      const prev = lastByPerson[r.PersonGUID];
+      const t = new Date(r.LocaleMessageTime).getTime();
+      if (!prev || t > new Date(prev.LocaleMessageTime).getTime()) {
+        lastByPerson[r.PersonGUID] = r;
+      }
+    });
+
+    const realtime = {};
+    const unmappedDoors = new Set();
+
+    Object.values(lastByPerson).forEach(r => {
+      // if OutDirection, only skip when it's a true Out-of-office swipe
+      if (r.Direction === 'OutDirection') {
+        const key = normalizeDoorName(r.Door) + '___' + r.Direction;
+        const zone = doorZoneMap[key];
+        if (zone !== 'Out of office') {
+          // it’s not an eviction, so treat it as an “InDirection”
+        } else {
+          return; // true exit → skip from headcount
+        }
+      }
+
+      // now count
+      const p = r.PartitionName2;
+      if (!realtime[p]) {
+        realtime[p] = { total:0, Employee:0, Contractor:0 };
+        if (p === 'CR.Costa Rica Partition') realtime[p].TempBadge = 0;
+        realtime[p].floors = {};
+      }
+      realtime[p].total++;
+      if (isTempBadgeType(r.PersonnelType)) realtime[p].TempBadge++;
+      else if (isEmployeeType(r.PersonnelType)) realtime[p].Employee++;
+      else realtime[p].Contractor++;
+
+      const floor = lookupFloor(p, r.Door, r.Direction, unmappedDoors) || 'Unmapped';
+      realtime[p].floors[floor] = (realtime[p].floors[floor]||0) + 1;
+    });
+
+    if (unmappedDoors.size) {
+      console.warn('Unmapped doors:\n' + Array.from(unmappedDoors).join('\n'));
+    }
+
+    res.json({
+      success: true,
+      today,
+      realtime,
+      details: Object.values(lastByPerson)
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Live summary failed' });
+  }
+};
+
+
+
+
+
+// src/controllers/occupancy.controller.js
+const service = require('../services/occupancy.service');
+const doorMap = require('../utils/doorMap');
+const doorZoneMap = require('../utils/doorMap'); // same assumption
+
+function isEmployeeType(pt) {
+  return pt === 'Employee'
+      || pt === 'Terminated Employee'
+      || pt === 'Terminated Personnel';
+}
+
+function lookupFloor(partition, door, direction, unmappedSet) {
+  const entry = doorMap.find(d =>
+    d.partition === partition && d.door === door
+  );
+  if (!entry) {
+    unmappedSet.add(`${partition} | ${door}`);
+    return null;
+  }
+  return direction === 'InDirection'
+    ? entry.inDirectionFloor
+    : entry.outDirectionFloor;
+}
+
+function normalizeDoorName(name) {
+  return name
+    .toUpperCase()
+    .replace(/_(?:[0-9A-F]{2}:?)+$/i, '')
+    .replace(/EMTRY\b/, 'ENTRY')
+    .replace(/POD\s*PODIUM/i, 'PODIUM')
+    .replace(/RESTRICTED DOOR/i, 'RESTRICTED DOOR')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+exports.getLiveSummary = async (req, res) => {
+  try {
+    const swipes = await service.fetchLiveOccupancy();
+
+    // 1) Today’s headcount
+    const firstByPerson = {};
+    swipes.forEach(r => {
+      const prev = firstByPerson[r.PersonGUID];
+      const t = new Date(r.LocaleMessageTime).getTime();
+      if (!prev || t < new Date(prev.LocaleMessageTime).getTime()) {
+        firstByPerson[r.PersonGUID] = r;
+      }
+    });
+    const today = { total:0, Employee:0, Contractor:0 };
+    Object.values(firstByPerson).forEach(r => {
+      today.total++;
+      if (isEmployeeType(r.PersonnelType)) today.Employee++;
+      else today.Contractor++;
+    });
+
+    // 2) Real-time headcount (last swipe per person)
+    const lastByPerson = {};
+    swipes.forEach(r => {
+      const prev = lastByPerson[r.PersonGUID];
+      const t = new Date(r.LocaleMessageTime).getTime();
+      if (!prev || t > new Date(prev.LocaleMessageTime).getTime()) {
+        lastByPerson[r.PersonGUID] = r;
+      }
+    });
+
+    const realtime = {};
+    const unmappedDoors = new Set();
+
+    Object.values(lastByPerson).forEach(r => {
+      // strictly skip only true Out-of-office exits
+      if (r.Direction === 'OutDirection') {
+        const key = normalizeDoorName(r.Door) + '___' + r.Direction;
+        const zone = doorZoneMap[key];
+        if (zone !== 'Out of office') {
+          // not a true exit → count below
+        } else {
+          return; // skip
+        }
+      }
+
+      // count as if InDirection
+      const p = r.PartitionName2;
+      if (!realtime[p]) {
+        realtime[p] = { total:0, Employee:0, Contractor:0, floors:{} };
+      }
+      realtime[p].total++;
+      if (isEmployeeType(r.PersonnelType)) realtime[p].Employee++;
+      else realtime[p].Contractor++;
+
+      const floor = lookupFloor(p, r.Door, r.Direction, unmappedDoors) || 'Unmapped';
+      realtime[p].floors[floor] = (realtime[p].floors[floor]||0) + 1;
+    });
+
+    if (unmappedDoors.size) {
+      console.warn('Unmapped doors:\n' + Array.from(unmappedDoors).join('\n'));
+    }
+
+    res.json({
+      success: true,
+      today,
+      realtime,
+      details: Object.values(lastByPerson)
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Live summary failed' });
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
 Strickly read both file and in live Summary strickly remove count when out of office condtion meet strickly
 
 //C:\Users\W0024618\Desktop\laca-occupancy-backend\src\controllers\occupancy.controller.js
