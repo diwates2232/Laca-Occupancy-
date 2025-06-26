@@ -1,175 +1,104 @@
-// src/pages/Dashboard.jsx
+For a Costa Rica We have Floor Wise SeatCapacity as So Here We Can Display HeadCount , SeatCapacity , usage (Percentage )
+For Costa rica Standerd chart ,Also For Costa Rica display Live Floor Wise HeadCount So For Costa Rica Use bar Line Charts
 
-const chartTypeMap = {
-  'CR.Costa Rica Partition': 'pie',
-  'AR.Cordoba':               'column',
-  'BR.Sao Paulo':             'bar',
-  // fallback for the rest:
-  'MX.Mexico City':           'bar',
-  'PE.Lima':                  'bar',
-  'PA.Panama City':           'bar',
-};
+For Agrentina same have Floor data so here also We can display SeatCapacity Line Charts 
 
 
+Brazil has only one Fllor here We can Replace another standerd chart 
+
+Same For Mexico Panama peru 
+
+So For Each partation use Unique chart and Upadte All Files and Create New Files for Remenening file 
+
+Alos use multiple Colours and make page more attractive 
+
+add legends and details for every chart carefully.
 
 
-import React from 'react';
-import { Card, CardContent, Typography } from '@mui/material';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+so Update all Files carefully ,
+also Check API Responec for more details and Adjust Chart as per RTesponce
 
-export default function PieChartCard({ title, data, colors }) {
-  return (
-    <Card sx={{ flex: '1 1 16%', minWidth: 200 }}>
-      <CardContent>
-        <Typography variant="subtitle1" align="center" gutterBottom>{title}</Typography>
-        <ResponsiveContainer width="100%" height={200}>
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              nameKey="name"
-              innerRadius={40}
-              outerRadius={80}
-              paddingAngle={4}
-            >
-              {data.map((_, idx) => (
-                <Cell key={idx} fill={colors[idx % colors.length]} />
-              ))}
-            </Pie>
-            <Tooltip/>
-            <Legend verticalAlign="bottom" height={30}/>
-          </PieChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  );
-}
-
-
-
-
-
-import React from 'react';
-import { Card, CardContent, Typography } from '@mui/material';
-import { ComposedChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-
-export default function ColumnChartCard({ title, data, barColor }) {
-  return (
-    <Card sx={{ flex: '1 1 16%', minWidth: 200 }}>
-      <CardContent>
-        <Typography variant="subtitle1" align="center" gutterBottom>{title}</Typography>
-        <ResponsiveContainer width="100%" height={200}>
-          <ComposedChart data={data} margin={{ top: 10, bottom: 10 }}>
-            <XAxis dataKey="name" hide />
-            <YAxis hide />
-            <Tooltip />
-            <Bar dataKey="value" barSize={20} fill={barColor} radius={[4,4,0,0]} />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  );
-}
-
-
-
-
-
-import React from 'react';
-import { Card, CardContent, Typography } from '@mui/material';
-import { ComposedChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-
-export default function BarChartCard({ title, data, barColor }) {
-  return (
-    <Card sx={{ flex: '1 1 16%', minWidth: 200 }}>
-      <CardContent>
-        <Typography variant="subtitle1" align="center" gutterBottom>{title}</Typography>
-        <ResponsiveContainer width="100%" height={200}>
-          <ComposedChart layout="vertical" data={data} margin={{ left: 20, right: 10 }}>
-            <XAxis type="number" hide />
-            <YAxis dataKey="name" type="category" hide/>
-            <Tooltip />
-            <Bar dataKey="value" barSize={12} fill={barColor} radius={[0,4,4,0]}/>
-          </ComposedChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  );
-}
-
-
-
-
-
-
-import PieChartCard    from '../components/PieChartCard';
-import ColumnChartCard from '../components/ColumnChartCard';
-import BarChartCard    from '../components/BarChartCard';
-
-// your WU brand palette:
-const wuPalette = {
-  primary:   '#FFC107',  // WU gold
-  secondary: '#000000',  // WU black
-  accent:    '#E57373',  // red accent
-};
-
-
-
-
-
-<Box mt={4} display="flex" flexWrap="wrap" gap={1} justifyContent="space-between">
-  {loading
-    ? <Skeleton variant="rectangular" width="100%" height={220} />
-    : partitions.map(p => {
-        const key       = p.name;
-        const title     = displayNameMap[key] || key.split('.').pop();
-        const type      = chartTypeMap[key] || 'bar';
-        // prepare a simple data array: two slices or bars
-        const chartData = [
-          { name: 'Employees',   value: p.Employee },
-          { name: 'Contractors', value: p.Contractor },
-          ...(p.TempBadge ? [{ name: 'TempBadge', value: p.TempBadge }] : [])
-        ];
-        switch (type) {
-          case 'pie':
-            return (
-              <PieChartCard
-                key={key}
-                title={title}
-                data={chartData}
-                colors={[ wuPalette.primary, wuPalette.accent, wuPalette.secondary ]}
-              />
-            );
-          case 'column':
-            return (
-              <ColumnChartCard
-                key={key}
-                title={title}
-                data={chartData}
-                barColor={wuPalette.primary}
-              />
-            );
-          case 'bar':
-          default:
-            return (
-              <BarChartCard
-                key={key}
-                title={title}
-                data={chartData}
-                barColor={wuPalette.primary}
-              />
-            );
-        }
-      })
-  }
-</Box>
-
-
-
-
-
-
-m
+http://localhost:3001/api/occupancy/live-summary
+"success": true,
+  "today": {
+    "total": 756,
+    "Employee": 667,
+    "Contractor": 89,
+    "TempBadge": 0
+  },
+  "realtime": {
+    "AR.Cordoba": {
+      "total": 189,
+      "Employee": 165,
+      "Contractor": 24,
+      "floors": {
+        "1st Floor": 27,
+        "2nd Floor": 25,
+        " BUZON": 2,
+        "3rd Floor": 33,
+        "12th Floor": 15,
+        "7th Floor": 29,
+        "5th Floor": 24,
+        "10th Floor": 5,
+        "4th Floor": 14,
+        "6th Floor": 11,
+        "8th Floor": 2,
+        "9th Floor": 1,
+        "PORTON": 1
+      }
+    },
+    "CR.Costa Rica Partition": {
+      "total": 392,
+      "Employee": 360,
+      "Contractor": 32,
+      "TempBadge": 0,
+      "floors": {
+        "Building F4": 53,
+        "Building E3": 44,
+        "Building A3": 52,
+        "Building E4": 33,
+        " Building B1": 26,
+        "Building B3": 41,
+        "Building A2": 56,
+        "Building A1": 7,
+        "Building E2": 38,
+        "Building B2": 42
+      }
+    },
+    "BR.Sao Paulo": {
+      "total": 43,
+      "Employee": 35,
+      "Contractor": 8,
+      "floors": {
+        "6th Floor": 43
+      }
+    },
+    "MX.Mexico City": {
+      "total": 13,
+      "Employee": 10,
+      "Contractor": 3,
+      "floors": {
+        "Floor 01": 13
+      }
+    },
+    "PE.Lima": {
+      "total": 33,
+      "Employee": 32,
+      "Contractor": 1,
+      "floors": {
+        "2nd Floor": 26,
+        " 3rd Floor": 7
+      }
+    },
+    "PA.Panama City": {
+      "total": 8,
+      "Employee": 7,
+      "Contractor": 1,
+      "floors": {
+        "Floor 01": 8
+      }
+    }
+  },
 
 
 
@@ -214,6 +143,9 @@ import ChartCard from '../components/ChartCard';
 import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
 import { partitionList } from '../services/occupancy.service';
 import seatCapacities from '../data/seatCapacities';
+import PieChartCard    from '../components/PieChartCard';
+import ColumnChartCard from '../components/ColumnChartCard';
+import BarChartCard    from '../components/BarChartCard';
 
  
 
@@ -235,6 +167,26 @@ const colorsMap = {
   'BR.Sao Paulo':             ['#FFD666', '#fcf3cf', '#2ecc71', '#ec7063'],
   'PA.Panama City':           ['#FFE599', '#fcf3cf', '#2ecc71', '#ec7063'],
 };
+
+
+const chartTypeMap = {
+  'CR.Costa Rica Partition': 'pie',
+  'AR.Cordoba':               'column',
+  'BR.Sao Paulo':             'bar',
+  // fallback for the rest:
+  'MX.Mexico City':           'bar',
+  'PE.Lima':                  'bar',
+  'PA.Panama City':           'bar',
+};
+
+
+// your WU brand palette:
+const wuPalette = {
+  primary:   '#FFC107',  // WU gold
+  secondary: '#000000',  // WU black
+  accent:    '#E57373',  // red accent
+};
+
 
 
 export default function Dashboard() {
@@ -483,81 +435,53 @@ export default function Dashboard() {
          </Box>
 
           
-
-{/* Live totals chart */}
-<Box mt={4} sx={{ width: '100%', p: 2, border: '1px solid #FFC107' }}>
-  <Box display="flex" justifyContent="space-between" alignItems="center">
-    <Typography variant="h6">Live Totals by Partition</Typography>
-    <Typography variant="body2" color="textSecondary">
-      Last updated: {lastUpdate}
-    </Typography>
-  </Box>
-
-  {loading ? (
-    <Skeleton variant="rectangular" width="100%" height={360} />
-  ) : (
-  
-    (() => {
-
-      
-
-
- const chartData = partitions.map((p, i) => {
-   const name = displayNameMap[p.name] || p.name.replace(' Partition','');
-   const headcount = p.total;
-  // const capacity  = seatCapacities[name] ?? 0;            // look up seats
-    const capacity  = seatCapacities[name] ?? 0;            // look up seats
-   const pct       = capacity ? Math.round(headcount / capacity * 100) : 0;
-   return {
-     name,
-     
-         Headcount: headcount,
-         Capacity:  capacity,
-          percentage: pct, // for your own use if needed
-            fill: colorsMap[p.name]?.[0] || '#FFC107',
-           
-           
-           
-            // breakdown: {
-            //   Employees:   p.Employee,
-            //   Contractors: p.Contractor,
-            //   ...(p.TempBadge ? { 'Temp Badge': p.TempBadge } : {}),
-            //   Capacity:    capacity,
-            //   'Load %':    pct + '%',
-            // }
-
-     breakdown: {
-       Employees:    p.Employee,
-       Contractors:  p.Contractor,
-       ...(p.TempBadge ? { 'Temp Badge': p.TempBadge } : {}),
-       'Total Seat': capacity,           // renamed
-       Usage:        pct + '%',          // renamed
-     }
-  };
- });
-
-
-      // 3) Render one ChartCard
-      return (
-
- <ChartCard
-   data={chartData}
-   dataKey="Headcount"
-   chartHeight={360}
-   colors={{
-     head: '#2ecc71',   // Green 
-     cap:  '#FDDA0D'    // Red
-   }}
-   axisProps={{
-     xAxis: { tick: { fill: '#fff' } },
-     yAxis: { tick: { fill: '#fff' } }
-  }}
-   disableLegendToggle={true}    // new prop to prevent hide/show
- />
-      );
-    })()
-  )}
+<Box mt={4} display="flex" flexWrap="wrap" gap={1} justifyContent="space-between">
+  {loading
+    ? <Skeleton variant="rectangular" width="100%" height={220} />
+    : partitions.map(p => {
+        const key       = p.name;
+        const title     = displayNameMap[key] || key.split('.').pop();
+        const type      = chartTypeMap[key] || 'bar';
+        // prepare a simple data array: two slices or bars
+        const chartData = [
+          { name: 'Employees',   value: p.Employee },
+          { name: 'Contractors', value: p.Contractor },
+          ...(p.TempBadge ? [{ name: 'TempBadge', value: p.TempBadge }] : [])
+        ];
+        switch (type) {
+          case 'pie':
+            return (
+              <PieChartCard
+                key={key}
+                title={title}
+                data={chartData}
+                colors={[ wuPalette.primary, wuPalette.accent, wuPalette.secondary ]}
+              />
+            );
+          case 'column':
+            return (
+              <ColumnChartCard
+                key={key}
+                title={title}
+                data={chartData}
+                barColor={wuPalette.primary}
+              />
+            );
+          case 'bar':
+          default:
+            return (
+              <BarChartCard
+                key={key}
+                title={title}
+                data={chartData}
+                barColor={wuPalette.primary}
+              />
+            );
+        }
+      })
+  }
 </Box>
+
 
       </Container>
 
@@ -586,6 +510,282 @@ export default function Dashboard() {
     </>
   );
 }
+
+
+
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\BarChartCard.jsx
+
+
+
+import React from 'react';
+import { Card, CardContent, Typography } from '@mui/material';
+import { ComposedChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+
+export default function BarChartCard({ title, data, barColor }) {
+  return (
+    <Card sx={{ flex: '1 1 16%', minWidth: 200 }}>
+      <CardContent>
+        <Typography variant="subtitle1" align="center" gutterBottom>{title}</Typography>
+        <ResponsiveContainer width="100%" height={200}>
+          <ComposedChart layout="vertical" data={data} margin={{ left: 20, right: 10 }}>
+            <XAxis type="number" hide />
+            <YAxis dataKey="name" type="category" hide/>
+            <Tooltip />
+            <Bar dataKey="value" barSize={12} fill={barColor} radius={[0,4,4,0]}/>
+          </ComposedChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\ChartCard.jsx
+
+// // // main
+
+
+// // src/components/ChartCard.jsx
+// // import React, { useState } from 'react';
+// import React, { Fragment, useState } from 'react';
+// import { Card, CardContent, Typography, Box } from '@mui/material';
+// import {
+//   AreaChart,
+//   Area,
+//   Line,
+//   XAxis,
+//   YAxis,
+//   Tooltip,
+//   ResponsiveContainer,
+//   CartesianGrid,
+//   Legend,
+//   Brush,
+//   LabelList,
+//   ReferenceLine,
+// } from 'recharts';
+// import dayjs from 'dayjs';
+
+// export default function ChartCard({
+//   title,
+//   data = [],
+//   dataKey = 'value',
+//   chartHeight = 350,
+//   colors = { head: '#FFC107', cap: '#B0BEC5' },
+//   animateDuration = 800,
+//   showCrosshair = true,
+//   timeFormat = 'HH:mm:ss',
+//     axisProps = {},               // NEW
+//   tooltipFormatter = null,      // NEW
+// }) {
+//   const [hidden, setHidden] = useState({});
+//   const [activeIndex, setActiveIndex] = useState(null);
+
+//   if (!Array.isArray(data) || !data.length) {
+//     return (
+//       <Card sx={{ mb: 2 }}>
+//         <CardContent sx={{ textAlign: 'center' }}>
+//           <Typography variant="h6">{title}</Typography>
+//           <Typography variant="body2">No data to display.</Typography>
+//         </CardContent>
+//       </Card>
+//     );
+//   }
+
+//   const hasCapacity = data[0].Capacity != null;
+//   const handleLegendClick = o => {
+//     const { dataKey } = o;
+//     setHidden(prev => ({ ...prev, [dataKey]: !prev[dataKey] }));
+//   };
+
+//   return (
+//     <Card sx={{ mb: 2 }}>
+//       <CardContent>
+//         {/* Chart title */}
+//         <Typography variant="h6" gutterBottom sx={{ color: colors.head }}>
+//           {title}
+//         </Typography>
+
+//         {/* Chart container */}
+//         <Box sx={{ width: '100%', height: chartHeight }}>
+//           <ResponsiveContainer>
+//             <AreaChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+//               <defs>
+//                 <linearGradient id="colorHead" x1="0" y1="0" x2="0" y2="1">
+//                   <stop offset="50%" stopColor={colors.head} stopOpacity={0.4} />
+//                   <stop offset="95%" stopColor={colors.head} stopOpacity={0} />
+//                 </linearGradient>
+//               </defs>
+
+//               {/* Grid */}
+//               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+
+//               {/* Crosshair vertical line */}
+//               {showCrosshair && activeIndex != null && data[activeIndex] && (
+//                 <ReferenceLine
+//                   x={data[activeIndex].name}
+//                   stroke={colors.head}
+//                   strokeOpacity={0.5}
+//                 />
+//               )}
+
+//               <XAxis
+//                 dataKey="name"
+//                 tick={{ fill: '#FFF', fontWeight: 600 }}
+//                 tickFormatter={t => {
+//                   // if timestamp-like, format; else just return
+//                   return typeof t === 'number'
+//                     ? dayjs(t).format(timeFormat)
+//                     : t;
+                    
+//                 }}
+//                 label={{
+            
+//                   position: 'insideBottomRight',
+//                   offset: -0,
+//                   fill: '#FFF',
+//                   fontWeight: 600
+//                 }}
+//                 {...axisProps.xAxis}
+//               />
+
+//               <YAxis
+//                 tick={{ fill: '#FFF', fontWeight: 600 }}
+//                 label={{
+//                   value: 'Count',
+//                   angle: -90,
+//                   position: 'insideLeft',
+//                   fill: '#FFF',
+//                   fontWeight: 600
+//                 }}
+//                  {...axisProps.yAxis}
+//               />
+
+//               {/* Tooltip & Legend */}
+//                <Tooltip
+//                 contentStyle={{ backgroundColor: '#000', border: `1px solid ${colors.head}`, padding: '1rem' }}
+//                 cursor={showCrosshair}
+//                 isAnimationActive={false}
+//                 onMouseMove={o => setActiveIndex(o && o.activeTooltipIndex)}
+             
+             
+//                 content={({ active, payload }) => {
+//    if (!active || !payload || !payload.length) return null;
+//    const { breakdown = {}, name } = payload[0].payload;
+//    return (
+//      <Box
+//        sx={{
+//          backgroundColor: '#000',     // ensure black background
+//          border: `1px solid ${colors.head}`,
+//         padding: 1,
+//          borderRadius: 1,
+//        }}
+//      >
+//        <Typography variant="subtitle2" sx={{ color: colors.head, mb: 1 }}>
+//          {name}
+//        </Typography>
+//        {Object.entries(breakdown).map(([key, val]) => (
+//          <Typography key={key} variant="body2" sx={{ color: '#FFF' }}>
+//            {key}: {val}
+//          </Typography>
+//        ))}
+//      </Box>
+//    );
+//  }}
+//                />
+
+//               <Legend wrapperStyle={{ color: '#FFF' }} onClick={handleLegendClick} />
+
+//               {/* Brush for zooming/panning */}
+//               {/* <Brush
+//                 dataKey="name"
+//                 height={30}
+//                 stroke={colors.head}
+//                 travellerWidth={10}
+//                 updateId={data.length} // reset on data change
+//               /> */}
+
+//               {/* Capacity area */}
+//               {hasCapacity && !hidden.Capacity && (
+//                 <Area
+//                   type="monotone"
+//                   dataKey="Capacity"
+//                   name="Capacity"
+//                   stroke={colors.cap}
+//                   fill={`${colors.cap}33`}
+//                   dot={false}
+//                 >
+//                   <LabelList
+//                     dataKey="Capacity"
+//                     position="top"
+//                     style={{ fill: colors.cap, fontSize: 10, fontWeight: 600 }}
+//                   />
+//                 </Area>
+//               )}
+
+//               {/* Headcount area */}
+//               {!hidden.Headcount && (
+//                 <Area
+//                   type="monotone"
+//                   dataKey={hasCapacity ? 'Headcount' : dataKey}
+//                   name={hasCapacity ? 'Headcount' : dataKey}
+//                   stroke={colors.head}
+//                   fill="url(#colorHead)"
+//                   dot={false}
+//                   isAnimationActive
+//                   animationDuration={animateDuration}
+//                 >
+//                   <LabelList
+//                     dataKey={hasCapacity ? 'Headcount' : dataKey}
+//                     position="top"
+//                     style={{ fill: '#FFF', fontSize: 12, fontWeight: 600 }}
+//                   />
+//                 </Area>
+//               )}
+
+//               {/* Overlay line for crisp “spark” */}
+//               {!hidden.Headcount && (
+//                 <Line
+//                   type="monotone"
+//                   dataKey={hasCapacity ? 'Headcount' : dataKey}
+//                   stroke={colors.head}
+//                   strokeWidth={2}
+//                   dot={false}
+//                   isAnimationActive
+//                   animationDuration={animateDuration}
+//                   activeDot={{ r: 6, stroke: '#FFF', strokeWidth: 2 }}
+//                 />
+//               )}
+//             </AreaChart>
+//           </ResponsiveContainer>
+//         </Box>
+//       </CardContent>
+//     </Card>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -829,5 +1029,69 @@ export default function ChartCard({
 
 
 
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\ColumnChartCard.jsx
+
+
+import React from 'react';
+import { Card, CardContent, Typography } from '@mui/material';
+import { ComposedChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+
+export default function ColumnChartCard({ title, data, barColor }) {
+  return (
+    <Card sx={{ flex: '1 1 16%', minWidth: 200 }}>
+      <CardContent>
+        <Typography variant="subtitle1" align="center" gutterBottom>{title}</Typography>
+        <ResponsiveContainer width="100%" height={200}>
+          <ComposedChart data={data} margin={{ top: 10, bottom: 10 }}>
+            <XAxis dataKey="name" hide />
+            <YAxis hide />
+            <Tooltip />
+            <Bar dataKey="value" barSize={20} fill={barColor} radius={[4,4,0,0]} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\PieChartCard.jsx
+
+
+import React from 'react';
+import { Card, CardContent, Typography } from '@mui/material';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+export default function PieChartCard({ title, data, colors }) {
+  return (
+    <Card sx={{ flex: '1 1 16%', minWidth: 200 }}>
+      <CardContent>
+        <Typography variant="subtitle1" align="center" gutterBottom>{title}</Typography>
+        <ResponsiveContainer width="100%" height={200}>
+          <PieChart>
+            <Pie
+              data={data}
+              dataKey="value"
+              nameKey="name"
+              innerRadius={40}
+              outerRadius={80}
+              paddingAngle={4}
+            >
+              {data.map((_, idx) => (
+                <Cell key={idx} fill={colors[idx % colors.length]} />
+              ))}
+            </Pie>
+            <Tooltip/>
+            <Legend verticalAlign="bottom" height={30}/>
+          </PieChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
 
 
