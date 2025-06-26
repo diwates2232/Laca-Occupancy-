@@ -1,3 +1,76 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend
+} from 'recharts';
+
+export default function PartitionOverviewChart({ data }) {
+  const navigate = useNavigate();
+
+  const handleBarClick = (entry, index) => {
+    // assuming your partition keys line up by index:
+    navigate(`/partitions/${encodeURIComponent(entry.name)}`);
+  };
+
+  return (
+    <ResponsiveContainer width="100%" height={360}>
+      <ComposedChart
+        data={data}
+        margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
+        onClick={(e) => {
+          if (e && e.activePayload && e.activePayload[0]) {
+            handleBarClick(e.activePayload[0].payload);
+          }
+        }}
+      >
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="name" tick={{ fontWeight: 600 }} />
+        <YAxis tick={{ fontWeight: 600 }} />
+        <Tooltip />
+        <Legend verticalAlign="top" />
+        <Bar
+          dataKey="Capacity"
+          name="Total Seats"
+          barSize={20}
+          fill="#FDDA0D"
+        />
+        <Line
+          type="monotone"
+          dataKey="Headcount"
+          name="Headcount"
+          stroke="#2ecc71"
+          strokeWidth={2}
+          dot={false}
+        />
+      </ComposedChart>
+    </ResponsiveContainer>
+  );
+}
+
+
+
+
+import PartitionOverviewChart from '../components/PartitionOverviewChart';
+// …
+<PartitionOverviewChart data={chartData} />
+
+
+
+
+
+
+
+
+
+
 // src/pages/Dashboard.jsx
 
 import React, { useEffect, useState } from 'react';
