@@ -1,3 +1,50 @@
+-    // 1) True "Out of office" → full eviction
+-    if (Direction === 'OutDirection' && zone === 'out of office') {
+-      uniquePeople.delete(dedupKey);
+-      delete current[dedupKey];
+-      continue;
+-    }
+-
+-    // ─── 2) Other OutDirection → maybe eviction, maybe keep
+-    if (Direction === 'OutDirection') {
+-      // If this OutDirection is genuinely “Outer Area,” keep them:
+-      if (zoneRaw.endsWith('Outer Area')) {
+-        uniquePeople.set(dedupKey, PersonnelType);
+-        current[dedupKey] = { …evt, zone: zoneRaw, door: Door };
+-      } else {
+-        // Everything else = eviction
+-        uniquePeople.delete(dedupKey);
+-        delete current[dedupKey];
+-      }
+-      continue;
+-    }
++    // ─── OutDirection events only evict on a true "Out of office"
++    if (Direction === 'OutDirection') {
++      if (zoneRaw === 'Out of office') {
++        uniquePeople.delete(dedupKey);
++        delete current[dedupKey];
++      }
++      // otherwise: do nothing (leave them in current)
++      continue;
++    }
+
+
+
+// 4) Catch‐all eviction
+if (Direction !== 'InDirection' && Direction !== 'OutDirection') {
+  uniquePeople.delete(dedupKey);
+  delete current[dedupKey];
+}
+
+
+
+
+
+
+
+
+
+
 -    if (Direction === 'OutDirection') {
 -      // If this OutDirection is genuinely “Outer Area,” keep them:
 -      if (zone.toLowerCase()) {
