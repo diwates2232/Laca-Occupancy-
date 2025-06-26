@@ -1,529 +1,14 @@
-// src/services/occupancy.service.js
+Now Read Below Chart section 
+Below Live Totals by Partition charts Are not Look good 
+can you make this charts like We have sepreately display in another page for partation details ,
 
-/**
- * Returns pre-aggregated today & realtime counts, grouped by partition and floor.
- */
-exports.fetchLiveSummaryAgg = async () => {
-  const pool = await poolPromise;
-  const partitionsSql = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
+there is 2 option suggest me Which Option is best .
+1) Convert Current Chart into Coilumn Line Chart , (Column for seat Capacity and Line For HeadCount )
+2) Build Partation Wise Small diffrent diffrent Charts Where Display seat Capacity as headCount , also Building Wise Count , Floor Wsie Count , also another details 
+So Motive is All Region HeadCount in Details is Covered in one page and for details and Historical already ahve a seprate pages .
 
-  // 1) first-swipe per person today = headcount
-  // 2) last-swipe per person = realtime IN/OUT
-  //    then GROUP BY PartitionName2, Direction, In/Out floor
-  const query = `
-    WITH Raw AS (
-      SELECT
-        DATEADD(MINUTE, -t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
-        t1.PartitionName2,
-        t1.ObjectIdentity1    AS PersonGUID,
-        t3.Name               AS PersonnelType,
-        t1.ObjectName2        AS Door,
-        t5d.value             AS Direction
-      FROM [ACVSUJournal_00010028].[dbo].[ACVSUJournalLog] AS t1
-      ...
-      WHERE
-        t1.MessageType = 'CardAdmitted'
-        AND t1.PartitionName2 IN (${partitionsSql})
-        AND CONVERT(DATE, DATEADD(MINUTE, -t1.MessageLocaleOffset, t1.MessageUTC)) = CONVERT(DATE, GETDATE())
-    ),
-    FirstSwipe AS (
-      SELECT
-        PersonGUID, MIN(LocaleMessageTime) AS FirstTime
-      FROM Raw
-      GROUP BY PersonGUID
-    ),
-    LastSwipe AS (
-      SELECT
-        PersonGUID, MAX(LocaleMessageTime) AS LastTime
-      FROM Raw
-      GROUP BY PersonGUID
-    ),
-    TodayCounts AS (
-      SELECT
-        COUNT(*) AS TotalToday,
-        SUM(CASE WHEN PersonnelType LIKE '%Temp Badge%' THEN 1 ELSE 0 END) AS TempBadgeToday,
-        SUM(CASE WHEN PersonnelType IN ('Employee','Terminated Employee','Terminated Personnel') THEN 1 ELSE 0 END) AS EmployeeToday,
-        SUM(CASE WHEN PersonnelType NOT IN ('Employee','Terminated Employee','Terminated Personnel') AND PersonnelType NOT LIKE '%Temp Badge%' THEN 1 ELSE 0 END) AS ContractorToday
-      FROM FirstSwipe f
-      JOIN Raw r ON r.PersonGUID = f.PersonGUID AND r.LocaleMessageTime = f.FirstTime
-    ),
-    RealTimeCounts AS (
-      SELECT
-        r.PartitionName2            AS Partition,
-        FLOOR(CASE WHEN d.Value='InDirection' THEN entry.inDirectionFloor ELSE entry.outDirectionFloor END) AS Floor,
-        SUM(1)                      AS Headcount,
-        SUM(CASE WHEN r.PersonnelType LIKE '%Temp Badge%' THEN 1 ELSE 0 END) AS TempBadge,
-        SUM(CASE WHEN r.PersonnelType IN ('Employee','Terminated Employee','Terminated Personnel') THEN 1 ELSE 0 END) AS Employee,
-        SUM(CASE WHEN r.PersonnelType NOT IN ('Employee','Terminated Employee','Terminated Personnel') AND r.PersonnelType NOT LIKE '%Temp Badge%' THEN 1 ELSE 0 END) AS Contractor
-      FROM LastSwipe l
-      JOIN Raw r ON r.PersonGUID = l.PersonGUID AND r.LocaleMessageTime = l.LastTime
-      JOIN [YourDoorMapTableOrTVF] entry
-        ON entry.Partition = r.PartitionName2 AND entry.Door = r.Door
-      JOIN [ACVSUJournalLogxmlShred] d
-        ON r.XmlGUID = d.GUID AND d.Value IN ('InDirection','OutDirection')
-      WHERE NOT (
-        d.Value = 'OutDirection'
-        AND (entry.outDirectionFloor = 'Out of office')
-      )
-      GROUP BY r.PartitionName2, entry.inDirectionFloor, entry.outDirectionFloor, d.Value
-    )
-    SELECT
-      t.TotalToday, t.EmployeeToday, t.ContractorToday, t.TempBadgeToday,
-      rt.Partition, rt.Floor, rt.Headcount, rt.Employee, rt.Contractor, rt.TempBadge
-    FROM TodayCounts t CROSS JOIN (SELECT DISTINCT 1 AS dummy) x
-    JOIN RealTimeCounts rt ON 1=1
-    ORDER BY rt.Partition, rt.Floor;
-  `;
 
-  const result = await pool.request().query(query);
-  return result.recordset;
-};
-
-
-
-
-
-
-
-
-
-Now Read all Backend and Frontend filees carefully , Issue is there Ui takes More time to load data , 
-so check each file line by line and solve the issue carefully
-
-//C:\Users\W0024618\Desktop\laca-occupancy-backend\src\controllers\occupancy.controller.js
-
-
-const service = require('../services/occupancy.service');
-const doorMap = require('../utils/doorMap'); 
-
-
-
-exports.getLiveOccupancy = async (req, res) => {
-  try {
-    const data = await service.fetchLiveOccupancy();
-    res.json({ success: true, count: data.length, data });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Live occupancy fetch failed' });
-  }
-};
-
-
-
-
-/**
- * Returns true if this PersonnelType counts as Employee.
- * Everything else (including blank) counts as Contractor.
- */
-
-function isEmployeeType(pt) {
-  return pt === 'Employee'
-      || pt === 'Terminated Employee'
-      || pt === 'Terminated Personnel';
-}
-
-/**
- * Returns true if this PersonnelType is a Temp Badge.
- */
-// function isTempBadgeType(pt) {
-//   return pt === 'Temp Badge';
-// }
-
-
-function isTempBadgeType(pt) {
-  // handle both variants from the database
-  return pt === 'Temp Badge' || pt === 'TempBadge';
-}
-
-
-
-/**
- * Look up floor for a given record by matching door + partition.
- */
-function lookupFloor(partition, door, direction, unmappedSet) {
-  const entry = doorMap.find(d =>
-    d.partition === partition && d.door === door
-  );
-  if (!entry) {
-    unmappedSet.add(`${partition} | ${door}`);
-    return null;
-  }
-  return direction === 'InDirection'
-    ? entry.inDirectionFloor
-    : entry.outDirectionFloor;
-}
-
-exports.getLiveSummary = async (req, res) => {
-  try {
-    const swipes = await service.fetchLiveOccupancy();
-
-    // 1. TODAY’S HEADCOUNT: first swipe per person
-    const firstByPerson = {};
-    swipes.forEach(r => {
-      const prev = firstByPerson[r.PersonGUID];
-      const t = new Date(r.LocaleMessageTime).getTime();
-      if (!prev || t < new Date(prev.LocaleMessageTime).getTime()) {
-        firstByPerson[r.PersonGUID] = r;
-      }
-    });
-    const todayRecs = Object.values(firstByPerson);
-    const today = { total: 0, Employee: 0, Contractor: 0, TempBadge: 0 };
-    todayRecs.forEach(r => {
-      today.total++;
-      if (isTempBadgeType(r.PersonnelType)) today.TempBadge++;
-      else if (isEmployeeType(r.PersonnelType)) today.Employee++;
-      else today.Contractor++;
-    });
-
-    // 2. REAL-TIME: last swipe per person, only InDirection
-    const lastByPerson = {};
-    swipes.forEach(r => {
-      const prev = lastByPerson[r.PersonGUID];
-      const t = new Date(r.LocaleMessageTime).getTime();
-      if (!prev || t > new Date(prev.LocaleMessageTime).getTime()) {
-        lastByPerson[r.PersonGUID] = r;
-      }
-    });
-
-    const realtime = {};
-    const unmappedDoors = new Set();
-    Object.values(lastByPerson).forEach(r => {
-      // if (r.Direction !== 'InDirection') return;
-     // ● only remove if this door truly maps to "Out of office"
-     if (r.Direction === 'OutDirection') {
-       const floor = lookupFloor(r.PartitionName2, r.Door, r.Direction, unmappedDoors);
-       if (floor === 'Out of office' || floor?.trim() === 'Out of office') {
-         return; // true exit → evict
-       }
-       // otherwise fall through and count them
-     }
-
-
-      const p = r.PartitionName2;
-      // initialize, including TempBadge for CR
-      if (!realtime[p]) {
-        realtime[p] = { total: 0, Employee: 0, Contractor: 0 };
-        if (p === 'CR.Costa Rica Partition') realtime[p].TempBadge = 0;
-        realtime[p].floors = {};
-      }
-      realtime[p].total++;
-      if (isTempBadgeType(r.PersonnelType)) realtime[p].TempBadge++;
-      else if (isEmployeeType(r.PersonnelType)) realtime[p].Employee++;
-      else realtime[p].Contractor++;
-
-      const floor = lookupFloor(p, r.Door, r.Direction, unmappedDoors) || 'Unmapped';
-      realtime[p].floors[floor] = (realtime[p].floors[floor] || 0) + 1;
-    });
-
-    if (unmappedDoors.size) {
-      console.warn('Unmapped doors:\n' + Array.from(unmappedDoors).join('\n'));
-    }
-
-    return res.json({
-      success: true,
-      today,
-      realtime,
-      details: Object.values(lastByPerson)
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, message: 'Live summary failed' });
-  }
-};
-
-
-exports.getHistoricalOccupancy = async (req, res) => {
-  const location = req.params.location || null;
-  try {
-    const raw = await service.fetchHistoricalOccupancy(location);
-
-    // first swipe per person per date
-    const byDate = raw.reduce((acc, r) => {
-      const iso = (r.LocaleMessageTime instanceof Date)
-        ? r.LocaleMessageTime.toISOString()
-        : r.LocaleMessageTime;
-      const date = iso.slice(0,10);
-      acc[date] = acc[date] || {};
-      const prev = acc[date][r.PersonGUID];
-      if (!prev || new Date(iso) < new Date(prev.LocaleMessageTime)) {
-        acc[date][r.PersonGUID] = { ...r, LocaleMessageTime: iso };
-      }
-      return acc;
-    }, {});
-
-    const summaryByDate = [];
-    const details = [];
-
-    Object.keys(byDate).sort().forEach(date => {
-      const recs = Object.values(byDate[date]);
-      details.push(...recs);
-
-      // initialize region counts, including TempBadge for CR location
-      const regionCounts = { total: 0, Employee: 0, Contractor: 0 };
-      if (location === 'CR.Costa Rica Partition') regionCounts.TempBadge = 0;
-
-      const partitionCounts = {};
-      recs.forEach(r => {
-        regionCounts.total++;
-        if (isTempBadgeType(r.PersonnelType)) regionCounts.TempBadge++;
-        else if (isEmployeeType(r.PersonnelType)) regionCounts.Employee++;
-        else regionCounts.Contractor++;
-
-        if (!location) {
-          const p = r.PartitionName2;
-          if (!partitionCounts[p]) {
-            partitionCounts[p] = { total: 0, Employee: 0, Contractor: 0 };
-            if (p === 'CR.Costa Rica Partition') partitionCounts[p].TempBadge = 0;
-          }
-          partitionCounts[p].total++;
-          if (isTempBadgeType(r.PersonnelType)) partitionCounts[p].TempBadge++;
-          else if (isEmployeeType(r.PersonnelType)) partitionCounts[p].Employee++;
-          else partitionCounts[p].Contractor++;
-        }
-      });
-
-      summaryByDate.push({
-        date,
-        day: new Date(date).toLocaleDateString('en-US', { weekday:'long' }),
-        region: location
-          ? { name: location, ...regionCounts }
-          : { name: 'LACA', ...regionCounts },
-        partitions: location ? undefined : partitionCounts
-      });
-    });
-
-    return res.json({ success: true, summaryByDate, details });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, message: 'Historical fetch failed' });
-  }
-};
-
-
-
-
-
-
-// src/services/occupancy.service.js
-
-const { poolPromise, sql } = require('../config/db');
-
-const partitionList = [
-  'AR.Cordoba',
-  'BR.Sao Paulo',
-  'CR.Costa Rica Partition',
-  'MX.Mexico City',
-  'PA.Panama City',
-  'PE.Lima'
-];
-
-/**
- * Live occupancy (today) query unchanged.
- */
-exports.fetchLiveOccupancy = async () => {
-  const pool = await poolPromise;
-  const partitionsSql = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
-
-  const query = `
-    WITH CombinedQuery AS (
-      SELECT
-        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
-        t1.ObjectName1,
-        t1.ObjectName2            AS Door,
-        CASE
-          WHEN t3.Name IN ('Contractor','Terminated Contractor')
-            THEN t2.Text12
-          ELSE CAST(t2.Int1 AS NVARCHAR)
-        END                       AS EmployeeID,
-        t2.text5                  AS Text5,
-        t1.PartitionName2         AS PartitionName2,
-        t1.ObjectIdentity1        AS PersonGUID,
-        t3.Name                   AS PersonnelType,
-        COALESCE(
-          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]','varchar(50)'),
-          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID)[1]','varchar(50)'),
-          sc.value
-        )                         AS CardNumber,
-        t5a.value                 AS AdmitCode,
-        t5d.value                 AS Direction
-      FROM [ACVSUJournal_00010028].[dbo].[ACVSUJournalLog] AS t1
-      LEFT JOIN [ACVSCore].[Access].[Personnel]     AS t2
-        ON t1.ObjectIdentity1 = t2.GUID
-      LEFT JOIN [ACVSCore].[Access].[PersonnelType] AS t3
-        ON t2.PersonnelTypeId = t3.ObjectID
-      LEFT JOIN [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxmlShred] AS t5a
-        ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
-      LEFT JOIN [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxmlShred] AS t5d
-        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
-      LEFT JOIN [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxml] AS t_xml
-        ON t1.XmlGUID = t_xml.GUID
-      LEFT JOIN (
-        SELECT GUID, value
-        FROM [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxmlShred]
-        WHERE Name IN ('Card','CHUID')
-      ) AS sc
-        ON t1.XmlGUID = sc.GUID
-      WHERE
-        t1.MessageType = 'CardAdmitted'
-        AND t1.PartitionName2 IN (${partitionsSql})
-        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
-            = CONVERT(DATE, GETDATE())
-    )
-    SELECT
-      LocaleMessageTime,
-      CONVERT(VARCHAR(10), LocaleMessageTime, 23) AS Dateonly,
-      CONVERT(VARCHAR(8), LocaleMessageTime, 108) AS Swipe_Time,
-      EmployeeID,
-      PersonGUID,
-      ObjectName1,
-      Door,
-      PersonnelType,
-      CardNumber,
-      Text5,
-      PartitionName2,
-      AdmitCode,
-      Direction
-    FROM CombinedQuery
-    ORDER BY LocaleMessageTime ASC;
-  `;
-
-  const result = await pool.request().query(query);
-  return result.recordset;
-};
-
-
-/**
- * Core raw‐data fetch for the past N days, all or by location.
- */
-exports.fetchHistoricalData = async ({ days = 7, location = null }) => {
-  const pool = await poolPromise;
-  const partitionsSql = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
-  const locationFilter = location
-    ? `AND t1.PartitionName2 = @location`
-    : `AND t1.PartitionName2 IN (${partitionsSql})`;
-
-  const query = `
-    WITH Hist AS (
-      SELECT
-        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
-        t1.ObjectName1,
-        t1.ObjectName2       AS Door,
-        CASE
-          WHEN t3.Name IN ('Contractor','Terminated Contractor') THEN t2.Text12
-          ELSE CAST(t2.Int1 AS NVARCHAR)
-        END                   AS EmployeeID,
-        t2.text5             AS Text5,
-        t1.PartitionName2    AS PartitionName2,
-        t1.ObjectIdentity1   AS PersonGUID,
-        t3.Name              AS PersonnelType,
-        COALESCE(
-          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]','varchar(50)'),
-          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID)[1]','varchar(50)'),
-          sc.value
-        )                     AS CardNumber,
-        t5a.value            AS AdmitCode,
-        t5d.value            AS Direction,
-        CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC)) AS SwipeDate
-      FROM [ACVSUJournal_00010028].[dbo].[ACVSUJournalLog] AS t1
-      LEFT JOIN [ACVSCore].[Access].[Personnel]     AS t2
-        ON t1.ObjectIdentity1 = t2.GUID
-      LEFT JOIN [ACVSCore].[Access].[PersonnelType] AS t3
-        ON t2.PersonnelTypeId = t3.ObjectID
-      LEFT JOIN [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxmlShred] AS t5a
-        ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
-      LEFT JOIN [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxmlShred] AS t5d
-        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
-      LEFT JOIN [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxml] AS t_xml
-        ON t1.XmlGUID = t_xml.GUID
-      LEFT JOIN (
-        SELECT GUID, value
-        FROM [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxmlShred]
-        WHERE Name IN ('Card','CHUID')
-      ) AS sc
-        ON t1.XmlGUID = sc.GUID
-      WHERE
-        t1.MessageType = 'CardAdmitted'
-        ${locationFilter}
-        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
-            >= DATEADD(DAY, -${days}, CONVERT(DATE, GETDATE()))
-    )
-    SELECT *
-    FROM Hist
-    ORDER BY LocaleMessageTime ASC;
-  `;
-
-  const req = pool.request();
-  if (location) req.input('location', sql.NVarChar, location);
-  const result = await req.query(query);
-  return result.recordset;
-};
-
-
-/**
- * Public wrapper: always last 7 days, all or by location.
- */
-exports.fetchHistoricalOccupancy = async (location) => {
-  return exports.fetchHistoricalData({ days: 7, location: location || null });
-};
-
-module.exports.partitionList = partitionList;
-
-
-
-
-
-
-C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\hooks\useLiveOccupancy.js
-
-
-// src/hooks/useLiveOccupancy.js
-
-import { useState, useEffect, useRef } from 'react';
-import { fetchLiveSummary } from '../api/occupancy.service';
-
-export function useLiveOccupancy(interval = 1000) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const timer = useRef(null);
-
-  useEffect(() => {
-    let active = true;
-
-    async function load() {
-      try {
-        const json = await fetchLiveSummary();
-        if (!active) return;
-        setData(json);
-        setLoading(false);
-      } catch (e) {
-        if (!active) return;
-        setError(e);
-        setLoading(false);
-      }
-    }
-
-    load();
-    timer.current = setInterval(load, interval);
-
-    return () => {
-      active = false;
-      clearInterval(timer.current);
-    };
-  }, [interval]);
-
-  return { data, loading, error };
-}
-
-
-
-
-
-C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\Dashboard.jsx
-
-
-
-
+Which option is Best SUggest me 
 
 // src/pages/Dashboard.jsx
 
@@ -945,849 +430,236 @@ export default function Dashboard() {
 
 
 
-//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\History.jsx
 
-// src/pages/History.jsx
-
-import React, { useEffect, useState, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+// src/components/ChartCard.jsx
+import React, { useState, useRef } from 'react';
+import { Card, CardContent, Typography, Box } from '@mui/material';
 import {
-  Container,
-  Box,
-  Button,
-  Typography,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  Paper,
-  TextField
-} from '@mui/material';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
-import { format } from 'date-fns';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
+  AreaChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
+  LabelList,
+  ReferenceLine,
+} from 'recharts';
+import dayjs from 'dayjs';
 
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import LoadingSpinner from '../components/LoadingSpinner';
-import { fetchHistory } from '../api/occupancy.service';
+export default function ChartCard({
+  title,
+  data = [],
+  dataKey = 'value',
+  chartHeight = 350,
+  colors = { head: '#FFC107', cap: '#000000' },
+  animateDuration = 800,
+  showCrosshair = true,
+  timeFormat = 'HH:mm:ss',
+  axisProps = {},
+  tooltipFormatter = null,
+  disableLegendToggle = false,     // prevent hiding via legend click
+}) {
+  const [hidden, setHidden] = useState({});
+  const [activeIndex, setActiveIndex] = useState(null);
+  const [replayKey, setReplayKey] = useState(0);
+  const containerRef = useRef();
 
-export default function History() {
-  // Grab optional partition from URL
-  const { partition } = useParams();
-  const decodedPartition = partition ? decodeURIComponent(partition) : null;
-  // e.g. "CR" from "CR.Costa Rica Partition"
-  const filterCode = decodedPartition?.split('.')[0] || null;
-
-  const [data, setData]               = useState(null);
-  const [loading, setLoading]         = useState(true);
-  const [pickedDate, setPickedDate]   = useState(null);
-  const [showDetails, setShowDetails] = useState(false);
-
-  // 1) Summary entry for the selected date
-  const summaryEntry = useMemo(() => {
-    if (!data || !pickedDate) return null;
-    const dateStr = format(pickedDate, 'yyyy-MM-dd');
-    return data.summaryByDate.find(r => r.date === dateStr) || null;
-  }, [data, pickedDate]);
-
-  // 2) Build & filter partitionRows
-  const partitionRows = useMemo(() => {
-    if (!summaryEntry) return [];
-    const codeToCountry = {
-      AR: 'Argentina',
-      BR: 'Brazil',
-      CR: 'Costa Rica',
-      MX: 'Mexico',
-      PA: 'Panama',
-      PE: 'Peru'
-    };
-
-    return Object.entries(summaryEntry.partitions)
-      .filter(([key]) =>
-        !filterCode ? true : key.startsWith(filterCode + '.')
-      )
-      .map(([key, vals]) => {
-        const [code, cityRaw] = key.split('.');
-        return {
-          country: codeToCountry[code] || code,
-          city: cityRaw.replace('Partition','').trim(),
-          employee: vals.Employee  ?? vals.EmployeeCount  ?? 0,
-          contractor: vals.Contractor ?? vals.ContractorCount ?? 0,
-          // only CR gets tempBadge
-          tempBadge: vals.TempBadge ?? 0,
-          total: vals.total ?? 0,
-        };
-      });
-  }, [summaryEntry, filterCode]);
-
-  // 3) Build & filter detailRows
-  const detailRows = useMemo(() => {
-    if (!data || !pickedDate) return [];
-    const dateStr = format(pickedDate, 'yyyy-MM-dd');
-    return data.details
-      // same-day only
-      .filter(r => format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd') === dateStr)
-      // only the partition(s) we care about
-      .filter(r =>
-        !filterCode
-          ? true
-          : r.PartitionName2.startsWith(filterCode + '.')
-      )
-      // only InDirection swipes count toward headcount
-      .filter(r => r.Direction === 'InDirection')
-      // dedupe by EmployeeID + PersonnelType
-      .reduce((unique, row) => {
-        // const key = `${row.EmployeeID}-${row.PersonnelType}`;
-        const key = `${row.PersonGUID}-${row.PersonnelType}`;
-        if (!unique._seen.has(key)) {
-          unique._seen.add(key);
-          unique.rows.push(row);
-        }
-        return unique;
-      }, { _seen: new Set(), rows: [] })
-      .rows;
-  }, [data, pickedDate, filterCode]);
-
-  // Fetch all on mount
-  useEffect(() => {
-    setLoading(true);
-    fetchHistory()
-      .then(json => setData(json))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) return <LoadingSpinner />;
-  if (!data)    return null;
-
-  // Export to Excel
-  const handleExport = () => {
-    const ws = XLSX.utils.json_to_sheet(
-      detailRows.map((r, i) => ({
-        Sr: i + 1,
-        Date: format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd'),
-        Time: format(new Date(r.LocaleMessageTime), 'HH:mm:ss'),
-        EmployeeID: r.EmployeeID,
-        Name: r.ObjectName1,
-        PersonnelType: r.PersonnelType,   // preserve visitor/temp badge/contractor/etc.
-        Door: r.Door,
-        Partition: r.PartitionName2
-      }))
+  if (!Array.isArray(data) || !data.length) {
+    return (
+      <Card sx={{ mb: 2 }}>
+        <CardContent sx={{ textAlign: 'center' }}>
+          <Typography variant="h6">{title}</Typography>
+          <Typography variant="body2">No data to display.</Typography>
+        </CardContent>
+      </Card>
     );
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Details');
-    const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    saveAs(new Blob([buf]), `history_${format(pickedDate, 'yyyyMMdd')}.xlsx`);
+  }
+
+  const hasCapacity = data[0].Capacity != null;
+
+  // Prevent toggling series off
+  const handleLegendClick = o => {
+    if (disableLegendToggle) return;
+    const { dataKey } = o;
+    setHidden(prev => ({ ...prev, [dataKey]: !prev[dataKey] }));
   };
 
-  const isCostaRica = filterCode === 'CR';
+  // Clicking chart area will replay animations
+  const handleChartClick = () => {
+    setReplayKey(k => k + 1);
+  };
 
   return (
-    <>
-      <Header />
+    <Card sx={{ mb: 2 }}>
+      <CardContent>
+        {/* Title */}
+        <Typography variant="h6" gutterBottom sx={{ color: colors.head }}>
+          {title}
+        </Typography>
 
-      <Container maxWidth={false} disableGutters sx={{ pt: 2, pb: 4 }}>
-        {/* DatePicker + Summary */}
-        {pickedDate && summaryEntry ? (
-          <Box display="flex" alignItems="flex-start" sx={{ px: '20px', mb: 2, gap: '10px' }}>
-            {/* Date picker */}
-            <Box sx={{ flex: '0 0 200px' }}>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DatePicker
-                  label="Select date"
-                  value={pickedDate}
-                  onChange={d => { setPickedDate(d); setShowDetails(false); }}
-                  renderInput={params => <TextField fullWidth {...params} />}
-                />
-              </LocalizationProvider>
-            </Box>
-
-            {/* Summary & Toggle */}
-            <Box sx={{ flex: 1, maxWidth: 900, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {/* Summary table */}
-              <Paper elevation={3} sx={{ px: 4, py: 3, border: '3px solid #000', borderRadius: 2 }}>
-                <Table sx={{ border: '2px solid #000' }}>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell
-                        colSpan={isCostaRica ? 6 : 5}
-                        align="center"
-                        sx={{
-                          fontWeight: 'bold',
-                          fontSize: 16,
-                          bgcolor: '#000',
-                          color: '#fff',
-                          border: '2px solid #000'
-                        }}
-                      >
-                        {format(pickedDate, 'EEEE, d MMMM, yyyy')}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow sx={{ bgcolor: '#FFC107' }}>
-                      {[
-                        'Country','City','Employee','Contractors',
-                        ...(isCostaRica ? ['Temp Badge'] : []),
-                        'Total'
-                      ].map(h => (
-                        <TableCell
-                          key={h}
-                          align={['Country','City'].includes(h) ? 'left' : 'right'}
-                          sx={{
-                            color: '#000',
-                            fontWeight: 'bold',
-                            fontSize: 14,
-                            border: '2px solid #000'
-                          }}
-                        >
-                          {h}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-
-                  <TableBody>
-                    {partitionRows.map((row,i) => (
-                      <TableRow key={i}>
-                        <TableCell sx={{ border: '2px solid #000' }}>{row.country}</TableCell>
-                        <TableCell sx={{ border: '2px solid #000' }}>{row.city}</TableCell>
-                        <TableCell align="right" sx={{ border: '2px solid #000' }}>{row.employee}</TableCell>
-                        <TableCell align="right" sx={{ border: '2px solid #000' }}>{row.contractor}</TableCell>
-                        {isCostaRica && (
-                          <TableCell align="right" sx={{ border: '2px solid #000' }}>
-                            {row.tempBadge}
-                          </TableCell>
-                        )}
-                        <TableCell
-                          align="right"
-                          sx={{
-                            backgroundColor: '#FFC107',
-                            fontWeight: 'bold',
-                            border: '2px solid #000'
-                          }}
-                        >
-                          {row.total}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-
-                    {/* Grand total row */}
-                    <TableRow sx={{ bgcolor: '#666' }}>
-                      <TableCell colSpan={2} align="right"
-                        sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
-                        Total
-                      </TableCell>
-                      <TableCell align="right"
-                        sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
-                        {partitionRows.reduce((s, r) => s + r.employee, 0)}
-                      </TableCell>
-                      <TableCell align="right"
-                        sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
-                        {partitionRows.reduce((s, r) => s + r.contractor, 0)}
-                      </TableCell>
-                      {isCostaRica && (
-                        <TableCell align="right"
-                          sx={{ color: '#fff', fontWeight: 'bold', border: '2px solid #000' }}>
-                          {partitionRows.reduce((s, r) => s + r.tempBadge, 0)}
-                        </TableCell>
-                      )}
-                      <TableCell align="right"
-                        sx={{ color: '#fff', fontWeight: 'bold', bgcolor: '#333', border: '2px solid #000' }}>
-                        {partitionRows.reduce((s, r) => s + r.total, 0)}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </Paper>
-
-              {/* See/Hide Details & Export */}
-              <Box display="flex" justifyContent="center" sx={{ mt: 1 }}>
-                <Button
-                  variant="contained"
-                  sx={{ bgcolor: '#FFC107', color: '#000' }}
-                  onClick={() => setShowDetails(v => !v)}
-                >
-                  {showDetails ? 'Hide Details' : 'See Details'}
-                </Button>
-                {showDetails && (
-                  <Button
-                    variant="outlined"
-                    sx={{ ml: 2, borderColor: '#FFC107', color: '#FFC107' }}
-                    onClick={handleExport}
-                  >
-                    Export to Excel
-                  </Button>
-                )}
-              </Box>
-            </Box>
-          </Box>
-        ) : (
-          // Only date picker
-          <Box sx={{ px: '20px', mb: 3 }}>
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <DatePicker
-                label="Select date"
-                value={pickedDate}
-                onChange={d => { setPickedDate(d); setShowDetails(false); }}
-                renderInput={params => <TextField fullWidth {...params} />}
-              />
-            </LocalizationProvider>
-            {!pickedDate && (
-              <Typography variant="body1" color="textSecondary" sx={{ mt: 2 }}>
-                Please pick a date to view region summary.
-              </Typography>
-            )}
-          </Box>
-        )}
-
-        {/* Details table */}
-        {showDetails && (
-          <Box display="flex" justifyContent="center" mb={2} sx={{ width:'100%' }}>
-            <Paper
-              elevation={1}
-              sx={{
-                px: '40px',
-                py: 1,
-                width: '100%',
-                border: '3px solid #000',
-                borderRadius: 2,
+        {/* Chart */}
+        <Box
+          ref={containerRef}
+          sx={{ width: '100%', height: chartHeight, cursor: 'pointer' }}
+          onClick={handleChartClick}
+        >
+          <ResponsiveContainer key={replayKey}>
+            <AreaChart
+              data={data}
+              margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
+              onMouseMove={e => {
+                if (e && e.activeTooltipIndex != null) {
+                  setActiveIndex(e.activeTooltipIndex);
+                }
               }}
             >
-              {detailRows.length > 0 ? (
-                <Table sx={{ border: '2px solid #000', borderCollapse: 'collapse' }}>
-                  <TableHead>
-                    <TableRow sx={{ bgcolor: '#000' }}>
-                      {[
-                        'Sr','Date','Time',
-                        'Employee ID','Name','Personnel Type',
-                        'Door','Partition'
-                      ].map(h => (
-                        <TableCell
-                          key={h}
-                          align="center"
-                          sx={{
-                            color: '#FFC107',
-                            fontWeight: 'bold',
-                            fontSize: 14,
-                            border: '2px solid #000',
-                          }}
-                        >
-                          {h}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {detailRows.map((r, i) => (
-                      <TableRow key={`${r.PersonGUID}-${i}`}>
-                        <TableCell sx={{ border: '2px solid #000' }}>{i + 1}</TableCell>
-                        <TableCell sx={{ border: '2px solid #000' }}>
-                          {format(new Date(r.LocaleMessageTime), 'yyyy-MM-dd')}
-                        </TableCell>
-                        <TableCell sx={{ border: '2px solid #000' }}>
-                          {format(new Date(r.LocaleMessageTime), 'HH:mm:ss')}
-                        </TableCell>
-                        <TableCell sx={{ border: '2px solid #000' }}>{r.EmployeeID}</TableCell>
-                        <TableCell sx={{ border: '2px solid #000' }}>{r.ObjectName1}</TableCell>
-                        <TableCell sx={{ border: '2px solid #000' }}>{r.PersonnelType}</TableCell>
-                        <TableCell sx={{ border: '2px solid #000' }}>{r.Door}</TableCell>
-                        <TableCell sx={{ border: '2px solid #000' }}>{r.PartitionName2}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: '#666',
-                    textAlign: 'center',
-                    mt: 2,
-                    fontStyle: 'italic',
-                  }}
-                >
-                  No swipe records found for this date.
-                </Typography>
-              )}
-            </Paper>
-          </Box>
-        )}
-      </Container>
+              {/* Gradients */}
+              <defs>
+                <linearGradient id="colorHead" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="50%" stopColor={colors.head} stopOpacity={0.4} />
+                  <stop offset="95%" stopColor={colors.head} stopOpacity={0} />
+                </linearGradient>
+              </defs>
 
-      <Footer />
-    </>
-  );
-}
+              {/* Grid */}
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
 
-
-
-
-
-
-
-
-
-//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\PartitionDetail.jsx
-
-// src/pages/PartitionDetail.jsx
-import React, { useEffect, useState } from "react";
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  CircularProgress,
-} from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
-
-import SummaryCard from "../components/SummaryCard";
-import ChartCard from "../components/ChartCard";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import LoadingSpinner from "../components/LoadingSpinner";
-
-import { fetchLiveSummary, fetchHistory } from "../api/occupancy.service";
-import { lookupFloor } from "../utils/floorLookup";
-
-import buildingCapacities from "../data/buildingCapacities";
-
-import GroupIcon from "@mui/icons-material/Group";
-import TrackChangesIcon from "@mui/icons-material/TrackChanges";
-import PeopleIcon from "@mui/icons-material/People";
-import BusinessCenterIcon from "@mui/icons-material/BusinessCenter";
-
-export default function PartitionDetail() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-
-  const [liveSummary, setLiveSummary] = useState(null);
-  const [history, setHistory] = useState(null);
-  const [historyLoading, setHistoryLoading] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState("");
-
-  // Auto‐refresh live summary
-  useEffect(() => {
-    let timer;
-    async function loadLive() {
-      const json = await fetchLiveSummary();
-      setLiveSummary(json);
-      setLastUpdate(new Date().toLocaleTimeString());
-    }
-    loadLive();
-    timer = setInterval(loadLive, 1000);
-    return () => clearInterval(timer);
-  }, [partition]);
-
-  // Load historical summary once
-  useEffect(() => {
-    setHistoryLoading(true);
-    fetchHistory(partition).then((json) => {
-      setHistory(json);
-      setHistoryLoading(false);
-    });
-  }, [partition]);
-
-  if (!liveSummary || !history) return <LoadingSpinner />;
-
-  // Totals for cards
-  const lastDay = history.summaryByDate.at(-1);
-  const partToday = lastDay.region;
-  const live = liveSummary.realtime[partition] || {
-    total: 0,
-    Employee: 0,
-    Contractor: 0,
-    TempBadge: 0,
-    floors: {},
-  };
-
-  // Build floorEntries with capacity
-  const floorEntries = Object.entries(live.floors).map(([floor, cnt]) => {
-    const name     = floor.trim();
-    const capacity = buildingCapacities[name] ?? 0;
-    const pct      = capacity ? Math.round((cnt / capacity) * 100) : 0;
-
-    return {
-      name,
-      Headcount: cnt,
-      Capacity:  capacity,
-      breakdown: {
-        Headcount: cnt,
-      'Total Seat': capacity,           // renamed
-       Usage:        pct + '%',          // renamed
-      },
-    };
-  });
-
-  return (
-    <>
-      <Header />
-
-      <Box component="main" sx={{ pt: 1, pb: 1 }}>
-        <Container maxWidth={false} disableGutters>
-          {/* Back button */}
-          <Box display="flex" alignItems="center" mb={1} sx={{ px: "20px" }}>
-            <Button size="small" onClick={() => navigate(-1)}>
-              ← Back
-            </Button>
-          </Box>
-
-          {/* Six‐card partition summary */}
-          <Box display="flex" flexWrap="wrap" gap={1} mb={2} sx={{ px: "20px" }}>
-            {[
-              {
-                title: `Today's Total Headcount`,
-                value: historyLoading ? <CircularProgress size={20} /> : partToday.total,
-                icon: <GroupIcon sx={{ color: "#E57373", fontSize: 36 }} />,
-                border: "#FFD666",
-              },
-              {
-                title: `Today's Employees Count`,
-                value: historyLoading ? <CircularProgress size={20} /> : partToday.Employee,
-                icon: <PeopleIcon sx={{ color: "#81C784", fontSize: 36 }} />,
-                border: "#81C784",
-              },
-              {
-                title: `Today's Contractors Count`,
-                value: historyLoading ? <CircularProgress size={20} /> : partToday.Contractor,
-                icon: <BusinessCenterIcon sx={{ color: "#64B5F6", fontSize: 36 }} />,
-                border: "#FFE599",
-              },
-              {
-                title: `Realtime Headcount`,
-                value: live.total,
-                icon: <TrackChangesIcon sx={{ color: "#BA68C8", fontSize: 36 }} />,
-                border: "#FFF2CC",
-              },
-              {
-                title: `Realtime Employees Count`,
-                value: live.Employee,
-                icon: <PeopleIcon sx={{ color: "#FFB74D", fontSize: 36 }} />,
-                border: "#FFD666",
-              },
-              {
-                title: `Realtime Contractors Count`,
-                value: live.Contractor,
-                icon: <BusinessCenterIcon sx={{ color: "#4DB6AC", fontSize: 36 }} />,
-                border: "#FFE599",
-              },
-            ].map((card) => (
-              <Box key={card.title} sx={{ flex: "1 1 calc(16.66% - 8px)" }}>
-                <SummaryCard
-                  title={card.title}
-                  total={card.value}
-                  stats={[]}
-                  icon={card.icon}
-                  sx={{
-                    height: 140,
-                    border: `1px solid ${card.border}`,
-                  }}
+              {/* Crosshair */}
+              {showCrosshair && activeIndex != null && data[activeIndex] && (
+                <ReferenceLine
+                  x={data[activeIndex].name}
+                  stroke={colors.head}
+                  strokeOpacity={0.5}
                 />
-              </Box>
-            ))}
-          </Box>
-
-          {/* Floor‐capacity chart */}
-          <Box mb={4} sx={{ px: "20px", p: 2, border: "2px solid #FFC107" }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-              <Typography variant="h6">Live Floor Headcount against Occupancy</Typography>
-              <Typography variant="body2" color="textSecondary">
-                Last updated: {lastUpdate}
-              </Typography>
-            </Box>
-
-            <ChartCard
-              data={floorEntries}
-              dataKey="Headcount"
-              chartHeight={320}
-              colors={{ head: "#28B463", cap: "#FDDA0D" }}
-              axisProps={{
-                xAxis: { angle: -0, textAnchor: "end", tick: { fill: "#fff" } },
-                yAxis: { tick: { fill: "#fff" } },
-              }}
-            />
-          </Box>
-        </Container>
-      </Box>
-
-      <Footer />
-    </>
-  );
-}
-
-
-
-
-
-
-
-//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\pages\PartitionDetailDetails.jsx
-
-// src/pages/PartitionDetailDetails.jsx
-import React, { useEffect, useState, useMemo } from "react";
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  TextField,
-  TableContainer,
-  Paper,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-} from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import LoadingSpinner from "../components/LoadingSpinner";
-import DataTable from "../components/DataTable";
-import { fetchLiveSummary } from "../api/occupancy.service";
-import { lookupFloor } from "../utils/floorLookup";
-
-export default function PartitionDetailDetails() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-
-  const [details, setDetails] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [expandedFloor, setExpandedFloor] = useState(null);
-
-  // Initial load on partition change: show spinner
-  useEffect(() => {
-    let isMounted = true;
-    setLoading(true);
-    fetchLiveSummary().then(json => {
-      if (!isMounted) return;
-      const det = json.details
-        .filter(r => r.PartitionName2 === partition && r.Direction === "InDirection")
-        .map(r => ({
-          ...r,
-          floor: lookupFloor(r.PartitionName2, r.Door, r.Direction),
-        }));
-      setDetails(det);
-      setLastUpdate(new Date().toLocaleTimeString());
-      setLoading(false);
-    });
-    return () => {
-      isMounted = false;
-    };
-  }, [partition]);
-
-  // Subsequent refresh every second, without spinner
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      const json = await fetchLiveSummary();
-      const det = json.details
-        .filter(r => r.PartitionName2 === partition && r.Direction === "InDirection")
-        .map(r => ({
-          ...r,
-          floor: lookupFloor(r.PartitionName2, r.Door, r.Direction),
-        }));
-      setDetails(det);
-      setLastUpdate(new Date().toLocaleTimeString());
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [partition]);
-
-  // Group by floor
-  const floorMap = useMemo(() => {
-    const m = {};
-    details.forEach(r => {
-      m[r.floor] = m[r.floor] || [];
-      m[r.floor].push(r);
-    });
-    return m;
-  }, [details]);
-
-  // Filter + sort
-  const displayed = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    return Object.entries(floorMap)
-      .filter(([floor, emps]) => {
-        if (!term) return true;
-        if (floor.toLowerCase().includes(term)) return true;
-        return emps.some(r =>
-          r.ObjectName1.toLowerCase().includes(term) ||
-          r.EmployeeID.toLowerCase().includes(term)
-        );
-      })
-      .sort((a, b) => b[1].length - a[1].length);
-  }, [floorMap, searchTerm]);
-
-  const columns = [
-    { field: "EmployeeID", headerName: "Emp ID" },
-    { field: "ObjectName1", headerName: "Name" },
-    { field: "LocaleMessageTime", headerName: "Swipe Time" },
-    { field: "PersonnelType", headerName: "Type" },
-    { field: "CardNumber", headerName: "Card" },
-    { field: "Door", headerName: "Door" },
-  ];
-
-  return (
-    <>
-      <Header />
-
-      <Box component="main" sx={{ pt: 1, pb: 1 }}>
-        <Container maxWidth={false} disableGutters>
-          {/* Back */}
-          <Box display="flex" alignItems="center" mb={2} sx={{ px: "20px" }}>
-            <Button size="small" onClick={() => navigate(-1)}>
-              ← Back to Overview
-            </Button>
-          </Box>
-
-          {/* Floor Details + Search */}
-          <Box display="flex" alignItems="center" gap={2} mb={2} sx={{ px: "20px" }}>
-            <Typography variant="h6">Floor Details</Typography>
-            <Typography variant="body2" color="textSecondary">
-              Last updated: {lastUpdate}
-            </Typography>
-            <TextField
-              size="small"
-              placeholder="Search floor / emp…"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
-          </Box>
-
-          {/* Show spinner only during initial load */}
-          {loading ? (
-            <Box sx={{ px: "20px", py: 8 }}>
-              <LoadingSpinner />
-            </Box>
-          ) : (
-            <>
-              {/* Edge-to-edge cards */}
-              <Box
-                component="section"
-                sx={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  width: "100%",
-                  margin: 0,
-                  padding: 0,
-                }}
-              >
-                {displayed.map(([floor, emps]) => (
-                  <Box
-                    key={floor}
-                    sx={{
-                      width: "50%",
-                      boxSizing: "border-box",
-                      p: "20px",
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        border: "1px solid #FFC107",
-                        borderRadius: 2,
-                        height: "100%",
-                      }}
-                    >
-                      <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                        {floor} (Total {emps.length})
-                      </Typography>
-                      <TableContainer component={Paper} variant="outlined" sx={{ mb: 1 }}>
-                        <Table size="small">
-                          <TableHead>
-                            <TableRow>
-                              {["Emp ID", "Name", "Swipe Time", "Type", "Card", "Door"].map(h => (
-                                <TableCell key={h} sx={{ fontWeight: "bold" }}>
-                                  {h}
-                                </TableCell>
-                              ))}
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {emps.slice(0, 10).map((r, i) => {
-                              const term = searchTerm.trim().toLowerCase();
-                              const isMatch =
-                                term &&
-                                (r.ObjectName1.toLowerCase().includes(term) ||
-                                  r.EmployeeID.toLowerCase().includes(term));
-                              return (
-                                <TableRow
-                                  key={`${r.PersonGUID}-${i}`}
-                                  sx={isMatch ? { backgroundColor: "rgba(255, 235, 59, 0.3)" } : {}}
-                                >
-                                  <TableCell>{r.EmployeeID}</TableCell>
-                                  <TableCell>{r.ObjectName1}</TableCell>
-                                  <TableCell>
-                                    {new Date(r.LocaleMessageTime).toLocaleTimeString()}
-                                  </TableCell>
-                                  <TableCell>{r.PersonnelType}</TableCell>
-                                  <TableCell>{r.CardNumber}</TableCell>
-                                  <TableCell>{r.Door}</TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                      <Button
-                        size="small"
-                        onClick={() =>
-                          setExpandedFloor(expandedFloor === floor ? null : floor)
-                        }
-                      >
-                        {expandedFloor === floor ? "Hide" : "See more…"}
-                      </Button>
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
-
-              {/* Expanded full-width table */}
-              {expandedFloor && (
-                <Box sx={{ px: "20px", mt: 2 }}>
-                  <Typography variant="h6" gutterBottom>
-                    {expandedFloor} — All Entries
-                  </Typography>
-                  <DataTable
-                    columns={columns}
-                    rows={floorMap[expandedFloor].map(r => ({
-                      ...r,
-                      LocaleMessageTime: new Date(r.LocaleMessageTime).toLocaleTimeString(),
-                    }))}
-                  />
-                </Box>
               )}
-            </>
-          )}
-        </Container>
-      </Box>
 
-      <Footer />
-    </>
+              {/* X Axis */}
+              <XAxis
+                dataKey="name"
+                tick={{ fill: '#000', fontWeight: 600 }}
+                tickFormatter={t =>
+                  typeof t === 'number' ? dayjs(t).format(timeFormat) : t
+                }
+                label={{
+                
+                  position: 'insideBottomRight',
+                  offset: -10,
+                  fill: '#000',
+                  fontWeight: 600,
+                }}
+                {...axisProps.xAxis}
+              />
+
+              {/* Y Axis */}
+              <YAxis
+                tick={{ fill: '#fff', fontWeight: 600 }}
+                label={{
+                  value: 'Count',
+                  angle: -90,
+                  position: 'insideLeft',
+                  fill: '#000',
+                  fontWeight: 600,
+                }}
+                {...axisProps.yAxis}
+              />
+
+              {/* Tooltip */}
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#fff',
+                  border: `1px solid ${colors.head}`,
+                  padding: '0.5rem',
+                }}
+                cursor={showCrosshair}
+                isAnimationActive={false}
+                content={({ active, payload }) => {
+                  if (!active || !payload || !payload.length) return null;
+                  const { breakdown = {}, name } = payload[0].payload;
+                  return (
+                    <Box sx={{ backgroundColor: '#fff', border: `1px solid ${colors.head}`, p:1, borderRadius:1 }}>
+                      <Typography variant="subtitle2" sx={{ color: colors.head, mb: 0.5 }}>
+                        {name}
+                      </Typography>
+                      {Object.entries(breakdown).map(([key,val])=>(
+                        <Typography key={key} variant="body2" sx={{ color: '#000' }}>
+                          {key}: {val}
+                        </Typography>
+                      ))}
+                    </Box>
+                  );
+                }}
+              />
+
+              {/* Legend */}
+              <Legend
+                wrapperStyle={{ color: '#000' }}
+                onClick={handleLegendClick}
+                iconType="square"
+              />
+
+              {/* Capacity Area */}
+              {hasCapacity && !hidden.Capacity && (
+                <Area
+                  type="monotone"
+                  dataKey="Capacity"
+                  name="Total Seat"
+                  stroke={colors.cap}
+                  fill={`${colors.cap}33`}
+                  dot={false}
+                  isAnimationActive
+                  animationDuration={animateDuration}
+                >
+                  <LabelList
+                    dataKey="Capacity"
+                    position="top"
+                    style={{ fill: colors.cap, fontSize: 12, fontWeight: 600 }}
+                  />
+                </Area>
+              )}
+
+              {/* Headcount Area */}
+              {!hidden.Headcount && (
+                <Area
+                  type="monotone"
+                  dataKey={hasCapacity ? 'Headcount' : dataKey}
+                  name="Usage"
+                  stroke={colors.head}
+                  fill="url(#colorHead)"
+                  dot={false}
+                  isAnimationActive
+                  animationDuration={animateDuration}
+                >
+                  <LabelList
+                    dataKey={hasCapacity ? 'Headcount' : dataKey}
+                    position="top"
+                    style={{ fill: '#2ecc71', fontSize: 15, fontWeight: 600 }}
+                  />
+                </Area>
+              )}
+
+              {/* Overlay Line */}
+              {!hidden.Headcount && (
+                <Line
+                  type="monotone"
+                  dataKey={hasCapacity ? 'Headcount' : dataKey}
+                  stroke={colors.head}
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive
+                  animationDuration={animateDuration}
+                  activeDot={{ r: 6, stroke: '#000', strokeWidth: 2 }}
+                />
+              )}
+            </AreaChart>
+          </ResponsiveContainer>
+        </Box>
+      </CardContent>
+    </Card>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
