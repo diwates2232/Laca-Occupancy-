@@ -1,3 +1,27 @@
+--- a/src/pages/History.jsx
++++ b/src/pages/History.jsx
+@@  ninety‐something lines into your detailRows useMemo
+   // only InDirection swipes count toward headcount
+   .filter(r => r.Direction === 'InDirection')
+   // dedupe by PersonGUID + PersonnelType instead of EmployeeID
+   .reduce((unique, row) => {
+-    const key = `${row.EmployeeID}-${row.PersonnelType}`;
++    const key = `${row.PersonGUID}-${row.PersonnelType}`;
+     if (!unique._seen.has(key)) {
+       unique._seen.add(key);
+       unique.rows.push(row);
+     }
+     return unique;
+   }, { _seen: new Set(), rows: [] })
+   .rows;
+
+
+
+
+
+
+
+
 lets Understand issue ,
 In Summary we got excat correct data , for Specific partation also Lca Region
 
