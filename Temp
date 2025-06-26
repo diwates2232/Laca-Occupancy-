@@ -4,6 +4,44 @@ In Summary we got excat correct data , for Specific partation also Lca Region
 issue is there in details section in summary ex- Costa Rica partation in Summary displays 2 Temp badge , but When i export report and check manually this display only 1 temp badge .
 also in in realtime there are 2 temp badge are present ,
 
+in details 
+ {
+      "LocaleMessageTime": "2025-06-25T09:30:10.000Z",
+      "ObjectName1": "Costa Rica, TEMP_CR_042",
+      "Door": "LACA CR F4 Main Lobby Door",
+      "EmployeeID": "0",
+      "Text5": "Santa Ana - Parque Empresarial.",
+      "PartitionName2": "CR.Costa Rica Partition",
+      "PersonGUID": "DB50AD6D-EE22-4A07-9791-D4B6CDCE9C27",
+      "PersonnelType": "Temp Badge",
+      "CardNumber": "606348",
+      "AdmitCode": "Admit",
+      "Direction": "InDirection",
+      "SwipeDate": "2025-06-25T00:00:00.000Z"
+    },
+
+ {
+      "LocaleMessageTime": "2025-06-25T12:14:05.000Z",
+      "ObjectName1": "Costa Rica, TEMP_CR_006",
+      "Door": "LACA CR A1 Main Lobby Door",
+      "EmployeeID": "0",
+      "Text5": "Santa Ana - Parque Empresarial.",
+      "PartitionName2": "CR.Costa Rica Partition",
+      "PersonGUID": "AAF38F6D-CFE9-4ADC-9BDB-B04D91AA3367",
+      "PersonnelType": "Temp Badge",
+      "CardNumber": "612730",
+      "AdmitCode": "Admit",
+      "Direction": "InDirection",
+      "SwipeDate": "2025-06-25T00:00:00.000Z"
+    },
+
+
+above two temp badge are present 
+in Summary table display correct , but in details we got 1 temp badge deatails 
+
+so read below all files carefully and fix the issue
+
+
 
 //C:\Users\W0024618\Desktop\laca-occupancy-backend\src\controllers\occupancy.controller.js
 
