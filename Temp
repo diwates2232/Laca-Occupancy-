@@ -1,184 +1,3 @@
-// src/components/PartitionOverviewChart.jsx
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  ComposedChart,
-  Bar,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Legend
-} from 'recharts';
-
-export default function PartitionOverviewChart({ data }) {
-  const navigate = useNavigate();
-
-  const handleBarClick = (entry) => {
-    navigate(`/partitions/${encodeURIComponent(entry.name)}`);
-  };
-
-  return (
-    <ResponsiveContainer width="100%" height={400}>
-      <ComposedChart
-        data={data}
-        margin={{ top: 30, right: 40, left: 20, bottom: 30 }}
-        onClick={(e) => {
-          if (e && e.activePayload && e.activePayload[0]) {
-            handleBarClick(e.activePayload[0].payload);
-          }
-        }}
-      >
-        {/* X axis */}
-        <XAxis
-          dataKey="name"
-          tick={{ fontWeight: 600, fill: '#3D340B' }}
-          axisLine={{ stroke: '#767266' }}
-          tickLine={false}
-          interval={0}
-          angle={-20}
-          textAnchor="end"
-          height={60}
-        />
-
-        {/* Y axis */}
-        <YAxis
-          tick={{ fontWeight: 600, fill: '#3D340B' }}
-          axisLine={{ stroke: '#767266' }}
-          tickLine={false}
-        />
-
-        {/* Tooltip */}
-        <Tooltip
-          contentStyle={{
-            borderColor: '#767266',
-            borderRadius: 4,
-            padding: '0.5rem'
-          }}
-        />
-
-        {/* Legend */}
-        <Legend
-          verticalAlign="top"
-          align="right"
-          wrapperStyle={{ paddingBottom: 10 }}
-          iconType="square"
-          formatter={(value) => (
-            <span style={{ color: '#564110', fontWeight: 600 }}>{value}</span>
-          )}
-        />
-
-        {/* Bars: Capacity */}
-        <Bar
-          dataKey="Capacity"
-          name="Total Seats"
-          barSize={40}                  // ↑ increased width
-          fill="#724E14"                // golden mustard
-          radius={[4, 4, 0, 0]}         // rounded top corners
-        />
-
-        {/* Line: Headcount */}
-        <Line
-          type="monotone"
-          dataKey="Headcount"
-          name="Headcount"
-          stroke="#3D340B"              // deep olive-brown
-          strokeWidth={3}
-          dot={{ r: 5, fill: '#767266', strokeWidth: 0 }}  // olive-grey dots
-        />
-
-        {/* A small subtitle for details */}
-        <text
-          x={20}
-          y={20}
-          fill="#564110"
-          style={{ fontSize: '0.9rem', fontWeight: 500 }}
-        >
-          Click a bar for partition details
-        </text>
-      </ComposedChart>
-    </ResponsiveContainer>
-  );
-}
-
-
-
-
-Now Use Only Below Colours to Display Bar also use another Brand Colours ,also Increase Width carefully, Beacause bar look very small , adjust bar Width , aslo remove backside White lines ,
-also add legends and details section carefully ,
- (olive-grey): #767266
- (deep olive-brown): #3D340B
- (warm brown): #564110
- (golden mustard): #724E14
-
-
-
-//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\PartitionOverviewChart.jsx
-
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  ComposedChart,
-  Bar,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Legend
-} from 'recharts';
-
-export default function PartitionOverviewChart({ data }) {
-  const navigate = useNavigate();
-
-  const handleBarClick = (entry, index) => {
-    // assuming your partition keys line up by index:
-    // navigate(`/partitions/${encodeURIComponent(entry.name)}`);
-  };
-
-  return (
-    <ResponsiveContainer width="100%" height={360}>
-      <ComposedChart
-        data={data}
-        margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
-        onClick={(e) => {
-          if (e && e.activePayload && e.activePayload[0]) {
-            handleBarClick(e.activePayload[0].payload);
-          }
-        }}
-      >
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="name" tick={{ fontWeight: 600 }} />
-        <YAxis tick={{ fontWeight: 600 }} />
-        <Tooltip />
-        <Legend verticalAlign="top" />
-        <Bar
-          dataKey="Capacity"
-          name="Total Seats"
-          barSize={20}
-          fill="#FDDA0D"
-        />
-        <Line
-          type="monotone"
-          dataKey="Headcount"
-          name="Headcount"
-          stroke="#2ecc71"
-          strokeWidth={2}
-          dot={false}
-        />
-      </ComposedChart>
-    </ResponsiveContainer>
-  );
-}
-
-
-
-
-
-
-
 // src/pages/Dashboard.jsx
 
 import React, { useEffect, useState } from 'react';
@@ -220,7 +39,6 @@ import ChartCard from '../components/ChartCard';
 import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
 import { partitionList } from '../services/occupancy.service';
 import seatCapacities from '../data/seatCapacities';
-import PartitionOverviewChart from '../components/PartitionOverviewChart';
 
  
 
@@ -523,7 +341,15 @@ export default function Dashboard() {
           percentage: pct, // for your own use if needed
             fill: colorsMap[p.name]?.[0] || '#FFC107',
            
-          
+           
+           
+            // breakdown: {
+            //   Employees:   p.Employee,
+            //   Contractors: p.Contractor,
+            //   ...(p.TempBadge ? { 'Temp Badge': p.TempBadge } : {}),
+            //   Capacity:    capacity,
+            //   'Load %':    pct + '%',
+            // }
 
      breakdown: {
        Employees:    p.Employee,
@@ -539,8 +365,20 @@ export default function Dashboard() {
       // 3) Render one ChartCard
       return (
 
-
-<PartitionOverviewChart data={chartData} />
+ <ChartCard
+   data={chartData}
+   dataKey="Headcount"
+   chartHeight={360}
+   colors={{
+     head: '#2ecc71',   // Green 
+     cap:  '#FDDA0D'    // Red
+   }}
+   axisProps={{
+     xAxis: { tick: { fill: '#fff' } },
+     yAxis: { tick: { fill: '#fff' } }
+  }}
+   disableLegendToggle={true}    // new prop to prevent hide/show
+ />
       );
     })()
   )}
@@ -573,5 +411,248 @@ export default function Dashboard() {
     </>
   );
 }
+
+
+
+
+
+
+
+
+
+
+// src/components/ChartCard.jsx
+import React, { useState, useRef } from 'react';
+import { Card, CardContent, Typography, Box } from '@mui/material';
+import {
+  AreaChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
+  LabelList,
+  ReferenceLine,
+} from 'recharts';
+import dayjs from 'dayjs';
+
+export default function ChartCard({
+  title,
+  data = [],
+  dataKey = 'value',
+  chartHeight = 350,
+  colors = { head: '#FFC107', cap: '#000000' },
+  animateDuration = 800,
+  showCrosshair = true,
+  timeFormat = 'HH:mm:ss',
+  axisProps = {},
+  tooltipFormatter = null,
+  disableLegendToggle = false,     // prevent hiding via legend click
+}) {
+  const [hidden, setHidden] = useState({});
+  const [activeIndex, setActiveIndex] = useState(null);
+  const [replayKey, setReplayKey] = useState(0);
+  const containerRef = useRef();
+
+  if (!Array.isArray(data) || !data.length) {
+    return (
+      <Card sx={{ mb: 2 }}>
+        <CardContent sx={{ textAlign: 'center' }}>
+          <Typography variant="h6">{title}</Typography>
+          <Typography variant="body2">No data to display.</Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const hasCapacity = data[0].Capacity != null;
+
+  // Prevent toggling series off
+  const handleLegendClick = o => {
+    if (disableLegendToggle) return;
+    const { dataKey } = o;
+    setHidden(prev => ({ ...prev, [dataKey]: !prev[dataKey] }));
+  };
+
+  // Clicking chart area will replay animations
+  const handleChartClick = () => {
+    setReplayKey(k => k + 1);
+  };
+
+  return (
+    <Card sx={{ mb: 2 }}>
+      <CardContent>
+        {/* Title */}
+        <Typography variant="h6" gutterBottom sx={{ color: colors.head }}>
+          {title}
+        </Typography>
+
+        {/* Chart */}
+        <Box
+          ref={containerRef}
+          sx={{ width: '100%', height: chartHeight, cursor: 'pointer' }}
+          onClick={handleChartClick}
+        >
+          <ResponsiveContainer key={replayKey}>
+            <AreaChart
+              data={data}
+              margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
+              onMouseMove={e => {
+                if (e && e.activeTooltipIndex != null) {
+                  setActiveIndex(e.activeTooltipIndex);
+                }
+              }}
+            >
+              {/* Gradients */}
+              <defs>
+                <linearGradient id="colorHead" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="50%" stopColor={colors.head} stopOpacity={0.4} />
+                  <stop offset="95%" stopColor={colors.head} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+
+              {/* Grid */}
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+
+              {/* Crosshair */}
+              {showCrosshair && activeIndex != null && data[activeIndex] && (
+                <ReferenceLine
+                  x={data[activeIndex].name}
+                  stroke={colors.head}
+                  strokeOpacity={0.5}
+                />
+              )}
+
+              {/* X Axis */}
+              <XAxis
+                dataKey="name"
+                tick={{ fill: '#000', fontWeight: 600 }}
+                tickFormatter={t =>
+                  typeof t === 'number' ? dayjs(t).format(timeFormat) : t
+                }
+                label={{
+                
+                  position: 'insideBottomRight',
+                  offset: -10,
+                  fill: '#000',
+                  fontWeight: 600,
+                }}
+                {...axisProps.xAxis}
+              />
+
+              {/* Y Axis */}
+              <YAxis
+                tick={{ fill: '#fff', fontWeight: 600 }}
+                label={{
+                  value: 'Count',
+                  angle: -90,
+                  position: 'insideLeft',
+                  fill: '#000',
+                  fontWeight: 600,
+                }}
+                {...axisProps.yAxis}
+              />
+
+              {/* Tooltip */}
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#fff',
+                  border: `1px solid ${colors.head}`,
+                  padding: '0.5rem',
+                }}
+                cursor={showCrosshair}
+                isAnimationActive={false}
+                content={({ active, payload }) => {
+                  if (!active || !payload || !payload.length) return null;
+                  const { breakdown = {}, name } = payload[0].payload;
+                  return (
+                    <Box sx={{ backgroundColor: '#fff', border: `1px solid ${colors.head}`, p:1, borderRadius:1 }}>
+                      <Typography variant="subtitle2" sx={{ color: colors.head, mb: 0.5 }}>
+                        {name}
+                      </Typography>
+                      {Object.entries(breakdown).map(([key,val])=>(
+                        <Typography key={key} variant="body2" sx={{ color: '#000' }}>
+                          {key}: {val}
+                        </Typography>
+                      ))}
+                    </Box>
+                  );
+                }}
+              />
+
+              {/* Legend */}
+              <Legend
+                wrapperStyle={{ color: '#000' }}
+                onClick={handleLegendClick}
+                iconType="square"
+              />
+
+              {/* Capacity Area */}
+              {hasCapacity && !hidden.Capacity && (
+                <Area
+                  type="monotone"
+                  dataKey="Capacity"
+                  name="Total Seat"
+                  stroke={colors.cap}
+                  fill={`${colors.cap}33`}
+                  dot={false}
+                  isAnimationActive
+                  animationDuration={animateDuration}
+                >
+                  <LabelList
+                    dataKey="Capacity"
+                    position="top"
+                    style={{ fill: colors.cap, fontSize: 12, fontWeight: 600 }}
+                  />
+                </Area>
+              )}
+
+              {/* Headcount Area */}
+              {!hidden.Headcount && (
+                <Area
+                  type="monotone"
+                  dataKey={hasCapacity ? 'Headcount' : dataKey}
+                  name="Usage"
+                  stroke={colors.head}
+                  fill="url(#colorHead)"
+                  dot={false}
+                  isAnimationActive
+                  animationDuration={animateDuration}
+                >
+                  <LabelList
+                    dataKey={hasCapacity ? 'Headcount' : dataKey}
+                    position="top"
+                    style={{ fill: '#2ecc71', fontSize: 15, fontWeight: 600 }}
+                  />
+                </Area>
+              )}
+
+              {/* Overlay Line */}
+              {!hidden.Headcount && (
+                <Line
+                  type="monotone"
+                  dataKey={hasCapacity ? 'Headcount' : dataKey}
+                  stroke={colors.head}
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive
+                  animationDuration={animateDuration}
+                  activeDot={{ r: 6, stroke: '#000', strokeWidth: 2 }}
+                />
+              )}
+            </AreaChart>
+          </ResponsiveContainer>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
 
 
