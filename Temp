@@ -10,3 +10,20 @@ const seatCapacities = {
 
 export default seatCapacities;
 
+
+
+above is seat capacities for partation and 
+
+Building	Floor Capacity of Costa Rica 
+
+Building A1	33
+Building A2	160
+Building A3	157
+Building B2	173
+Building B3	160
+Building E2	115
+Building E3	140
+Building E4	160
+Building F4	146
+
+
