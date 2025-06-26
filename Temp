@@ -1,3 +1,52 @@
+-    if (Direction === 'OutDirection') {
+-      // If this OutDirection is genuinely “Outer Area,” keep them:
+-      if (zone.toLowerCase()) {
++    if (Direction === 'OutDirection') {
++      // Only “Outer Area” swipes get to stay in current headcount.
++      if (zoneRaw.endsWith('Outer Area')) {
+         uniquePeople.set(dedupKey, PersonnelType);
+         current[dedupKey] = { Dateonly, Swipe_Time, EmployeeID, … };
+      } else {
+         uniquePeople.delete(dedupKey);
+         delete current[dedupKey];
+      }
+      continue;
+    }
+
+
+
+
+-    const today = getTodayString();
+-    for (let i = events.length - 1; i >= 0; i--) {
+-      if (events[i].Dateonly !== today) {
+-        events.splice(i, 1);
+-      }
+-    }
++    // Option A: Rely on your fetchNewEvents() window rather than re-filtering here.
++    // // const today = getTodayString();
++    // // events = events.filter(e => e.Dateonly === today);
+
++    // Option B: Recompute date from the JS timestamp in Asia/Kolkata:
++    const todayKolkata = DateTime.now().setZone('Asia/Kolkata').toISODate();
++    for (let i = events.length - 1; i >= 0; i--) {
++      const ts = DateTime.fromJSDate(events[i].LocaleMessageTime, { zone: 'utc' })
++                     .setZone('Asia/Kolkata')
++                     .toISODate();
++      if (ts !== todayKolkata) {
++        events.splice(i, 1);
++      }
++    }
+
+
+
+
+
+
+
+
+
+
+
 Now Read Below Files carefully , issue is there we got 4 to 5 headCount less , so can you check once Why we got less count 
 
 // C:\Users\W0024618\Desktop\swipeData\employee-ai-insights\controllers\liveOccupancyController.js
