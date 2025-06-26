@@ -1,38 +1,174 @@
+Lets check both files carefully, issue is there if Direction is outdirection then count are removed in live summary,
+We need to strickly check  inDirection and OutDirection , only remove count When we got direction ==out of Office strickly
 // src/controllers/occupancy.controller.js
- const doorMap = require('../utils/doorMap');
-+const doorZoneMap = require('../utils/doorZoneMap'); // add this
 
- // … your existing normalizeDoorName, isEmployeeType …
+const service = require('../services/occupancy.service');
+const doorMap = require('../utils/doorMap');
+const doorZoneMap = require('../utils/doorMap'); 
 
- function lookupFloor(/*…*/) { /* unchanged */ }
 
- exports.getLiveSummary = async (req,res) => {
-   // … fetch swipes, build first/last …
 
-    Object.values(last).forEach(r => {
--     // this dropped *all* OutDirection
--     if (r.Direction !== 'InDirection') return;
-+     // only drop true exits:
-+     if (r.Direction === 'OutDirection') {
-+       // rebuild the exact map key, e.g. "APAC_IN_PUN_PODIUM_ST 1-DOOR 1 (RED)___OutDirection"
-+       const key = normalizeDoorName(r.Door) + '___' + r.Direction;
-+       const zone = doorZoneMap[key];
-+       // if it's not a real "Out of office" *and* ends with "Outer Area", 
-+       // we treat it as a non-eviction (i.e. keep them in)
-+       if (zone !== 'Out of office' && /Outer Area$/i.test(zone)) {
-+         // allow counting below
-+       } else {
-+         return; // true exit → skip
-+       }
-+     }
+function normalizeDoorName(name) {
+  return name
+    .toUpperCase()
+    .replace(/_(?:[0-9A-F]{2}:?)+$/i, '')
+    .replace(/EMTRY\b/, 'ENTRY')
+    .replace(/POD\s*PODIUM/i, 'PODIUM')   // <— this line ensures consistency
+    .replace(/RESTRICTED DOOR/i, 'RESTRICTED DOOR')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-     const p = r.PartitionName2;
-     const doorField = r.Door;
 
-     // … increment totals and floor buckets …
+function isEmployeeType(pt) {
+  return ['Employee','Terminated Employee','Terminated Personnel'].includes(pt);
+}
+
+function lookupFloor(_partition, rawDoor, direction, unmapped) {
+  const door = normalizeDoorName(rawDoor);
+  const entry = doorMap.find(d =>
+    d.normalizedDoor === door && d.partition === _partition
+  );
+  if (!entry) {
+    unmapped.add(`${_partition}|${rawDoor}`);
+    return 'Unknown';
+  }
+  return direction === 'InDirection'
+    ? entry.inDirectionFloor
+    : entry.outDirectionFloor;
+}
+
+exports.getLiveOccupancy = async (req,res) => {
+  try {
+    const data = await service.fetchLiveOccupancy();
+    res.json({ success:true, count:data.length, data });
+  } catch(e) {
+    console.error(e);
+    res.status(500).json({ success:false, message:'Live fetch failed' });
+  }
+};
+
+exports.getLiveSummary = async (req,res) => {
+  try {
+    const swipes = await service.fetchLiveOccupancy();
+
+    // first swipe per person = TODAY
+    const first = {};
+    swipes.forEach(r => {
+      const t = new Date(r.LocaleMessageTime).getTime();
+      if (!first[r.PersonGUID] || t < new Date(first[r.PersonGUID].LocaleMessageTime).getTime()) {
+        first[r.PersonGUID] = r;
+      }
     });
-   // …
+    const today = { total:0, Employee:0, Contractor:0 };
+    Object.values(first).forEach(r => {
+      today.total++;
+      if (isEmployeeType(r.PersonnelType)) today.Employee++;
+      else today.Contractor++;
+    });
 
+    // last swipe per person for realtime
+    const last = {};
+    swipes.forEach(r => {
+      const t = new Date(r.LocaleMessageTime).getTime();
+      if (!last[r.PersonGUID] || t > new Date(last[r.PersonGUID].LocaleMessageTime).getTime()) {
+        last[r.PersonGUID] = r;
+      }
+    });
+
+    const realtime = {};
+    const unmapped = new Set();
+
+
+
+    // now update here logic as per doormap.js
+
+     Object.values(last).forEach(r => {
+    //   if (r.Direction !== 'InDirection') return;
+
+     // only drop true exits:
+     if (r.Direction === 'OutDirection') {
+       // rebuild the exact map key, e.g. "APAC_IN_PUN_PODIUM_ST 1-DOOR 1 (RED)___OutDirection"
+       const key = normalizeDoorName(r.Door) + '___' + r.Direction;
+       const zone = doorZoneMap[key];
+       // if it's not a real "Out of office" *and* ends with "Outer Area", 
+       // we treat it as a non-eviction (i.e. keep them in)
+       if (zone !== 'Out of office' && /Outer Area$/i.test(zone)) {
+         // allow counting below
+       } else {
+         return; // true exit → skip
+       }
+     }   
+      const p    = r.PartitionName2;
+      const doorField = r.Door;  // now defined by service
+
+      if (!realtime[p]) {
+        realtime[p] = { total:0, Employee:0, Contractor:0, floors:{} };
+      }
+      realtime[p].total++;
+      if (isEmployeeType(r.PersonnelType)) realtime[p].Employee++;
+      else realtime[p].Contractor++;
+
+      const fl = lookupFloor(p, doorField, r.Direction, unmapped);
+      realtime[p].floors[fl] = (realtime[p].floors[fl]||0) + 1;
+    });
+
+    if (unmapped.size) console.warn('Unmapped doors:', Array.from(unmapped));
+
+    res.json({ success:true, today, realtime, details:Object.values(last) });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ success:false, message:'Summary failed' });
+  }
+};
+
+exports.getHistoricalOccupancy = async (req,res) => {
+  const location = req.params.location || null;
+  try {
+    const raw = await service.fetchHistoricalOccupancy(location);
+    // dedupe first swipe per person per day
+    const byDate = raw.reduce((acc,r) => {
+      const date = new Date(r.LocaleMessageTime).toISOString().slice(0,10);
+      acc[date] = acc[date]||{};
+      if (!acc[date][r.PersonGUID] ||
+          new Date(r.LocaleMessageTime) < new Date(acc[date][r.PersonGUID].LocaleMessageTime)
+      ) {
+        acc[date][r.PersonGUID] = { ...r, LocaleMessageTime: r.LocaleMessageTime };
+      }
+      return acc;
+    }, {});
+
+    const summaryByDate = [], details = [];
+    Object.keys(byDate).sort().forEach(date => {
+      const recs = Object.values(byDate[date]);
+      details.push(...recs);
+      const region = { total:0, Employee:0, Contractor:0 };
+      const partitions = {};
+      recs.forEach(r => {
+        region.total++;
+        if (isEmployeeType(r.PersonnelType)) region.Employee++;
+        else region.Contractor++;
+        if (!location) {
+          partitions[r.PartitionName2] = partitions[r.PartitionName2]||{ total:0,Employee:0,Contractor:0 };
+          partitions[r.PartitionName2].total++;
+          if (isEmployeeType(r.PersonnelType)) partitions[r.PartitionName2].Employee++;
+          else partitions[r.PartitionName2].Contractor++;
+        }
+      });
+      summaryByDate.push({
+        date,
+        day: new Date(date).toLocaleDateString('en-US',{ weekday:'long' }),
+        region: location ? { name:location, ...region } : { name:'APAC', ...region },
+        partitions: location ? undefined : partitions
+      });
+    });
+
+    res.json({ success:true, summaryByDate, details });
+  } catch(e) {
+    console.error(e);
+    res.status(500).json({ success:false, message:'Historical failed' });
+  }
+};
 
 
 
@@ -321,183 +457,6 @@ const doorMap = Object.entries(doorZoneMap).reduce((acc, [key, zone]) => {
 }, {});
 
 module.exports = Object.values(doorMap);
-
-
-
-
-
-
-
-
-// src/controllers/occupancy.controller.js
-
-
-const service = require('../services/occupancy.service');
-const doorMap = require('../utils/doorMap');
-
-
-function normalizeDoorName(name) {
-  return name
-    .toUpperCase()
-    .replace(/_(?:[0-9A-F]{2}:?)+$/i, '')
-    .replace(/EMTRY\b/, 'ENTRY')
-    .replace(/POD\s*PODIUM/i, 'PODIUM')   // <— this line ensures consistency
-    .replace(/RESTRICTED DOOR/i, 'RESTRICTED DOOR')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-
-function isEmployeeType(pt) {
-  return ['Employee','Terminated Employee','Terminated Personnel'].includes(pt);
-}
-
-function lookupFloor(_partition, rawDoor, direction, unmapped) {
-  const door = normalizeDoorName(rawDoor);
-  const entry = doorMap.find(d =>
-    d.normalizedDoor === door && d.partition === _partition
-  );
-  if (!entry) {
-    unmapped.add(`${_partition}|${rawDoor}`);
-    return 'Unknown';
-  }
-  return direction === 'InDirection'
-    ? entry.inDirectionFloor
-    : entry.outDirectionFloor;
-}
-
-exports.getLiveOccupancy = async (req,res) => {
-  try {
-    const data = await service.fetchLiveOccupancy();
-    res.json({ success:true, count:data.length, data });
-  } catch(e) {
-    console.error(e);
-    res.status(500).json({ success:false, message:'Live fetch failed' });
-  }
-};
-
-exports.getLiveSummary = async (req,res) => {
-  try {
-    const swipes = await service.fetchLiveOccupancy();
-
-    // first swipe per person = TODAY
-    const first = {};
-    swipes.forEach(r => {
-      const t = new Date(r.LocaleMessageTime).getTime();
-      if (!first[r.PersonGUID] || t < new Date(first[r.PersonGUID].LocaleMessageTime).getTime()) {
-        first[r.PersonGUID] = r;
-      }
-    });
-    const today = { total:0, Employee:0, Contractor:0 };
-    Object.values(first).forEach(r => {
-      today.total++;
-      if (isEmployeeType(r.PersonnelType)) today.Employee++;
-      else today.Contractor++;
-    });
-
-    // last swipe per person for realtime
-    const last = {};
-    swipes.forEach(r => {
-      const t = new Date(r.LocaleMessageTime).getTime();
-      if (!last[r.PersonGUID] || t > new Date(last[r.PersonGUID].LocaleMessageTime).getTime()) {
-        last[r.PersonGUID] = r;
-      }
-    });
-
-    const realtime = {};
-    const unmapped = new Set();
-
-
-
-    // now update here logic as per doormap.js
-
-     Object.values(last).forEach(r => {
-    //   if (r.Direction !== 'InDirection') return;
-
-
- // 1) true exits: skip non-InDirection _unless_ it's an allowed outer area
-  if (r.Direction === 'OutDirection') {
-    const doorKey = normalizeDoorName(r.Door) + '___' + r.Direction;
-     const zone = doorZoneMap[doorKey];
-    // if it's not the real "Out of office" and map says it's an outer area, treat as In
-    if (zone !== 'Out of office' && /Outer Area$/i.test(zone)) {
-      // allow as an “In” event
-    } else {
-      return; // true exit → evict
-    }
-  }
-
-      const p    = r.PartitionName2;
-      const doorField = r.Door;  // now defined by service
-
-      if (!realtime[p]) {
-        realtime[p] = { total:0, Employee:0, Contractor:0, floors:{} };
-      }
-      realtime[p].total++;
-      if (isEmployeeType(r.PersonnelType)) realtime[p].Employee++;
-      else realtime[p].Contractor++;
-
-      const fl = lookupFloor(p, doorField, r.Direction, unmapped);
-      realtime[p].floors[fl] = (realtime[p].floors[fl]||0) + 1;
-    });
-
-    if (unmapped.size) console.warn('Unmapped doors:', Array.from(unmapped));
-
-    res.json({ success:true, today, realtime, details:Object.values(last) });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ success:false, message:'Summary failed' });
-  }
-};
-
-exports.getHistoricalOccupancy = async (req,res) => {
-  const location = req.params.location || null;
-  try {
-    const raw = await service.fetchHistoricalOccupancy(location);
-    // dedupe first swipe per person per day
-    const byDate = raw.reduce((acc,r) => {
-      const date = new Date(r.LocaleMessageTime).toISOString().slice(0,10);
-      acc[date] = acc[date]||{};
-      if (!acc[date][r.PersonGUID] ||
-          new Date(r.LocaleMessageTime) < new Date(acc[date][r.PersonGUID].LocaleMessageTime)
-      ) {
-        acc[date][r.PersonGUID] = { ...r, LocaleMessageTime: r.LocaleMessageTime };
-      }
-      return acc;
-    }, {});
-
-    const summaryByDate = [], details = [];
-    Object.keys(byDate).sort().forEach(date => {
-      const recs = Object.values(byDate[date]);
-      details.push(...recs);
-      const region = { total:0, Employee:0, Contractor:0 };
-      const partitions = {};
-      recs.forEach(r => {
-        region.total++;
-        if (isEmployeeType(r.PersonnelType)) region.Employee++;
-        else region.Contractor++;
-        if (!location) {
-          partitions[r.PartitionName2] = partitions[r.PartitionName2]||{ total:0,Employee:0,Contractor:0 };
-          partitions[r.PartitionName2].total++;
-          if (isEmployeeType(r.PersonnelType)) partitions[r.PartitionName2].Employee++;
-          else partitions[r.PartitionName2].Contractor++;
-        }
-      });
-      summaryByDate.push({
-        date,
-        day: new Date(date).toLocaleDateString('en-US',{ weekday:'long' }),
-        region: location ? { name:location, ...region } : { name:'APAC', ...region },
-        partitions: location ? undefined : partitions
-      });
-    });
-
-    res.json({ success:true, summaryByDate, details });
-  } catch(e) {
-    console.error(e);
-    res.status(500).json({ success:false, message:'Historical failed' });
-  }
-};
-
 
 
 
