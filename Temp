@@ -1,3 +1,22 @@
+if (r.Direction === 'OutDirection') {
+  const key = normalizeDoorName(r.Door) + '___' + r.Direction;
+  const zone = doorZoneMap[key];
+
+  if (zone !== 'Out of office' && /Outer Area$/i.test(zone)) {
+    // allow counting below
+  } else {
+    return; // true exit → skip
+  }
+}
+
+
+
+
+
+
+
+
+
 // existing code builds and exports `doorMap` array…
 
 // Also export the raw door→zone lookup:
