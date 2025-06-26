@@ -1,3 +1,92 @@
+// src/services/occupancy.service.js
+
+/**
+ * Returns pre-aggregated today & realtime counts, grouped by partition and floor.
+ */
+exports.fetchLiveSummaryAgg = async () => {
+  const pool = await poolPromise;
+  const partitionsSql = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
+
+  // 1) first-swipe per person today = headcount
+  // 2) last-swipe per person = realtime IN/OUT
+  //    then GROUP BY PartitionName2, Direction, In/Out floor
+  const query = `
+    WITH Raw AS (
+      SELECT
+        DATEADD(MINUTE, -t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
+        t1.PartitionName2,
+        t1.ObjectIdentity1    AS PersonGUID,
+        t3.Name               AS PersonnelType,
+        t1.ObjectName2        AS Door,
+        t5d.value             AS Direction
+      FROM [ACVSUJournal_00010028].[dbo].[ACVSUJournalLog] AS t1
+      ...
+      WHERE
+        t1.MessageType = 'CardAdmitted'
+        AND t1.PartitionName2 IN (${partitionsSql})
+        AND CONVERT(DATE, DATEADD(MINUTE, -t1.MessageLocaleOffset, t1.MessageUTC)) = CONVERT(DATE, GETDATE())
+    ),
+    FirstSwipe AS (
+      SELECT
+        PersonGUID, MIN(LocaleMessageTime) AS FirstTime
+      FROM Raw
+      GROUP BY PersonGUID
+    ),
+    LastSwipe AS (
+      SELECT
+        PersonGUID, MAX(LocaleMessageTime) AS LastTime
+      FROM Raw
+      GROUP BY PersonGUID
+    ),
+    TodayCounts AS (
+      SELECT
+        COUNT(*) AS TotalToday,
+        SUM(CASE WHEN PersonnelType LIKE '%Temp Badge%' THEN 1 ELSE 0 END) AS TempBadgeToday,
+        SUM(CASE WHEN PersonnelType IN ('Employee','Terminated Employee','Terminated Personnel') THEN 1 ELSE 0 END) AS EmployeeToday,
+        SUM(CASE WHEN PersonnelType NOT IN ('Employee','Terminated Employee','Terminated Personnel') AND PersonnelType NOT LIKE '%Temp Badge%' THEN 1 ELSE 0 END) AS ContractorToday
+      FROM FirstSwipe f
+      JOIN Raw r ON r.PersonGUID = f.PersonGUID AND r.LocaleMessageTime = f.FirstTime
+    ),
+    RealTimeCounts AS (
+      SELECT
+        r.PartitionName2            AS Partition,
+        FLOOR(CASE WHEN d.Value='InDirection' THEN entry.inDirectionFloor ELSE entry.outDirectionFloor END) AS Floor,
+        SUM(1)                      AS Headcount,
+        SUM(CASE WHEN r.PersonnelType LIKE '%Temp Badge%' THEN 1 ELSE 0 END) AS TempBadge,
+        SUM(CASE WHEN r.PersonnelType IN ('Employee','Terminated Employee','Terminated Personnel') THEN 1 ELSE 0 END) AS Employee,
+        SUM(CASE WHEN r.PersonnelType NOT IN ('Employee','Terminated Employee','Terminated Personnel') AND r.PersonnelType NOT LIKE '%Temp Badge%' THEN 1 ELSE 0 END) AS Contractor
+      FROM LastSwipe l
+      JOIN Raw r ON r.PersonGUID = l.PersonGUID AND r.LocaleMessageTime = l.LastTime
+      JOIN [YourDoorMapTableOrTVF] entry
+        ON entry.Partition = r.PartitionName2 AND entry.Door = r.Door
+      JOIN [ACVSUJournalLogxmlShred] d
+        ON r.XmlGUID = d.GUID AND d.Value IN ('InDirection','OutDirection')
+      WHERE NOT (
+        d.Value = 'OutDirection'
+        AND (entry.outDirectionFloor = 'Out of office')
+      )
+      GROUP BY r.PartitionName2, entry.inDirectionFloor, entry.outDirectionFloor, d.Value
+    )
+    SELECT
+      t.TotalToday, t.EmployeeToday, t.ContractorToday, t.TempBadgeToday,
+      rt.Partition, rt.Floor, rt.Headcount, rt.Employee, rt.Contractor, rt.TempBadge
+    FROM TodayCounts t CROSS JOIN (SELECT DISTINCT 1 AS dummy) x
+    JOIN RealTimeCounts rt ON 1=1
+    ORDER BY rt.Partition, rt.Floor;
+  `;
+
+  const result = await pool.request().query(query);
+  return result.recordset;
+};
+
+
+
+
+
+
+
+
+
 Now Read all Backend and Frontend filees carefully , Issue is there Ui takes More time to load data , 
 so check each file line by line and solve the issue carefully
 
