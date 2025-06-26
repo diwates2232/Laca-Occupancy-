@@ -1,275 +1,27 @@
---- a/src/pages/Dashboard.jsx
-+++ b/src/pages/Dashboard.jsx
-@@ -19,7 +19,7 @@ import { partitionList } from '../services/occupancy.service';
- import seatCapacities from '../data/seatCapacities';
- 
- const displayNameMap = { /* ... */ };
- const colorsMap = { /* ... */ };
- 
- export default function Dashboard() {
-@@ -146,7 +146,6 @@ export default function Dashboard() {
-     {loading ? (
-       <Skeleton variant="rectangular" width="100%" height={360} />
-     ) : (
--    
-       (() => {
-         // 1) map partitions → chartData
-         const chartData = partitions.map((p, i) => {
-@@ -154,13 +153,18 @@ export default function Dashboard() {
-           const name      = displayNameMap[p.name] || p.name.replace(' Partition','');
-           const headcount = p.total;
--          // const capacity  = seatCapacities[name] ?? 0;            // look up seats
-+          const capacity  = seatCapacities[name] ?? 0;            // look up seats
-           const pct       = capacity ? Math.round(headcount / capacity * 100) : 0;
-           return {
-             name,
--            
--            Headcount: headcount,
--            Capacity:  capacity,
-+            Headcount: headcount,
-+            Capacity:  capacity,
- 
--           percentage: pct,                                     // for tooltips
--          fill: colorsMap[p.name]?.[0] || '#FFC107',
--           breakdown: {
--             Employees:  p.Employee,
--             Contractors: p.Contractor,
--             Capacity:    capacity,
--            'Load %':    pct + '%',
--             ...(p.TempBadge ? { 'Temp Badge': p.TempBadge } : {}),
--             // stray shorthand removed here
--           }
-+            percentage: pct, // for your own use if needed
-+            fill: colorsMap[p.name]?.[0] || '#FFC107',
-+            breakdown: {
-+              Employees:   p.Employee,
-+              Contractors: p.Contractor,
-+              ...(p.TempBadge ? { 'Temp Badge': p.TempBadge } : {}),
-+              Capacity:    capacity,
-+              'Load %':    pct + '%',
-+            }
-           };
-         });
- 
-@@ -172,7 +176,7 @@ export default function Dashboard() {
-           <ChartCard
-             data={chartData}
-             dataKey="Headcount"
--            chartHeight={360}
-+            chartHeight={360}
-             colors={{ head: '#2E86AB', cap: '#E74C3C' }}
-             axisProps={{
-               xAxis: { tick: { fill: '#fff' } },
+Now all Works fine 
+just we need some Improvement 
+Now in dashboard display 
+Capacity & haedCount 
+like
 
+When i move mouse into any partation this display like
+Costa Rica 
+Employee 
+Contractors 
+Capacity 
+load 
 
+replace this as
+Costa Rica
+Employee
+Contractors
+Total Seat
+Usage 
 
-Now read the files and solve the issue carefully
+2) In below chart in details Capacity  , Headcount  are display When i click HeadCount then it display Capacity , 
+this has one animation When i click Capacity then capacity not display , but i want again see capacity so there is no animation 
 
-ERROR
-Capacity is not defined
-ReferenceError: Capacity is not defined
-    at http://localhost:3002/static/js/bundle.js:170411:17
-    at Array.map (<anonymous>)
-    at http://localhost:3002/static/js/bundle.js:170385:40
-    at Dashboard (http://localhost:3002/static/js/bundle.js:170454:11)
-    at react-stack-bottom-frame (http://localhost:3002/static/js/bundle.js:95294:18)
-    at renderWithHooks (http://localhost:3002/static/js/bundle.js:85504:20)
-    at updateFunctionComponent (http://localhost:3002/static/js/bundle.js:87197:17)
-    at beginWork (http://localhost:3002/static/js/bundle.js:87783:16)
-    at runWithFiberInDEV (http://localhost:3002/static/js/bundle.js:83275:68)
-    at performUnitOfWork (http://localhost:3002/static/js/bundle.js:89856:93)
-
-
-
-// src/pages/PartitionDetail.jsx
-import React, { useEffect, useState } from "react";
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  CircularProgress,
-} from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
-
-import SummaryCard from "../components/SummaryCard";
-import ChartCard from "../components/ChartCard";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import LoadingSpinner from "../components/LoadingSpinner";
-
-import { fetchLiveSummary, fetchHistory } from "../api/occupancy.service";
-import { lookupFloor } from "../utils/floorLookup";
-
-import buildingCapacities from "../data/buildingCapacities";
-
-import GroupIcon from "@mui/icons-material/Group";
-import TrackChangesIcon from "@mui/icons-material/TrackChanges";
-import PeopleIcon from "@mui/icons-material/People";
-import BusinessCenterIcon from "@mui/icons-material/BusinessCenter";
-
-export default function PartitionDetail() {
-  const { partition } = useParams();
-  const navigate = useNavigate();
-
-  const [liveSummary, setLiveSummary] = useState(null);
-  const [history, setHistory] = useState(null);
-  const [historyLoading, setHistoryLoading] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState("");
-
-  // Auto‐refresh live summary
-  useEffect(() => {
-    let timer;
-    async function loadLive() {
-      const json = await fetchLiveSummary();
-      setLiveSummary(json);
-      setLastUpdate(new Date().toLocaleTimeString());
-    }
-    loadLive();
-    timer = setInterval(loadLive, 1000);
-    return () => clearInterval(timer);
-  }, [partition]);
-
-  // Load historical summary once
-  useEffect(() => {
-    setHistoryLoading(true);
-    fetchHistory(partition).then((json) => {
-      setHistory(json);
-      setHistoryLoading(false);
-    });
-  }, [partition]);
-
-  if (!liveSummary || !history) return <LoadingSpinner />;
-
-  // Totals for cards
-  const lastDay = history.summaryByDate.at(-1);
-  const partToday = lastDay.region;
-  const live = liveSummary.realtime[partition] || {
-    total: 0,
-    Employee: 0,
-    Contractor: 0,
-    TempBadge: 0,
-    floors: {},
-  };
-
-  // Build floorEntries with capacity
-  const floorEntries = Object.entries(live.floors).map(([floor, cnt]) => {
-    const name     = floor.trim();
-    const capacity = buildingCapacities[name] ?? 0;
-    const pct      = capacity ? Math.round((cnt / capacity) * 100) : 0;
-
-    return {
-      name,
-      Headcount: cnt,
-      Capacity:  capacity,
-      breakdown: {
-        Headcount: cnt,
-        Capacity:  capacity,
-        "Load %":  pct + "%",
-      },
-    };
-  });
-
-  return (
-    <>
-      <Header />
-
-      <Box component="main" sx={{ pt: 1, pb: 1 }}>
-        <Container maxWidth={false} disableGutters>
-          {/* Back button */}
-          <Box display="flex" alignItems="center" mb={1} sx={{ px: "20px" }}>
-            <Button size="small" onClick={() => navigate(-1)}>
-              ← Back
-            </Button>
-          </Box>
-
-          {/* Six‐card partition summary */}
-          <Box display="flex" flexWrap="wrap" gap={1} mb={2} sx={{ px: "20px" }}>
-            {[
-              {
-                title: `Today's Total Headcount`,
-                value: historyLoading ? <CircularProgress size={20} /> : partToday.total,
-                icon: <GroupIcon sx={{ color: "#E57373", fontSize: 36 }} />,
-                border: "#FFD666",
-              },
-              {
-                title: `Today's Employees Count`,
-                value: historyLoading ? <CircularProgress size={20} /> : partToday.Employee,
-                icon: <PeopleIcon sx={{ color: "#81C784", fontSize: 36 }} />,
-                border: "#81C784",
-              },
-              {
-                title: `Today's Contractors Count`,
-                value: historyLoading ? <CircularProgress size={20} /> : partToday.Contractor,
-                icon: <BusinessCenterIcon sx={{ color: "#64B5F6", fontSize: 36 }} />,
-                border: "#FFE599",
-              },
-              {
-                title: `Realtime Headcount`,
-                value: live.total,
-                icon: <TrackChangesIcon sx={{ color: "#BA68C8", fontSize: 36 }} />,
-                border: "#FFF2CC",
-              },
-              {
-                title: `Realtime Employees Count`,
-                value: live.Employee,
-                icon: <PeopleIcon sx={{ color: "#FFB74D", fontSize: 36 }} />,
-                border: "#FFD666",
-              },
-              {
-                title: `Realtime Contractors Count`,
-                value: live.Contractor,
-                icon: <BusinessCenterIcon sx={{ color: "#4DB6AC", fontSize: 36 }} />,
-                border: "#FFE599",
-              },
-            ].map((card) => (
-              <Box key={card.title} sx={{ flex: "1 1 calc(16.66% - 8px)" }}>
-                <SummaryCard
-                  title={card.title}
-                  total={card.value}
-                  stats={[]}
-                  icon={card.icon}
-                  sx={{
-                    height: 140,
-                    border: `1px solid ${card.border}`,
-                  }}
-                />
-              </Box>
-            ))}
-          </Box>
-
-          {/* Floor‐capacity chart */}
-          <Box mb={4} sx={{ px: "20px", p: 2, border: "2px solid #FFC107" }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-              <Typography variant="h6">Live Floor Counts vs Capacity</Typography>
-              <Typography variant="body2" color="textSecondary">
-                Last updated: {lastUpdate}
-              </Typography>
-            </Box>
-
-            <ChartCard
-              data={floorEntries}
-              dataKey="Headcount"
-              chartHeight={320}
-              colors={{ head: "#28B463", cap: "#CB4335" }}
-              axisProps={{
-                xAxis: { angle: -45, textAnchor: "end", tick: { fill: "#000" } },
-                yAxis: { tick: { fill: "#000" } },
-              }}
-            />
-          </Box>
-        </Container>
-      </Box>
-
-      <Footer />
-    </>
-  );
-}
-
-
-
-
-
+also use Standerd colours for graph use Western Union brand Colours for this 
 
 
 
@@ -606,29 +358,22 @@ export default function Dashboard() {
    const name = displayNameMap[p.name] || p.name.replace(' Partition','');
    const headcount = p.total;
   // const capacity  = seatCapacities[name] ?? 0;            // look up seats
-   const capacity   = seatCapacities[name] ?? 0;
+    const capacity  = seatCapacities[name] ?? 0;            // look up seats
    const pct       = capacity ? Math.round(headcount / capacity * 100) : 0;
    return {
      name,
      
-    //  Headcount: headcount,
-    //   Capacity:  capacity,
-
- Headcount: headcount,
-Capacity:  capacity,
-
-     percentage: pct,                                     // for tooltips
-    //  fill: colorsMap[p.name]?.[0] || '#FFC107',
-    fill: colorsMap[p.name]?.[0] || '#FFC107',
-     breakdown: {
-       Employees:  p.Employee,
-       Contractors: p.Contractor,
-       Capacity:    capacity,
-      'Load %':    pct + '%',
-       ...(p.TempBadge ? { 'Temp Badge': p.TempBadge } : {}),
-       Capacity,                                           // include absolute
-       'Load %': pct + '%'                                // include %
-     }
+         Headcount: headcount,
+         Capacity:  capacity,
+          percentage: pct, // for your own use if needed
+            fill: colorsMap[p.name]?.[0] || '#FFC107',
+            breakdown: {
+              Employees:   p.Employee,
+              Contractors: p.Contractor,
+              ...(p.TempBadge ? { 'Temp Badge': p.TempBadge } : {}),
+              Capacity:    capacity,
+              'Load %':    pct + '%',
+            }
   };
  });
 
@@ -645,7 +390,6 @@ Capacity:  capacity,
           // colors={{ head: '#FFC107', cap: '#B0BEC5' }}
 
           colors={{ head: '#2E86AB', cap: '#E74C3C' }}
-
           // If you want to customize axes, tooltips, etc:
           axisProps={{
             xAxis: { tick: { fill: '#fff' } },
@@ -656,7 +400,6 @@ Capacity:  capacity,
     })()
   )}
 </Box>
-
 
 
       </Container>
@@ -688,3 +431,193 @@ Capacity:  capacity,
 }
 
 
+
+
+
+
+
+
+// src/pages/PartitionDetail.jsx
+import React, { useEffect, useState } from "react";
+import {
+  Container,
+  Box,
+  Typography,
+  Button,
+  CircularProgress,
+} from "@mui/material";
+import { useParams, useNavigate } from "react-router-dom";
+
+import SummaryCard from "../components/SummaryCard";
+import ChartCard from "../components/ChartCard";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import LoadingSpinner from "../components/LoadingSpinner";
+
+import { fetchLiveSummary, fetchHistory } from "../api/occupancy.service";
+import { lookupFloor } from "../utils/floorLookup";
+
+import buildingCapacities from "../data/buildingCapacities";
+
+import GroupIcon from "@mui/icons-material/Group";
+import TrackChangesIcon from "@mui/icons-material/TrackChanges";
+import PeopleIcon from "@mui/icons-material/People";
+import BusinessCenterIcon from "@mui/icons-material/BusinessCenter";
+
+export default function PartitionDetail() {
+  const { partition } = useParams();
+  const navigate = useNavigate();
+
+  const [liveSummary, setLiveSummary] = useState(null);
+  const [history, setHistory] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState("");
+
+  // Auto‐refresh live summary
+  useEffect(() => {
+    let timer;
+    async function loadLive() {
+      const json = await fetchLiveSummary();
+      setLiveSummary(json);
+      setLastUpdate(new Date().toLocaleTimeString());
+    }
+    loadLive();
+    timer = setInterval(loadLive, 1000);
+    return () => clearInterval(timer);
+  }, [partition]);
+
+  // Load historical summary once
+  useEffect(() => {
+    setHistoryLoading(true);
+    fetchHistory(partition).then((json) => {
+      setHistory(json);
+      setHistoryLoading(false);
+    });
+  }, [partition]);
+
+  if (!liveSummary || !history) return <LoadingSpinner />;
+
+  // Totals for cards
+  const lastDay = history.summaryByDate.at(-1);
+  const partToday = lastDay.region;
+  const live = liveSummary.realtime[partition] || {
+    total: 0,
+    Employee: 0,
+    Contractor: 0,
+    TempBadge: 0,
+    floors: {},
+  };
+
+  // Build floorEntries with capacity
+  const floorEntries = Object.entries(live.floors).map(([floor, cnt]) => {
+    const name     = floor.trim();
+    const capacity = buildingCapacities[name] ?? 0;
+    const pct      = capacity ? Math.round((cnt / capacity) * 100) : 0;
+
+    return {
+      name,
+      Headcount: cnt,
+      Capacity:  capacity,
+      breakdown: {
+        Headcount: cnt,
+        Capacity:  capacity,
+        "Load %":  pct + "%",
+      },
+    };
+  });
+
+  return (
+    <>
+      <Header />
+
+      <Box component="main" sx={{ pt: 1, pb: 1 }}>
+        <Container maxWidth={false} disableGutters>
+          {/* Back button */}
+          <Box display="flex" alignItems="center" mb={1} sx={{ px: "20px" }}>
+            <Button size="small" onClick={() => navigate(-1)}>
+              ← Back
+            </Button>
+          </Box>
+
+          {/* Six‐card partition summary */}
+          <Box display="flex" flexWrap="wrap" gap={1} mb={2} sx={{ px: "20px" }}>
+            {[
+              {
+                title: `Today's Total Headcount`,
+                value: historyLoading ? <CircularProgress size={20} /> : partToday.total,
+                icon: <GroupIcon sx={{ color: "#E57373", fontSize: 36 }} />,
+                border: "#FFD666",
+              },
+              {
+                title: `Today's Employees Count`,
+                value: historyLoading ? <CircularProgress size={20} /> : partToday.Employee,
+                icon: <PeopleIcon sx={{ color: "#81C784", fontSize: 36 }} />,
+                border: "#81C784",
+              },
+              {
+                title: `Today's Contractors Count`,
+                value: historyLoading ? <CircularProgress size={20} /> : partToday.Contractor,
+                icon: <BusinessCenterIcon sx={{ color: "#64B5F6", fontSize: 36 }} />,
+                border: "#FFE599",
+              },
+              {
+                title: `Realtime Headcount`,
+                value: live.total,
+                icon: <TrackChangesIcon sx={{ color: "#BA68C8", fontSize: 36 }} />,
+                border: "#FFF2CC",
+              },
+              {
+                title: `Realtime Employees Count`,
+                value: live.Employee,
+                icon: <PeopleIcon sx={{ color: "#FFB74D", fontSize: 36 }} />,
+                border: "#FFD666",
+              },
+              {
+                title: `Realtime Contractors Count`,
+                value: live.Contractor,
+                icon: <BusinessCenterIcon sx={{ color: "#4DB6AC", fontSize: 36 }} />,
+                border: "#FFE599",
+              },
+            ].map((card) => (
+              <Box key={card.title} sx={{ flex: "1 1 calc(16.66% - 8px)" }}>
+                <SummaryCard
+                  title={card.title}
+                  total={card.value}
+                  stats={[]}
+                  icon={card.icon}
+                  sx={{
+                    height: 140,
+                    border: `1px solid ${card.border}`,
+                  }}
+                />
+              </Box>
+            ))}
+          </Box>
+
+          {/* Floor‐capacity chart */}
+          <Box mb={4} sx={{ px: "20px", p: 2, border: "2px solid #FFC107" }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+              <Typography variant="h6">Live Floor Counts vs Capacity</Typography>
+              <Typography variant="body2" color="textSecondary">
+                Last updated: {lastUpdate}
+              </Typography>
+            </Box>
+
+            <ChartCard
+              data={floorEntries}
+              dataKey="Headcount"
+              chartHeight={320}
+              colors={{ head: "#28B463", cap: "#CB4335" }}
+              axisProps={{
+                xAxis: { angle: -45, textAnchor: "end", tick: { fill: "#000" } },
+                yAxis: { tick: { fill: "#000" } },
+              }}
+            />
+          </Box>
+        </Container>
+      </Box>
+
+      <Footer />
+    </>
+  );
+}
