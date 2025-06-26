@@ -1,3 +1,111 @@
+// src/controllers/occupancy.controller.js
+const service = require('../services/occupancy.service');
+const doorMap = require('../utils/doorMap');
+
+/**
+ * Helper to page an array
+ */
+function paginateArray(arr, page = 1, pageSize = 50) {
+  const totalCount = arr.length;
+  const start = (page - 1) * pageSize;
+  const paged = arr.slice(start, start + pageSize);
+  return { paged, totalCount };
+}
+
+exports.getLiveOccupancy = async (req, res) => {
+  try {
+    const data = await service.fetchLiveOccupancy();
+    res.json({ success: true, count: data.length, data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Live occupancy fetch failed' });
+  }
+};
+
+function isEmployeeType(pt) { /* unchanged */ }
+function isTempBadgeType(pt) { /* unchanged */ }
+function lookupFloor(partition, door, direction, unmappedSet) { /* unchanged */ }
+
+exports.getLiveSummary = async (req, res) => {
+  try {
+    const { page = 1, pageSize = 50 } = req.query;
+    const swipes = await service.fetchLiveOccupancy();
+
+    // … compute today and realtime as before …
+
+    // build full details array
+    const fullDetails = Object.values(lastByPerson);
+
+    // paginate details
+    const { paged, totalCount } = paginateArray(fullDetails, Number(page), Number(pageSize));
+
+    return res.json({
+      success: true,
+      today,
+      realtime,
+      details: paged,
+      totalCount,
+      page: Number(page),
+      pageSize: Number(pageSize)
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Live summary failed' });
+  }
+};
+
+exports.getHistoricalOccupancy = async (req, res) => {
+  const { date, page = 1, pageSize = 50 } = req.query;
+  const location = req.params.location || null;
+  try {
+    const raw = await service.fetchHistoricalOccupancy(location);
+
+    // first swipe per person per date
+    const byDate = raw.reduce(/* unchanged grouping by date */);
+
+    const summaryByDate = [];
+    const allDetails = [];
+
+    Object.keys(byDate).sort().forEach(dateKey => {
+      const recs = Object.values(byDate[dateKey]);
+      allDetails.push(...recs);
+
+      // … compute summaryByDate entry …
+    });
+
+    // if date filter provided, filter and then paginate
+    let details = allDetails;
+    if (date) {
+      details = details.filter(r => r.LocaleMessageTime.startsWith(date));
+    }
+    const { paged, totalCount } = paginateArray(
+      // sort descending so latest first
+      details.sort((a,b) => new Date(b.LocaleMessageTime) - new Date(a.LocaleMessageTime)),
+      Number(page),
+      Number(pageSize)
+    );
+
+    return res.json({
+      success: true,
+      summaryByDate,
+      details: paged,
+      totalCount,
+      page: Number(page),
+      pageSize: Number(pageSize)
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Historical fetch failed' });
+  }
+};
+
+
+
+
+
+
+
+
 Now Lets check all backend Files if issue is resolve in beckebd kindly update , else we move in frontend part 
 
 
