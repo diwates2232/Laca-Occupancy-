@@ -1,15 +1,3 @@
-Now Read Below Chart section 
-Below Live Totals by Partition charts Are not Look good 
-can you make this charts like We have sepreately display in another page for partation details ,
-
-there is 2 option suggest me Which Option is best .
-1) Convert Current Chart into Coilumn Line Chart , (Column for seat Capacity and Line For HeadCount )
-2) Build Partation Wise Small diffrent diffrent Charts Where Display seat Capacity as headCount , also Building Wise Count , Floor Wsie Count , also another details 
-So Motive is All Region HeadCount in Details is Covered in one page and for details and Historical already ahve a seprate pages .
-
-
-Which option is Best SUggest me 
-
 // src/pages/Dashboard.jsx
 
 import React, { useEffect, useState } from 'react';
