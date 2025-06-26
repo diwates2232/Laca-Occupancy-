@@ -1,3 +1,68 @@
+--- a/src/pages/Dashboard.jsx
++++ b/src/pages/Dashboard.jsx
+@@ -19,7 +19,7 @@ import { partitionList } from '../services/occupancy.service';
+ import seatCapacities from '../data/seatCapacities';
+ 
+ const displayNameMap = { /* ... */ };
+ const colorsMap = { /* ... */ };
+ 
+ export default function Dashboard() {
+@@ -146,7 +146,6 @@ export default function Dashboard() {
+     {loading ? (
+       <Skeleton variant="rectangular" width="100%" height={360} />
+     ) : (
+-    
+       (() => {
+         // 1) map partitions → chartData
+         const chartData = partitions.map((p, i) => {
+@@ -154,13 +153,18 @@ export default function Dashboard() {
+           const name      = displayNameMap[p.name] || p.name.replace(' Partition','');
+           const headcount = p.total;
+-          // const capacity  = seatCapacities[name] ?? 0;            // look up seats
++          const capacity  = seatCapacities[name] ?? 0;            // look up seats
+           const pct       = capacity ? Math.round(headcount / capacity * 100) : 0;
+           return {
+             name,
+-            
+-            Headcount: headcount,
+-            Capacity:  capacity,
++            Headcount: headcount,
++            Capacity:  capacity,
+ 
+-           percentage: pct,                                     // for tooltips
+-          fill: colorsMap[p.name]?.[0] || '#FFC107',
+-           breakdown: {
+-             Employees:  p.Employee,
+-             Contractors: p.Contractor,
+-             Capacity:    capacity,
+-            'Load %':    pct + '%',
+-             ...(p.TempBadge ? { 'Temp Badge': p.TempBadge } : {}),
+-             // stray shorthand removed here
+-           }
++            percentage: pct, // for your own use if needed
++            fill: colorsMap[p.name]?.[0] || '#FFC107',
++            breakdown: {
++              Employees:   p.Employee,
++              Contractors: p.Contractor,
++              ...(p.TempBadge ? { 'Temp Badge': p.TempBadge } : {}),
++              Capacity:    capacity,
++              'Load %':    pct + '%',
++            }
+           };
+         });
+ 
+@@ -172,7 +176,7 @@ export default function Dashboard() {
+           <ChartCard
+             data={chartData}
+             dataKey="Headcount"
+-            chartHeight={360}
++            chartHeight={360}
+             colors={{ head: '#2E86AB', cap: '#E74C3C' }}
+             axisProps={{
+               xAxis: { tick: { fill: '#fff' } },
+
+
+
 Now read the files and solve the issue carefully
 
 ERROR
