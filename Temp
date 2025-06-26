@@ -1,3 +1,16 @@
+I sampled a small area in the middle of each of the four horizontal panels (from top to bottom) and got these approximate hex color codes:
+	•	Top panel (olive-grey): #767266
+	•	2nd panel (deep olive-brown): #3D340B
+	•	3rd panel (warm brown): #564110
+	•	Bottom panel (golden mustard): #724E14
+
+You can use these exact hex values to reproduce the same colors in your designs.
+
+
+
+
+
+
 //C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\PartitionOverviewChart.jsx
 
 import React from 'react';
