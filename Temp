@@ -1,3 +1,133 @@
+@@ top of file
+ import ChartCard from '../components/ChartCard';
+-import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
++import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+ import { partitionList } from '../services/occupancy.service';
++import seatCapacities from '../data/seatCapacities';
+
+@@ inside Dashboard(), replace the “Live totals chart” section with:
+-    // 2) Build your chart data
+-    (() => {
++  {/* Live totals vs. seats */}
++  {loading ? (
++    <Skeleton variant="rectangular" width="100%" height={360} />
++  ) : (() => {
+     const chartData = partitions.map((p, i) => {
+       const name      = displayNameMap[p.name] || p.name.replace(' Partition','');
+       const headcount = p.total;
+-      const capacity  = seatCapacities[name] ?? 0;            // look up seats
++      const capacity  = seatCapacities[name] ?? 0;            // look up seats
+       const pct       = capacity > 0
+-        ? Math.round(headcount / capacity * 100)
++        ? Math.round((headcount / capacity) * 100)
+         : 0;
+       return {
+         name,
+-        Headcount: headcount,
+-        Capacity:  capacity,
++        Headcount: headcount,
++        Capacity:  capacity,
+         percentage: pct,                                     // for tooltip
+         fill: colorsMap[p.name]?.[0] || '#FFC107',
+         breakdown: {
+           Employees:  p.Employee,
+           Contractors: p.Contractor,
+           ...(p.TempBadge ? { 'Temp Badge': p.TempBadge } : {}),
+-          Capacity,                                           // <-- BAD: no var named Capacity
+-          'Load %': pct + '%'                                // include %
++          Capacity: capacity,                                 // correct shorthand
++          'Load %': `${pct}%`
+         }
+       };
+     });
+ 
+     return (
+       <ChartCard
+         title="Live Totals vs Seats"
+-        data={chartData}
+-        // dataKey="value"
+-         dataKey="Headcount"  
+-        chartHeight={360}
+-        // colors={{ head: '#FFC107', cap: '#B0BEC5' }}
+-
+-        colors={{ head: '#2E86AB', cap: '#E74C3C' }}
++        data={chartData}
++        dataKey="Headcount"
++        chartHeight={360}
++        colors={{ head: '#2E86AB', cap: '#E74C3C' }}
+         axisProps={{
+           xAxis: { tick: { fill: '#fff' } },
+           yAxis: { tick: { fill: '#fff' } }
+         }}
+       />
+     );
+-  })()
++  })()}
+
+
+
+
+@@ top of file
+-import { fetchLiveSummary, fetchHistory } from "../api/occupancy.service";
+-import { lookupFloor } from "../utils/floorLookup";
++import { fetchLiveSummary, fetchHistory } from "../api/occupancy.service";
++import { lookupFloor } from "../utils/floorLookup";
++import buildingCapacities from '../data/buildingCapacities';
+@@ after your six‐card summary but before the existing “Live Floor Counts” chart:
++        {/* Floor‐by‐floor headcount vs. capacity */}
++        {partition.startsWith('CR.') && (
++          <Box mb={4} sx={{ px: "20px", p: 2, border: '2px solid #FFC107' }}>
++            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
++              <Typography variant="h6">Live Floor vs Capacity</Typography>
++              <Typography variant="body2" color="textSecondary">
++                Last updated: {lastUpdate}
++              </Typography>
++            </Box>
++
++            {(() => {
++              // map floors -> capacity entries
++              const floorData = Object.entries(live.floors).map(([floor, cnt]) => {
++                const name    = floor.trim();
++                const cap     = buildingCapacities[name] ?? 0;
++                const pct     = cap > 0
++                  ? Math.round((cnt / cap) * 100)
++                  : 0;
++                return {
++                  name,
++                  Headcount: cnt,
++                  Capacity:  cap,
++                  percentage: pct,
++                  breakdown: {
++                    Headcount: cnt,
++                    Capacity:  cap,
++                    'Load %':  `${pct}%`
++                  }
++                };
++              });
++
++              return (
++                <ChartCard
++                  data={floorData}
++                  dataKey="Headcount"
++                  chartHeight={320}
++                  colors={{ head: '#28B463', cap: '#CB4335' }}
++                  axisProps={{
++                    xAxis: { angle: -45, textAnchor: 'end', tick: { fill: '#000' } },
++                    yAxis: { tick: { fill: '#000' } }
++                  }}
++                />
++              );
++            })()}
++          </Box>
++        )}
+
+
+
+
+
+
+
+
 Now Read each file line by line and give me update files carefullly.
 silve error and check and u[pdate each file carefully
 
