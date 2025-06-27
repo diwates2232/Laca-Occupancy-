@@ -1,3 +1,184 @@
+// src/pages/Dashboard.jsx
+
+import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Box,
+  Typography,
+  Skeleton,
+} from '@mui/material';
+
+import GroupIcon from '@mui/icons-material/Group';
+import TrackChangesIcon from '@mui/icons-material/TrackChanges';
+import PeopleIcon from '@mui/icons-material/People';
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
+
+import CostaRicaFlag  from '../assets/flags/costa-rica.png';
+import ArgentinaFlag  from '../assets/flags/argentina.png';
+import MexicoFlag     from '../assets/flags/mexico.png';
+import PeruFlag       from '../assets/flags/peru.png';
+import BrazilFlag     from '../assets/flags/brazil.png';
+import PanamaFlag     from '../assets/flags/panama.png';
+
+import { useNavigate } from 'react-router-dom';
+
+import Header       from '../components/Header';
+import SummaryCard  from '../components/SummaryCard';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+import { partitionList }     from '../services/occupancy.service';
+import seatCapacities        from '../data/seatCapacities';
+
+import PieChartCard       from '../components/PieChartCard';
+import CompositeChartCard from '../components/CompositeChartCard';
+import LineChartCard      from '../components/LineChartCard';
+
+const displayNameMap = {
+  'CR.Costa Rica Partition': 'Costa Rica',
+  'AR.Cordoba':               'Argentina',
+  'MX.Mexico City':           'Mexico',
+  'PE.Lima':                  'Peru',
+  'BR.Sao Paulo':             'Brazil',
+  'PA.Panama City':           'Panama'
+};
+
+const wuPalette = {
+  gold:   '#FFC107',
+  black:  '#000000',
+  accent: '#E57373',
+};
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (data) {
+      setLastUpdate(new Date().toLocaleTimeString());
+    }
+  }, [data]);
+
+  if (error) {
+    return (
+      <Box width="100vw%" py={4}>
+        <Typography color="error" align="center">
+          Error loading live data
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Build partition objects
+  const regions = data?.realtime || {};
+  const partitions = partitionList.map(name => {
+    const key = Object.keys(regions).find(k => k.includes(name));
+    const p   = key ? regions[key] : {};
+    return {
+      name,
+      total:      p.total      || 0,
+      Employee:   p.Employee   || 0,
+      Contractor: p.Contractor || 0,
+      TempBadge:  p.TempBadge  || 0,
+      floors:     p.floors     || {}
+    };
+  }).sort((a, b) => b.total - a.total);
+
+  // Today & realtime totals
+  const todayTot     = data?.today?.total       ?? 0;
+  const todayEmp     = data?.today?.Employee    ?? 0;
+  const todayCont    = data?.today?.Contractor  ?? 0;
+  const realtimeTot  = partitions.reduce((sum, p) => sum + p.total, 0);
+  const realtimeEmp  = partitions.reduce((sum, p) => sum + p.Employee, 0);
+  const realtimeCont = partitions.reduce((sum, p) => sum + p.Contractor, 0);
+
+  // Extract CR and AR partitions
+  const costaRica = partitions.find(p => p.name === 'CR.Costa Rica Partition');
+  const argentina = partitions.find(p => p.name === 'AR.Cordoba');
+  // Others
+  const others = partitions.filter(p =>
+    p.name !== 'CR.Costa Rica Partition' && p.name !== 'AR.Cordoba'
+  );
+
+  // Build floor-level data for CR & AR
+  const buildFloorData = (partition, displayName) =>
+    Object.entries(partition.floors).map(([floor, cnt]) => ({
+      name:      floor.trim(),
+      headcount: cnt,
+      capacity:  seatCapacities[`${displayName}-${floor.trim()}`] || 0
+    }));
+
+  return (
+    <>
+      <Header />
+
+      <Container maxWidth={false} disableGutters sx={{ pt:1, pb:2, px:'20px' }}>
+        {/* Summary cards */}
+        <Box display="flex" flexWrap="wrap" gap={1} mb={1}>
+          {[
+            { title: "Today's Total Headcount",    value: todayTot,    icon: <GroupIcon sx={{ color: wuPalette.accent, fontSize: 36 }} />, border: wuPalette.gold },
+            { title: "Today's Employees Count",    value: todayEmp,    icon: <PeopleIcon sx={{ color: '#81C784', fontSize: 36 }} />,       border: '#81C784' },
+            { title: "Today's Contractors Count",  value: todayCont,   icon: <BusinessCenterIcon sx={{ color: '#64B5F6', fontSize: 36 }} />, border: '#FFE599' },
+            { title: "Realtime Headcount",         value: realtimeTot, icon: <TrackChangesIcon sx={{ color: '#BA68C8', fontSize: 36 }} />, border: '#FFF2CC' },
+            { title: "Realtime Employees Count",   value: realtimeEmp, icon: <PeopleIcon sx={{ color: '#FFB74D', fontSize: 36 }} />,       border: wuPalette.gold },
+            { title: "Realtime Contractors Count", value: realtimeCont,icon: <BusinessCenterIcon sx={{ color: '#4DB6AC', fontSize: 36 }} />, border: '#FFE599' },
+          ].map(card => (
+            <Box key={card.title} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+              <SummaryCard
+                title={card.title}
+                total={card.value}
+                stats={[]}
+                icon={card.icon}
+                sx={{ height: 140, border: `1px solid ${card.border}` }}
+              />
+            </Box>
+          ))}
+        </Box>
+
+        {/* Partition detail widgets */}
+        {loading ? (
+          <Skeleton variant="rectangular" width="100%" height={300} />
+        ) : (
+          <Box mt={4} display="flex" flexWrap="wrap" gap={1} justifyContent="space-between">
+            {/* Costa Rica (Composite Bar+Line) */}
+            <Box sx={{ flex: '1 1 calc(48% - 8px)', minWidth: 300 }}>
+              <CompositeChartCard
+                key="CR"
+                title="Costa Rica"
+                data={buildFloorData(costaRica, 'Costa Rica')}
+              />
+            </Box>
+
+            {/* Argentina (Line) */}
+            <Box sx={{ flex: '1 1 calc(48% - 8px)', minWidth: 300 }}>
+              <LineChartCard
+                key="AR"
+                title="Argentina"
+                data={buildFloorData(argentina, 'Argentina')}
+              />
+            </Box>
+
+            {/* Combined Pie for the other four */}
+            <Box sx={{ flex: '1 1 calc(48% - 8px)', minWidth: 300 }}>
+              <PieChartCard
+                key="others"
+                title="Other Regions"
+                data={others.map(p => ({
+                  name:  displayNameMap[p.name] || p.name.split('.').pop(),
+                  value: p.total
+                }))}
+                colors={[ wuPalette.gold, wuPalette.accent, wuPalette.black, '#81C784' ]}
+              />
+            </Box>
+          </Box>
+        )}
+      </Container>
+
+      <Footer />
+    </>
+  );
+}
+
+
 Once Check all file carefully and Review and Give me Fully Updated files carefully
 
 // src/pages/Dashboard.jsx
