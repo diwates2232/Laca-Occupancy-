@@ -1,3 +1,28 @@
+// src/pages/Dashboard.jsx (or wherever you define palette15)
+
+const palette15 = [
+  '#FFC107', // Gold (WU primary)
+  '#E91E63', // Pink
+  '#4CAF50', // Green
+  '#FF5722', // Deep Orange
+  '#9C27B0', // Purple
+  '#FF9800', // Orange
+  '#795548', // Brown
+  '#CDDC39', // Lime
+  '#FFEB3B', // Yellow
+  '#B0BEC5', // Gray
+  '#A1887F', // Taupe
+  '#D84315', // Red-Orange
+  '#827717', // Olive
+  '#6D4C41', // Dark Brown
+  '#E65100'  // Deep Orange Accent
+];
+
+
+
+
+
+
 here Remove blue Colour strickly
 const palette15 = [
   '#FFC107','#E91E63','#3F51B5','#4CAF50','#FF5722',
