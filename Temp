@@ -1,3 +1,138 @@
+--- a/src/components/CompositeChartCard.jsx
++++ b/src/components/CompositeChartCard.jsx
+@@ -38,7 +38,12 @@ export default function CompositeChartCard({
+       <CardContent sx={{ p: 1 }}>
+         <Typography
+           variant="subtitle1"
+           align="center"
+           gutterBottom
+           color="text.primary"
+         >
+           {title}
+         </Typography>
+         <Box sx={{ width: '100%', height }}>
+           <ResponsiveContainer>
+             <ComposedChart
+               data={enriched}
+               margin={{ top: 10, right: 20, left: 0, bottom: 20 }}
+             >
+               <CartesianGrid
+                 strokeDasharray="3 3"
+                 stroke="rgba(255,255,255,0.1)"
+               />
+
+-              <XAxis
+-                dataKey="name"
+-                tickLine={false}
+-                axisLine={false}
+-                stroke="rgba(255,255,255,0.6)"
+-              />
++              <XAxis
++                dataKey="name"
++                tickLine={false}
++                axisLine={false}
++                stroke="rgba(255,255,255,0.6)"
++                tickFormatter={label => 
++                  // strip any leading word(s) and space, e.g. "Building A1" → "A1"
++                  label.replace(/^[^\s]*\s*/, '')
++                }
++              />
+
+               <YAxis
+                 yAxisId="left"
+                 tickLine={false}
+                 axisLine={false}
+                 stroke="rgba(255,255,255,0.6)"
+               />
+
+               <YAxis
+                 yAxisId="right"
+                 orientation="right"
+                 tickLine={false}
+                 axisLine={false}
+                 stroke="rgba(255,255,255,0.6)"
+                 domain={[0, 100]}
+                 tickFormatter={val => `${val}%`}
+               />
+
+               <Tooltip
+                 contentStyle={{ backgroundColor: '#222', borderColor: lineColor }}
+                 formatter={(value, name) => 
+                   name === 'percentage' ? `${value}%` : value
+                 }
+               />
+
+               <Legend
+                 verticalAlign="top"
+                 wrapperStyle={{ color: 'rgba(255,255,255,0.8)' }}
+               />
+
+               {/* Headcount bars with per-bar colors & percentage labels */}
+               <Bar
+                 yAxisId="left"
+                 dataKey="headcount"
+                 name="Headcount"
+                 barSize={20}
+                 isAnimationActive
+                 animationDuration={animationDuration}
+                 animationEasing={animationEasing}
+               >
+                 {enriched.map((entry, idx) => (
+                   <Cell
+                     key={`cell-${idx}`}
+                     fill={entry._color}
+                     stroke="#fff"
+                     strokeWidth={1}
+                   />
+                 ))}
+                 <LabelList
+                   dataKey="percentage"
+                   position="top"
+                   formatter={val => `${val}%`}
+                   style={{ fill: '#fff', fontSize: 10, fontWeight: 600 }}
+                 />
+               </Bar>
+
+               {/* Usage % line on right axis */}
+               <Line
+                 yAxisId="right"
+                 type="monotone"
+                 dataKey="percentage"
+                 name="Usage %"
+                 stroke={lineColor}
+                 strokeWidth={2}
+                 dot={false}
+                 isAnimationActive
+                 animationDuration={animationDuration}
+                 animationEasing={animationEasing}
+               />
+
+               {/* Seat Capacity dashed line */}
+               <Line
+                 yAxisId="left"
+                 type="monotone"
+                 dataKey="capacity"
+                 name="Seat Capacity"
+                 stroke="#81C784"
+                 strokeDasharray="5 5"
+                 dot={false}
+                 isAnimationActive
+                 animationDuration={animationDuration}
+                 animationEasing={animationEasing}
+               />
+             </ComposedChart>
+           </ResponsiveContainer>
+         </Box>
+       </CardContent>
+     </Card>
+   );
+ }
+
+
+
+
+
+
 Now Strickly Dont make Another Changes 
 Just BeLow The Bar details display like
 Building A1  Building A2 Building A3 
