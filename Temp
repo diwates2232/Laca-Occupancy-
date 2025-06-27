@@ -1,121 +1,65 @@
+Now Read all Files carefully then update step by step 
+1) Add AutoScaling for all Charts and cards , 
+2) Use Infographic Theme 
+3) Add Standerd animation
+4) Add hover effect 
+5) make Live theme 
+6) fill Add Border for Charts 
+7) Autosacle each chart and inner componenet aslo 
+8) When Count is 0 in Chart only then display there is no Realtime Employee Data 
+9)aslo in your Openion add more effects and animation so page looks more standerd and interactive .
+
+Dont Make Unnecessary changes strickly ...
+
+
 // src/pages/Dashboard.jsx
-…
-        {/* Partition detail widgets */}
--        {loading ? (
--          <Skeleton variant="rectangular" width="100%" height={600}/>
--        ) : (
--          <>
--            {/* First row: Costa Rica & Argentina */}
--            <Box mt={4} display="flex" gap={1}>
--              {/* Costa Rica */}
--              <Box sx={{ flex:'1 1 49%', minWidth:320 }}>
--                <CompositeChartCard … height={300}/>
--              </Box>
--              {/* Argentina */}
--              <Box sx={{ flex:'1 1 49%', minWidth:320 }}>
--                <LineChartCard … height={300}/>
--              </Box>
--            </Box>
--
--            {/* Second row: Brazil, Panama, Peru pies */}
--            <Box mt={4} display="flex" gap={1}>
--              {others.map((p, idx) => (
--                <Box key={p.name} sx={{ flex:'1 1 32%', minWidth:200 }}>
--                  <PieChartCard … height={300}/>
--                </Box>
--              ))}
--            </Box>
--          </>
--        )}
-+        {loading ? (
-+          <Skeleton variant="rectangular" width="100%" height={400}/>
-+        ) : (
-+          <Box mt={4} display="flex" gap={1} justifyContent="space-between">
-+
-+            {/* 1) Costa Rica (Composite) */}
-+            <Box sx={{ flex:'1 1 32%', minWidth:280 }}>
-+              <CompositeChartCard
-+                title="Costa Rica"
-+                data={Object.entries(
-+                  partitions.find(p=>p.name==='CR.Costa Rica Partition').floors
-+                ).map(([floor,c])=>({
-+                  name: floor.trim(),
-+                  headcount: c,
-+                  capacity:  seatCapacities[`Costa Rica-${floor.trim()}`]||0
-+                }))}
-+                barColor={palette15[0]}
-+                lineColor={palette15[1]}
-+                height={300}
-+              />
-+            </Box>
-+
-+            {/* 2) Argentina (Line) */}
-+            <Box sx={{ flex:'1 1 32%', minWidth:280 }}>
-+              <LineChartCard
-+                title="Argentina"
-+                data={Object.entries(
-+                  partitions.find(p=>p.name==='AR.Cordoba').floors
-+                ).map(([floor,c])=>({
-+                  name: floor.trim(),
-+                  headcount: c,
-+                  capacity:  seatCapacities[`Argentina-${floor.trim()}`]||0
-+                }))}
-+                lineColor1={palette15[2]}
-+                lineColor2={palette15[3]}
-+                height={300}
-+              />
-+            </Box>
-+
-+            {/* 3) Combined Pie for MX/BR/PE/PA */}
-+            <Box sx={{ flex:'1 1 32%', minWidth:280 }}>
-+              <PieChartCard
-+                title="Latin America"
-+                data={partitions
-+                  .filter(p => ['MX.Mexico City','BR.Sao Paulo','PE.Lima','PA.Panama City'].includes(p.name))
-+                  .map(p => ({
-+                    name: displayNameMap[p.name],
-+                    value: p.total
-+                  }))}
-+                colors={[
-+                  palette15[4],
-+                  palette15[5],
-+                  palette15[6],
-+                  palette15[7],
-+                ]}
-+                height={300}
-+                showZeroSlice={true}
-+              />
-+            </Box>
-+
-+          </Box>
-+        )}
-…
-
-
-
-
-
-
-
-
 
 import React, { useEffect, useState } from 'react';
-import { Container, Box, Typography, Skeleton } from '@mui/material';
-import GroupIcon from '@mui/icons-material/Group';
-import TrackChangesIcon from '@mui/icons-material/TrackChanges';
+import {
+  Container,
+  Box,
+  Typography,
+  Skeleton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  Divider
+} from '@mui/material';
+
+import GroupIcon from '@mui/icons-material/Group';         // Replaces TodayIcon
+import TrackChangesIcon from '@mui/icons-material/TrackChanges'; // Replaces SyncIcon
+
+
 import PeopleIcon from '@mui/icons-material/People';
 import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
+
+// Flags
+import CostaRicaFlag  from '../assets/flags/costa-rica.png';
+import ArgentinaFlag  from '../assets/flags/argentina.png';
+import MexicoFlag     from '../assets/flags/mexico.png';
+import PeruFlag       from '../assets/flags/peru.png';
+import BrazilFlag     from '../assets/flags/brazil.png';
+import PanamaFlag     from '../assets/flags/panama.png';
+
+
 import { useNavigate } from 'react-router-dom';
 
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 import SummaryCard from '../components/SummaryCard';
+import ChartCard from '../components/ChartCard';
 import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
 import { partitionList } from '../services/occupancy.service';
 import seatCapacities from '../data/seatCapacities';
 
-import CompositeChartCard from '../components/CompositeChartCard';
-import LineChartCard      from '../components/LineChartCard';
-import PieChartCard       from '../components/PieChartCard';
+import PieChartCard         from '../components/PieChartCard';
+import CompositeChartCard   from '../components/CompositeChartCard';
+import LineChartCard        from '../components/LineChartCard';
+
+ 
+
 
 const displayNameMap = {
   'CR.Costa Rica Partition': 'Costa Rica',
@@ -126,16 +70,48 @@ const displayNameMap = {
   'PA.Panama City':           'Panama'
 };
 
-// 15-colour palette (you can tweak as needed)
+const colorsMap = {
+  'CR.Costa Rica Partition': ['#FFD666', '#fcf3cf', '#2ecc71', '#ec7063', '#ec7063'],
+  'AR.Cordoba':               ['#FFE599', '#fcf3cf', '#2ecc71', '#ec7063'],
+  'MX.Mexico City':           ['#FFD666', '#fcf3cf', '#2ecc71', '#ec7063'],
+  'PE.Lima':                  ['#FFF2CC', '#fcf3cf', '#2ecc71', '#ec7063'],
+  'BR.Sao Paulo':             ['#FFD666', '#fcf3cf', '#2ecc71', '#ec7063'],
+  'PA.Panama City':           ['#FFE599', '#fcf3cf', '#2ecc71', '#ec7063'],
+};
+
+
+
+
+const widgetMap = {
+  'CR.Costa Rica Partition': 'composite',
+  'AR.Cordoba':               'line',
+  'BR.Sao Paulo':             'pie',
+  'MX.Mexico City':           'pie',
+  'PE.Lima':                  'pie',
+  'PA.Panama City':           'pie',
+};
+
+
+// const wuPalette = {
+//   gold:   '#FFC107',
+//   black:  '#000000',
+//   accent: '#E57373',
+// };
+
+
+
 const palette15 = [
   '#FFC107','#E91E63','#3F51B5','#4CAF50','#FF5722',
   '#9C27B0','#00BCD4','#8BC34A','#FF9800','#673AB7',
   '#009688','#CDDC39','#FFEB3B','#795548','#607D8B'
 ];
 
+
+
 export default function Dashboard() {
   const { data, loading, error } = useLiveOccupancy(1000);
   const [lastUpdate, setLastUpdate] = useState('');
+  const [partition, setPartition] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -152,110 +128,344 @@ export default function Dashboard() {
     );
   }
 
+  // Build and sort partitions
   const regions = data?.realtime || {};
-  const partitions = partitionList.map(name => {
-    const key = Object.keys(regions).find(k => k.includes(name));
-    const p   = key ? regions[key] : {};
-    return {
-      name,
-      total:     p.total      || 0,
-      Employee:  p.Employee   || 0,
-      Contractor:p.Contractor || 0,
-      TempBadge: p.TempBadge  || 0,
-      floors:    p.floors     || {}
-    };
-  }).sort((a,b)=>b.total - a.total);
+  const partitions = partitionList
+    .map(name => {
+      const key = Object.keys(regions).find(k => k.includes(name));
+      const p = key ? regions[key] : {};
+      return {
+        name,
+        total: p.total || 0,
+        Employee: p.Employee || 0,
+        Contractor: p.Contractor || 0,
+        TempBadge: p.TempBadge || 0,
+        floors: p.floors || {}
+      };
+    })
+    .sort((a, b) => b.total - a.total);
 
-  const todayTot    = data?.today?.total    ?? 0;
-  const todayEmp    = data?.today?.Employee ?? 0;
-  const todayCont   = data?.today?.Contractor ?? 0;
-  const realtimeTot = partitions.reduce((s,p)=>s+p.total,0);
-  const realtimeEmp = partitions.reduce((s,p)=>s+p.Employee,0);
-  const realtimeCont= partitions.reduce((s,p)=>s+p.Contractor,0);
+  // Totals
+  const todayTot   = data?.today?.total    ?? 0;
+  const todayEmp   = data?.today?.Employee ?? 0;
+  const todayCont  = data?.today?.Contractor ?? 0;
+  const realtimeTot  = partitions.reduce((sum, p) => sum + p.total, 0);
+  const realtimeEmp  = partitions.reduce((sum, p) => sum + p.Employee, 0);
+  const realtimeCont = partitions.reduce((sum, p) => sum + p.Contractor, 0);
 
-  // extract partition helpers
+
+ // extract partition helpers
   const cr = partitions.find(p=>p.name==='CR.Costa Rica Partition');
   const ar = partitions.find(p=>p.name==='AR.Cordoba');
   const others = partitions.filter(p=>!['CR.Costa Rica Partition','AR.Cordoba'].includes(p.name))
     .filter(p=>['BR.Sao Paulo','MX.Mexico City','PE.Lima','PA.Panama City'].includes(p.name));
 
+
   return (
     <>
       <Header />
 
-      <Container maxWidth={false} disableGutters sx={{ pt:1, pb:2, px:'20px' }}>
-        {/* summary cards */}
-        {/* ... (unchanged) */}
+      <Container
+        maxWidth={false}
+        disableGutters
+        sx={{
+          pt: 1,
+          pb: 2,
+          px: '20px',        // ← exactly 20px padding both sides
+        }}
+      >
 
-        {/* Partition detail widgets */}
-        {loading
-          ? <Skeleton variant="rectangular" width="100%" height={600}/>
-          : <>
-            {/* First row: Costa Rica & Argentina */}
-            <Box mt={4} display="flex" gap={1}>
-              {/* Costa Rica */}
-              <Box sx={{ flex:'1 1 49%', minWidth:320 }}>
-                <CompositeChartCard
-                  title="Costa Rica"
-                  data={Object.entries(cr.floors).map(([floor,c])=>({
-                    name: floor.trim(),
-                    headcount: c,
-                    capacity:  seatCapacities[`Costa Rica-${floor.trim()}`]||0
-                  }))}
-                  // barColor / lineColor from palette
-                  barColor={palette15[0]}
-                  lineColor={palette15[1]}
-                  height={300}
-                />
-              </Box>
-              {/* Argentina */}
-              <Box sx={{ flex:'1 1 49%', minWidth:320 }}>
-                <LineChartCard
-                  title="Argentina"
-                  data={Object.entries(ar.floors).map(([floor,c])=>({
-                    name: floor.trim(),
-                    headcount: c,
-                    capacity:  seatCapacities[`Argentina-${floor.trim()}`]||0
-                  }))}
-                  lineColor1={palette15[2]}
-                  lineColor2={palette15[3]}
-                  height={300}
-                />
-              </Box>
-            </Box>
+        {/* Top six summary cards */}
+     <Box display="flex" flexWrap="wrap" gap={1} mb={1}>
+  {[
+    {
+      title: "Today's Total Headcount",
+      value: todayTot,
+      icon: <GroupIcon sx={{ color: '#E57373', fontSize: 36 }} />,
+      borderColor: '#FFD666',
+    },
+    {
+      title: "Today's Employees Count",
+      value: todayEmp,
+      icon: <PeopleIcon sx={{ color: '#81C784', fontSize: 36 }} />,
+      borderColor: '#81C784', 
+    },
+    {
+      title: "Today's Contractors Count",
+      value: todayCont,
+      icon: <BusinessCenterIcon sx={{ color: '#64B5F6', fontSize: 36 }} />,
+      borderColor: '#FFE599',
+      
+    },
+    {
+      title: "Realtime Headcount",
+      value: realtimeTot,
+      icon: <TrackChangesIcon sx={{ color: '#BA68C8', fontSize: 36 }} />,
+      borderColor: '#FFF2CC',
+    },
+    {
+      title: "Realtime Employees Count",
+      value: realtimeEmp,
+      icon: <PeopleIcon sx={{ color: '#FFB74D', fontSize: 36 }} />,
+      borderColor: '#FFD666',
+    },
+    {
+      title: "Realtime Contractors Count",
+      value: realtimeCont,
+      icon: <BusinessCenterIcon sx={{ color:  '#4DB6AC', fontSize: 36 }} />,
+      borderColor: '#FFE599'
+    }
+ 
 
-            {/* Second row: Brazil, Panama, Peru pies */}
-            <Box mt={4} display="flex" gap={1}>
-              {others.map((p, idx) => {
-                const title = displayNameMap[p.name];
-                const capacity = seatCapacities[title] || 0;
-                const used     = p.total;
-                const available= capacity - used;
+    ].map(card => (
+     <Box key={card.title} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+       <SummaryCard
+         title={card.title}
+         total={card.value}
+         stats={[]}
+         icon={card.icon}
+         sx={{
+           height: 140,
+           border: `1px solid ${card.borderColor}`
+         }}
+       />
+     </Box>
+   ))}
+ </Box> 
+
+        {/* Partition cards */}
+        <Box mt={4} sx={{ width: '100vw%', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          {loading ? (
+            <Skeleton variant="rectangular" width="100vw%" height={200} />
+          ) : (
+                        (() => {
+              // map of flags and primary colors for each partition
+              const flagMap = {
+                'CR.Costa Rica Partition': CostaRicaFlag,
+                'AR.Cordoba':               ArgentinaFlag,
+                'MX.Mexico City':           MexicoFlag,
+                'PE.Lima':                  PeruFlag,
+                'BR.Sao Paulo':             BrazilFlag,
+                'PA.Panama City':           PanamaFlag,
+              };
+
+
+              // full palette arrays per flag: [title, total, stat1, stat2, stat3?]
+              const colorsMap = {
+                'CR.Costa Rica Partition': [
+                  '#FFD666', // title (red)
+                  '#fcf3cf', // total (blue)
+                  '#2ecc71', // Employees (white)
+                  '#ec7063', // Contractors (blue)
+                  '#ec7063'  // TempBadge (white)
+                ],
+               'AR.Cordoba': [
+                   '#FFE599', // title (light blue)
+                  '#fcf3cf', // total (white)
+                  '#2ecc71', // Employees (sun yellow)
+                  '#ec7063',  // Contractors (white)
+                ],
+                'MX.Mexico City': [
+                   '#FFD666', // title (green)
+                  '#fcf3cf', // total (white)
+                  '#2ecc71', // Employees (red)
+                  '#ec7063',  // Contractors (white)
+                ],
+                'PE.Lima': [
+                  '#FFF2CC', // title (red)
+                  '#fcf3cf', // total (white)
+                  '#2ecc71',// Employees (red)
+                  '#ec7063',  // Contractors (white)
+                ],
+                'BR.Sao Paulo': [
+                  '#FFD666', // title (green)
+                  '#fcf3cf', // total (yellow)
+                  '#2ecc71', // Employees (blue)
+                  '#ec7063', // Contractors (yellow)
+                ],
+                'PA.Panama City': [
+                  '#FFE599', // title (blue)
+                  '#fcf3cf', // total (white)
+                  '#2ecc71', // Employees (red)
+                  '#ec7063', // Contractors (white)
+                ]
+              };
+
+              return partitions.map(p => {
+  
+
+                const flagSrc = flagMap[p.name] || '';
+                const colors = colorsMap[p.name] || ['#FFC107', '#FFC107'];
+                const [ titleC, totalC, ...statCs ] = colors;
+
+
                 return (
-                  <Box key={p.name} sx={{ flex:'1 1 32%', minWidth:200 }}>
-                    <PieChartCard
-                      title={title}
-                      data={[
-                        { name:'Used',     value: used },
-                        { name:'Available',value: available>0?available:0 }
+                  <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+                    <SummaryCard
+                      // title={p.name}
+                      title={displayNameMap[p.name] || p.name.replace(' Partition','')}
+                    
+                      icon={
+                        flagSrc && (
+                          <Box
+                            component="img"
+                            src={flagSrc}
+                            alt={`${p.name} flag`}
+                            sx={{
+                              width: 50,
+                              height: 30,
+                              border: '1px solid #fff'  // 1px border
+                            }}
+                          />
+                        )
+                      }
+
+
+                      total={p.total}
+                      stats={[
+                        { label: 'Employees',   value: p.Employee },
+                        { label: 'Contractors', value: p.Contractor },
+                        ...(p.name === 'CR.Costa Rica Partition'
+                          ? [{ label: 'Temp Badge', value: p.TempBadge }]
+                          : [])
                       ]}
-                      colors={[ palette15[4 + idx*2], palette15[5 + idx*2] ]}
-                      height={300}
-                      showZeroSlice={true}
+
+                      // pass our new color props
+                      titleColor={titleC}
+                      totalColor={totalC}
+                      statColors={statCs}
+
+
+                    sx={{
+                        width: '100vw%',
+                    
+                           border: `1px solid ${titleC}`,
+
+       // typography overrides:
+       '& .MuiTypography-subtitle1': {
+         fontSize: '1.3rem'          // partition title
+       },
+       '& .MuiTypography-h4': {
+         fontSize: '1.7rem'        // partition total
+       },
+       '& .MuiTypography-caption': {
+         fontSize: '0.875rem'      // partition stats labels/values
+       }
+
+                      }}
                     />
                   </Box>
                 );
-              })}
+              });
+            })()
+           )}
+         </Box>
+
+
+
+
+
+ {/* Partition detail widgets */}
+         {loading ? (
+          <Skeleton variant="rectangular" width="100%" height={700}/>
+        ) : (
+          <Box mt={4} display="flex" gap={1} justifyContent="space-between">
+
+            {/* 1) Costa Rica (Composite) */}
+            <Box sx={{ flex:'1 1 32%', minWidth:280 }}>
+              <CompositeChartCard
+                title="Costa Rica"
+                data={Object.entries(
+                  partitions.find(p=>p.name==='CR.Costa Rica Partition').floors
+                ).map(([floor,c])=>({
+                  name: floor.trim(),
+                  headcount: c,
+                  capacity:  seatCapacities[`Costa Rica-${floor.trim()}`]||0
+                }))}
+                barColor={palette15[0]}
+                lineColor={palette15[1]}
+                height={400}
+              />
             </Box>
-          </>
-        }
+
+            {/* 2) Argentina (Line) */}
+            <Box sx={{ flex:'1 1 32%', minWidth:380 }}>
+              <LineChartCard
+                title="Argentina"
+                data={Object.entries(
+                  partitions.find(p=>p.name==='AR.Cordoba').floors
+                ).map(([floor,c])=>({
+                  name: floor.trim(),
+                  headcount: c,
+                  capacity:  seatCapacities[`Argentina-${floor.trim()}`]||0
+                }))}
+                lineColor1={palette15[2]}
+                lineColor2={palette15[3]}
+                height={400}
+              />
+            </Box>
+
+            {/* 3) Combined Pie for MX/BR/PE/PA */}
+            <Box sx={{ flex:'1 1 32%', minWidth:380 }}>
+              <PieChartCard
+                title="Latin America"
+                data={partitions
+                  .filter(p => ['MX.Mexico City','BR.Sao Paulo','PE.Lima','PA.Panama City'].includes(p.name))
+                  .map(p => ({
+                    name: displayNameMap[p.name],
+                    value: p.total
+                  }))}
+                colors={[
+                  palette15[4],
+                  palette15[5],
+                  palette15[6],
+                  palette15[7],
+                ]}
+                height={400}
+                showZeroSlice={true}
+                
+              />
+            </Box>
+
+          </Box>
+        )}
+
+        
       </Container>
+
+
+
+      <footer style={{
+        backgroundColor: '#000000',
+        color: '#FFC107',
+        padding: '1.5rem 0',
+        textAlign: 'center',
+        marginTop: 0,
+        borderTop: '2px solid #FFC107',
+        fontSize: '0.95rem',
+        lineHeight: '1.6'
+      }}>
+        <div><strong>Global Security Operations Center</strong><br/>
+          Live HeadCount against Occupancy dashboard for Western Union — Real-time occupancy, floor activity, and personnel insights.
+        </div>
+        <div style={{ marginTop: '0.75rem' }}>
+          Contact us:&nbsp;
+          <a href="mailto:GSOC-GlobalSecurityOperationCenter.SharedMailbox@westernunion.com"
+             style={{ color: '#FFC107', textDecoration: 'underline' }}>
+            GSOC Mail
+          </a>&nbsp;|&nbsp;
+          Landline:&nbsp;<span style={{ color: '#FFC107' }}>+91-020-67632394</span>
+        </div>
+      </footer>
     </>
   );
 }
 
 
 
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\CompositeChartCard.jsx
 
 import React from 'react';
 import { Card, CardContent, Typography } from '@mui/material';
@@ -312,6 +522,9 @@ export default function CompositeChartCard({
 
 
 
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\LineChartCard.jsx
+
+
 import React from 'react';
 import { Card, CardContent, Typography } from '@mui/material';
 import {
@@ -366,6 +579,8 @@ export default function LineChartCard({
 
 
 
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\PieChartCard.jsx
+
 
 import React from 'react';
 import { Card, CardContent, Typography } from '@mui/material';
@@ -416,135 +631,254 @@ export default function PieChartCard({
 
 
 
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\Header.jsx
+
+
+
+// src/components/Header.jsx
+
+import React from 'react';
+import {
+  AppBar,
+  Toolbar,
+  Box,
+  Typography,
+  Select,
+  MenuItem,
+  IconButton
+} from '@mui/material';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+import HomeIcon    from '@mui/icons-material/Home';
+import HistoryIcon from '@mui/icons-material/History';
+import ListAltIcon from '@mui/icons-material/ListAlt';
+
+import WuLogo from '../assets/wu-logo.png';
+import CostaRicaFlag from '../assets/flags/costa-rica.png';
+import ArgentinaFlag  from '../assets/flags/argentina.png';
+import MexicoFlag     from '../assets/flags/mexico.png';
+import PeruFlag       from '../assets/flags/peru.png';
+import BrazilFlag     from '../assets/flags/brazil.png';
+import PanamaFlag     from '../assets/flags/panama.png';
+import LacaFlag       from '../assets/laca-flag.png';
+import { partitionList } from '../services/occupancy.service';
+
+export default function Header() {
+  const navigate = useNavigate();
+  const loc = useLocation();
+
+  const parts = loc.pathname.split('/').filter(Boolean);
+  const isPartitionPath = parts[0] === 'partition' && Boolean(parts[1]);
+  const currentPartition = isPartitionPath ? decodeURIComponent(parts[1]) : '';
+  const suffixSegments = isPartitionPath
+    ? parts.slice(2)
+    : parts[0] === 'history'
+      ? ['history']
+      : [];
+
+  const flagMap = {
+    'CR.Costa Rica Partition': CostaRicaFlag,
+    'AR.Cordoba':               ArgentinaFlag,
+    'MX.Mexico City':           MexicoFlag,
+    'PE.Lima':                  PeruFlag,
+    'BR.Sao Paulo':             BrazilFlag,
+    'PA.Panama City':           PanamaFlag,
+  };
+  const selectedFlag = flagMap[currentPartition] || LacaFlag;
+
+  const makePartitionPath = (suffix) => {
+    const base = `/partition/${encodeURIComponent(currentPartition)}`;
+    return suffix ? `${base}/${suffix}` : base;
+  };
+
+  const handlePartitionChange = (newPartition) => {
+    if (!newPartition) return navigate('/');
+    const base = `/partition/${encodeURIComponent(newPartition)}`;
+    const full = suffixSegments.length
+      ? `${base}/${suffixSegments.join('/')}`
+      : base;
+    navigate(full);
+  };
+
+  return (
+    <AppBar position="static" color="primary" sx={{ mb: 2 }}>
+      <Toolbar sx={{ justifyContent: 'space-between' }}>
+
+        {/* Left side: Logo, Title, Navigation Icons */}
+        <Box display="flex" alignItems="center" sx={{ flexGrow: 1 }}>
+          <Box component="img" src={WuLogo} alt="WU Logo" sx={{ height: 36, mr: 2 }} />
+
+          <Typography variant="h6" sx={{ fontWeight: 600, mr: 3 }}>
+            Western Union – LACA
+            {currentPartition && (
+              <> • {currentPartition.replace('CR.Costa Rica Partition','Costa Rica')}</>
+            )}
+          </Typography>
+
+          {/* Dashboard Icon (green) */}
+          <IconButton
+            size="large"
+            color="inherit"
+            onClick={() => {
+              const target = currentPartition
+                ? `/partition/${encodeURIComponent(currentPartition)}`
+                : '/';
+              navigate(target);
+            }}
+          >
+            <HomeIcon sx={{ color: '#4caf50' }} />
+          </IconButton>
+
+          {/* History Icon (orange) */}
+          <IconButton
+            size="large"
+            color="inherit"
+            onClick={() => {
+              const target = currentPartition
+                ? makePartitionPath('history')
+                : '/history';
+              navigate(target);
+            }}
+          >
+            <HistoryIcon sx={{ color: '#F88379' }} />
+          </IconButton>
+
+          {/* Details Icon (blue) */}
+          {currentPartition && (
+            <IconButton
+              size="large"
+              color="inherit"
+              onClick={() => navigate(makePartitionPath('details'))}
+            >
+              <ListAltIcon sx={{ color: '#2196f3' }} />
+            </IconButton>
+          )}
+        </Box>
+
+        {/* Right side: Partition selector + Flag */}
+        <Box display="flex" alignItems="center">
+          <Select
+            size="small"
+            value={currentPartition}
+            displayEmpty
+            onChange={e => handlePartitionChange(e.target.value)}
+            sx={{ bgcolor: 'background.paper', mr: 2 }}
+          >
+            <MenuItem value="">— Select Partition —</MenuItem>
+            {partitionList.map(p => (
+              <MenuItem key={p} value={p}>
+                {p.replace('Partition', '')}
+              </MenuItem>
+            ))}
+          </Select>
+          <Box component="img" src={selectedFlag} alt="Flag" sx={{ height: 50 }} />
+        </Box>
+      </Toolbar>
+    </AppBar>
+  );
+}
 
 
 
 
 
-Now Lets Work on this only
-
-add here Standerd 15 colours plates use unique colours pair for each var or line .
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\SummaryCard.jsx
 
 
-const wuPalette = {
-  gold:   '#FFC107',
-  black:  '#000000',
-  accent: '#E57373',
-};
+//C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\SummaryCard.jsx
+import React from 'react';
+import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
 
+// export default function SummaryCard({ title, total, stats, icon, titleColor,totalColor,statColors,idx,sx = {} }) {
+export default function SummaryCard({
+  title,
+  total,
+  stats,
+  icon,
+  titleColor,
+  totalColor,
+  statColors,
+  sx,idx = {}
+}) {
 
-Now In one row display 2 chart cards and Brazil Panama Peru display Below 
-so Adjust Size in One Row Increase Height of chart ,
-
-
-For Brazil Panama Peru Build pie Chart alwayes display When Count is 0 per chart does not display anything , so When Count is 0 still display Pie chart and display thire Seat Capacity until Count is not increase .
-
-   {/* Partition detail widgets */}
-        {loading ? (
-          <Skeleton variant="rectangular" width="100%" height={400}/>
-        ) : (
-          <Box mt={4} display="flex" flexWrap="wrap" gap={1} justifyContent="space-between">
-
-            {/* Costa Rica (composite) */}
-            <Box sx={{ flex:'1 1 calc(48% - 8px)', minWidth:300 }}>
-              <CompositeChartCard
-                key="CR"
-                title="Costa Rica"
-                data={
-                  Object.entries(
-                    partitions.find(p=>p.name==='CR.Costa Rica Partition').floors
-                  ).map(([floor,cnt])=>({
-                    name: floor.trim(),
-                    headcount: cnt,
-                    capacity:  seatCapacities[`Costa Rica-${floor.trim()}`]||0
-                  }))
-                }
-              />
+  return (
+    <Card variant="outlined" sx={{ px: 2, py: 1, ...sx }}>
+      <CardContent sx={{ textAlign: 'center' }}>
+     
+             {/* Icon + Title */}
+        <Box display="flex" justifyContent="center" alignItems="center" mb={1}>
+          {icon && (
+            <Box component="span" sx={{ mr: 1, fontSize: 34, color: 'primary.main' }}>
+              {icon}
             </Box>
+          )}
 
-            {/* Argentina (line) */}
-            <Box sx={{ flex:'1 1 calc(48% - 8px)', minWidth:300 }}>
-              <LineChartCard
-                key="AR"
-                title="Argentina"
-                data={
-                  Object.entries(
-                    partitions.find(p=>p.name==='AR.Cordoba').floors
-                  ).map(([floor,cnt])=>({
-                    name: floor.trim(),
-                    headcount: cnt,
-                    capacity:  seatCapacities[`Argentina-${floor.trim()}`]||0
-                  }))
-                }
-              />
-            </Box>
+          
+          {/* <Typography variant="subtitle1" gutterBottom> */}
 
-            {/* Combined Pie (other four) */}
-            <Box sx={{ flex:'1 1 calc(48% - 8px)', minWidth:300 }}>
-              <PieChartCard
-                key="others"
-                title="Brazil Panama Peru"
-                data={
-                  partitions
-                    .filter(p => !['CR.Costa Rica Partition','AR.Cordoba'].includes(p.name))
-                    .map(p => ({
-                      name: displayNameMap[p.name]||p.name.split('.').pop(),
-                      value: p.total
-                    }))
-                }
-                colors={[wuPalette.gold, wuPalette.accent, wuPalette.black, '#81C784']}
-              />
-            </Box>
+          <Typography
+            variant="subtitle1"
+            gutterBottom
+            sx={ titleColor ? { color: titleColor } : {} }
+          >
 
+            {title}
+          </Typography>
+        </Box>
+
+     
+     
+        {total != null && (
+          <Box display="flex" justifyContent="center" alignItems="baseline" mb={1}>
+            {/* <Typography variant="h4" sx={{ mr: 1 }}> */}
+
+            <Typography
+              variant="h4"
+              sx={{
+                mr: 1,
+                ...(totalColor ? { color: totalColor } : {})
+              }}
+            >
+
+              {total}
+            </Typography>
+            {/* <Typography variant="caption">Total</Typography> */}
+          
           </Box>
         )}
-      </Container>
+  
+
+        <Grid container spacing={1} justifyContent="center">
+          {stats.map(({ label, value }, idx) => (
+            <Grid key={label} item xs={6}>
 
 
 
+              <Typography
+                variant="caption"
+          
 
-C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\CompositeChartCard.jsx
+                sx={ statColors && statColors[idx]
+                  ? { color: statColors[idx] }
+                  : {} }
+  >
+                {label}
+              </Typography>
+              <Typography
+                variant="h6"
 
 
-// src/components/CompositeChartCard.jsx
-import React from 'react';
-import { Card, CardContent, Typography } from '@mui/material';
-import {
-  ComposedChart, Bar, Line, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid, Legend
-} from 'recharts';
+                sx={ statColors && statColors[idx]
+                  ? { color: statColors[idx] }
+                  : {} }
 
-export default function CompositeChartCard({ title, data, capacityLine }) {
-  return (
-    <Card sx={{ flex: '1 1 16%', minWidth: 240 }}>
-      <CardContent>
-        <Typography variant="subtitle1" align="center" gutterBottom>{title}</Typography>
-        <ResponsiveContainer width="100%" height={220}>
-          <ComposedChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#eee"/>
-            <XAxis dataKey="name" tickLine={false} axisLine={false} />
-            <YAxis yAxisId="left" tickLine={false} axisLine={false} />
-            <YAxis yAxisId="right" orientation="right" tickLine={false} axisLine={false} />
-            <Tooltip/>
-            <Legend verticalAlign="top" height={24}/>
-            <Bar
-              yAxisId="left"
-              dataKey="headcount"
-              name="Headcount"
-              barSize={20}
-              fill="#FFC107"
-              radius={[4,4,0,0]}
-            />
-            <Line
-              yAxisId="right"
-              dataKey="capacity"
-              name="Seat Capacity"
-              stroke="#E57373"
-              strokeWidth={2}
-              dot={false}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
+              >
+                {value}
+              </Typography>
+
+            </Grid>
+          ))}
+        </Grid>
       </CardContent>
     </Card>
   );
@@ -554,98 +888,124 @@ export default function CompositeChartCard({ title, data, capacityLine }) {
 
 
 
-C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\LineChartCard.jsx
-
-// src/components/LineChartCard.jsx
-import React from 'react';
-import { Card, CardContent, Typography } from '@mui/material';
-import {
-  LineChart, Line, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid, Legend
-} from 'recharts';
-
-export default function LineChartCard({ title, data, capacityLine }) {
-  return (
-    <Card sx={{ flex: '1 1 16%', minWidth: 240 }}>
-      <CardContent>
-        <Typography variant="subtitle1" align="center" gutterBottom>{title}</Typography>
-        <ResponsiveContainer width="100%" height={220}>
-          <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-            <XAxis dataKey="name" tickLine={false} axisLine={false}/>
-            <YAxis tickLine={false} axisLine={false}/>
-            <Tooltip/>
-            <Legend verticalAlign="top" height={24}/>
-            <Line
-              type="monotone"
-              dataKey="headcount"
-              name="Headcount"
-              stroke="#FFC107"
-              strokeWidth={2}
-              dot={{ r: 3 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="capacity"
-              name="Seat Capacity"
-              stroke="#000"
-              strokeDasharray="5 5"
-              dot={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  );
-}
 
 
 
+C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\theme\westernUnionTheme.js
 
-C:\Users\W0024618\Desktop\laca-occupancy-frontend\src\components\PieChartCard.jsx
 
-// src/components/LineChartCard.jsx
-import React from 'react';
-import { Card, CardContent, Typography } from '@mui/material';
-import {
-  LineChart, Line, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid, Legend
-} from 'recharts';
 
-export default function LineChartCard({ title, data, capacityLine }) {
-  return (
-    <Card sx={{ flex: '1 1 16%', minWidth: 240 }}>
-      <CardContent>
-        <Typography variant="subtitle1" align="center" gutterBottom>{title}</Typography>
-        <ResponsiveContainer width="100%" height={220}>
-          <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-            <XAxis dataKey="name" tickLine={false} axisLine={false}/>
-            <YAxis tickLine={false} axisLine={false}/>
-            <Tooltip/>
-            <Legend verticalAlign="top" height={24}/>
-            <Line
-              type="monotone"
-              dataKey="headcount"
-              name="Headcount"
-              stroke="#FFC107"
-              strokeWidth={2}
-              dot={{ r: 3 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="capacity"
-              name="Seat Capacity"
-              stroke="#000"
-              strokeDasharray="5 5"
-              dot={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  );
-}
+// src/theme/westernUnionTheme.js
+import { createTheme } from '@mui/material/styles';
+
+const westernUnionTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    background: {
+      default: '#000000',
+      paper:   '#1c1c1c'
+    },
+    primary: {
+      main: '#FFC72C',
+      contrastText: '#000000'
+    },
+    secondary: {
+      main: '#FFFFFF',
+      contrastText: '#000000'
+    },
+    text: {
+      primary:   '#FFFFFF',
+      secondary: 'rgba(255,255,255,0.7)'
+    },
+    divider: 'rgba(255,255,255,0.2)'
+  },
+
+  typography: {
+    fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
+    // Card titles
+    subtitle1: { fontWeight: 900, color: '#FFE599' },
+    // Totals (variant h4 in SummaryCard)
+    h4: { color: '#fcf3cf', fontWeight: 'bold' },
+    // Stat values (variant h6)
+    h6: { color: '#FFC107', fontWeight: 900 },
+    // Stat labels (variant caption)
+    caption: { color: '#FFC107', fontWeight: 900 },
+
+    // You can leave other variants untouched
+    body1:   { color: '#FFFFFF' },
+    body2:   { color: 'rgba(255,255,255,0.7)' }
+  },
+
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        html: {
+          height: '100%'
+        },
+        body: {
+          margin: 0,
+          padding: 0,
+          height: '100%',
+          background: 'linear-gradient(135deg, #000000 30%, #2c0000 80%, #000000 100%)',
+          backgroundAttachment: 'fixed',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: 'cover',
+          animation: 'gradientSpin 20s ease infinite',
+          overflowX: 'hidden'
+        },
+        '@keyframes gradientSpin': {
+          '0%':   { backgroundPosition: '0% 50%' },
+          '50%':  { backgroundPosition: '100% 50%' },
+          '100%': { backgroundPosition: '0% 50%' }
+        }
+      }
+    },
+
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          borderRadius: 4
+        },
+        contained: {
+          backgroundColor: '#FFC107',
+          color: '#000000',
+          '&:hover': {
+            backgroundColor: '#e6ac00'
+          }
+        }
+      }
+    },
+
+    MuiDivider: {
+      styleOverrides: {
+        root: {
+          backgroundColor: 'rgba(255,255,255,0.2)'
+        }
+      }
+    },
+
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: {
+          backgroundColor: '#333',
+          color: '#FFF'
+        }
+      }
+    }
+
+    // Note: We no longer override MuiCard so your SummaryCard and ChartCard
+    // backgrounds, borders and hover effects come from their own `sx` props.
+  }
+});
+
+export default westernUnionTheme;
+
+
+
+
+
+
 
 
 
