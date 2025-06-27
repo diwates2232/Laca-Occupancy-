@@ -1,3 +1,80 @@
+// src/components/PieChartCard.jsx
+
+import React from 'react';
+import { Card, CardContent, Typography, Box } from '@mui/material';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+export default function PieChartCard({
+  title,
+  data,
+  colors = ['#FFC107', '#E0E0E0'],
+  height = 300,
+  showZeroSlice = false,
+  animationDuration = 1500
+}) {
+  // Determine if all slices are zero
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+  const renderData = showZeroSlice && total === 0
+    ? [{ name: 'Available', value: data[1]?.value || 0 }]
+    : data;
+
+  return (
+    <Card sx={{
+      border: `1px solid ${colors[0]}`,
+      borderRadius: 2,
+      bgcolor: 'rgba(0,0,0,0.4)',
+      overflow: 'hidden',
+      transition: 'transform 0.3s, box-shadow 0.3s',
+      '&:hover': {
+        transform: 'scale(1.02)',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.7)'
+      }
+    }}>
+      <CardContent sx={{ p: 1 }}>
+        <Typography variant="subtitle1" align="center" gutterBottom color="text.primary">
+          {title}
+        </Typography>
+        <Box sx={{ width: '100%', height }}>
+          <ResponsiveContainer>
+            <PieChart>
+              <Pie
+                data={renderData}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={60}
+                outerRadius={100}
+                paddingAngle={4}
+                isAnimationActive
+                animationDuration={animationDuration}
+              >
+                {renderData.map((_, i) => (
+                  <Cell
+                    key={`cell-${i}`}
+                    fill={colors[i % colors.length]}
+                  />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{ backgroundColor: '#222', borderColor: colors[0] }}
+              />
+              <Legend 
+                verticalAlign="bottom" 
+                wrapperStyle={{ color: 'rgba(255,255,255,0.8)' }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
+
 // src/components/LineChartCard.jsx
 
 import React from 'react';
