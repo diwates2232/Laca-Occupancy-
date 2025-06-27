@@ -1,3 +1,325 @@
+import React, { useEffect, useState } from 'react';
+import { Container, Box, Typography, Skeleton } from '@mui/material';
+import GroupIcon from '@mui/icons-material/Group';
+import TrackChangesIcon from '@mui/icons-material/TrackChanges';
+import PeopleIcon from '@mui/icons-material/People';
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
+import { useNavigate } from 'react-router-dom';
+
+import Header from '../components/Header';
+import SummaryCard from '../components/SummaryCard';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+import { partitionList } from '../services/occupancy.service';
+import seatCapacities from '../data/seatCapacities';
+
+import CompositeChartCard from '../components/CompositeChartCard';
+import LineChartCard      from '../components/LineChartCard';
+import PieChartCard       from '../components/PieChartCard';
+
+const displayNameMap = {
+  'CR.Costa Rica Partition': 'Costa Rica',
+  'AR.Cordoba':               'Argentina',
+  'MX.Mexico City':           'Mexico',
+  'PE.Lima':                  'Peru',
+  'BR.Sao Paulo':             'Brazil',
+  'PA.Panama City':           'Panama'
+};
+
+// 15-colour palette (you can tweak as needed)
+const palette15 = [
+  '#FFC107','#E91E63','#3F51B5','#4CAF50','#FF5722',
+  '#9C27B0','#00BCD4','#8BC34A','#FF9800','#673AB7',
+  '#009688','#CDDC39','#FFEB3B','#795548','#607D8B'
+];
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) {
+    return (
+      <Box width="100vw%" py={4}>
+        <Typography color="error" align="center">
+          Error loading live data
+        </Typography>
+      </Box>
+    );
+  }
+
+  const regions = data?.realtime || {};
+  const partitions = partitionList.map(name => {
+    const key = Object.keys(regions).find(k => k.includes(name));
+    const p   = key ? regions[key] : {};
+    return {
+      name,
+      total:     p.total      || 0,
+      Employee:  p.Employee   || 0,
+      Contractor:p.Contractor || 0,
+      TempBadge: p.TempBadge  || 0,
+      floors:    p.floors     || {}
+    };
+  }).sort((a,b)=>b.total - a.total);
+
+  const todayTot    = data?.today?.total    ?? 0;
+  const todayEmp    = data?.today?.Employee ?? 0;
+  const todayCont   = data?.today?.Contractor ?? 0;
+  const realtimeTot = partitions.reduce((s,p)=>s+p.total,0);
+  const realtimeEmp = partitions.reduce((s,p)=>s+p.Employee,0);
+  const realtimeCont= partitions.reduce((s,p)=>s+p.Contractor,0);
+
+  // extract partition helpers
+  const cr = partitions.find(p=>p.name==='CR.Costa Rica Partition');
+  const ar = partitions.find(p=>p.name==='AR.Cordoba');
+  const others = partitions.filter(p=>!['CR.Costa Rica Partition','AR.Cordoba'].includes(p.name))
+    .filter(p=>['BR.Sao Paulo','MX.Mexico City','PE.Lima','PA.Panama City'].includes(p.name));
+
+  return (
+    <>
+      <Header />
+
+      <Container maxWidth={false} disableGutters sx={{ pt:1, pb:2, px:'20px' }}>
+        {/* summary cards */}
+        {/* ... (unchanged) */}
+
+        {/* Partition detail widgets */}
+        {loading
+          ? <Skeleton variant="rectangular" width="100%" height={600}/>
+          : <>
+            {/* First row: Costa Rica & Argentina */}
+            <Box mt={4} display="flex" gap={1}>
+              {/* Costa Rica */}
+              <Box sx={{ flex:'1 1 49%', minWidth:320 }}>
+                <CompositeChartCard
+                  title="Costa Rica"
+                  data={Object.entries(cr.floors).map(([floor,c])=>({
+                    name: floor.trim(),
+                    headcount: c,
+                    capacity:  seatCapacities[`Costa Rica-${floor.trim()}`]||0
+                  }))}
+                  // barColor / lineColor from palette
+                  barColor={palette15[0]}
+                  lineColor={palette15[1]}
+                  height={300}
+                />
+              </Box>
+              {/* Argentina */}
+              <Box sx={{ flex:'1 1 49%', minWidth:320 }}>
+                <LineChartCard
+                  title="Argentina"
+                  data={Object.entries(ar.floors).map(([floor,c])=>({
+                    name: floor.trim(),
+                    headcount: c,
+                    capacity:  seatCapacities[`Argentina-${floor.trim()}`]||0
+                  }))}
+                  lineColor1={palette15[2]}
+                  lineColor2={palette15[3]}
+                  height={300}
+                />
+              </Box>
+            </Box>
+
+            {/* Second row: Brazil, Panama, Peru pies */}
+            <Box mt={4} display="flex" gap={1}>
+              {others.map((p, idx) => {
+                const title = displayNameMap[p.name];
+                const capacity = seatCapacities[title] || 0;
+                const used     = p.total;
+                const available= capacity - used;
+                return (
+                  <Box key={p.name} sx={{ flex:'1 1 32%', minWidth:200 }}>
+                    <PieChartCard
+                      title={title}
+                      data={[
+                        { name:'Used',     value: used },
+                        { name:'Available',value: available>0?available:0 }
+                      ]}
+                      colors={[ palette15[4 + idx*2], palette15[5 + idx*2] ]}
+                      height={300}
+                      showZeroSlice={true}
+                    />
+                  </Box>
+                );
+              })}
+            </Box>
+          </>
+        }
+      </Container>
+    </>
+  );
+}
+
+
+
+
+import React from 'react';
+import { Card, CardContent, Typography } from '@mui/material';
+import {
+  ComposedChart, Bar, Line, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, CartesianGrid, Legend
+} from 'recharts';
+
+export default function CompositeChartCard({
+  title,
+  data,
+  barColor = '#FFC107',
+  lineColor = '#E57373',
+  height = 220
+}) {
+  return (
+    <Card>
+      <CardContent>
+        <Typography variant="subtitle1" align="center" gutterBottom>
+          {title}
+        </Typography>
+        <ResponsiveContainer width="100%" height={height}>
+          <ComposedChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#eee"/>
+            <XAxis dataKey="name" tickLine={false} axisLine={false}/>
+            <YAxis yAxisId="left" tickLine={false} axisLine={false}/>
+            <YAxis yAxisId="right" orientation="right" tickLine={false} axisLine={false}/>
+            <Tooltip/>
+            <Legend verticalAlign="top"/>
+            <Bar
+              yAxisId="left"
+              dataKey="headcount"
+              name="Headcount"
+              barSize={24}
+              fill={barColor}
+              radius={[4,4,0,0]}
+            />
+            <Line
+              yAxisId="right"
+              dataKey="capacity"
+              name="Seat Capacity"
+              stroke={lineColor}
+              strokeWidth={3}
+              dot={false}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+import React from 'react';
+import { Card, CardContent, Typography } from '@mui/material';
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, CartesianGrid, Legend
+} from 'recharts';
+
+export default function LineChartCard({
+  title,
+  data,
+  lineColor1 = '#3F51B5',
+  lineColor2 = '#009688',
+  height = 220
+}) {
+  return (
+    <Card>
+      <CardContent>
+        <Typography variant="subtitle1" align="center" gutterBottom>
+          {title}
+        </Typography>
+        <ResponsiveContainer width="100%" height={height}>
+          <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#eee"/>
+            <XAxis dataKey="name" tickLine={false} axisLine={false}/>
+            <YAxis tickLine={false} axisLine={false}/>
+            <Tooltip/>
+            <Legend verticalAlign="top"/>
+            <Line
+              type="monotone"
+              dataKey="headcount"
+              name="Headcount"
+              stroke={lineColor1}
+              strokeWidth={3}
+              dot={{ r: 4 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="capacity"
+              name="Seat Capacity"
+              stroke={lineColor2}
+              strokeWidth={2}
+              strokeDasharray="5 5"
+              dot={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+import React from 'react';
+import { Card, CardContent, Typography } from '@mui/material';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+export default function PieChartCard({
+  title,
+  data,
+  colors = ['#FFC107','#E0E0E0'],
+  height = 220,
+  showZeroSlice = false
+}) {
+  // if both values zero, optionally still show capacity slice
+  const total = data.reduce((s,d)=>s+d.value, 0);
+  const renderData = showZeroSlice && total === 0
+    ? [{ name: 'Available', value: data[1].value }]
+    : data;
+
+  return (
+    <Card>
+      <CardContent>
+        <Typography variant="subtitle1" align="center" gutterBottom>
+          {title}
+        </Typography>
+        <ResponsiveContainer width="100%" height={height}>
+          <PieChart>
+            <Pie
+              data={renderData}
+              dataKey="value"
+              nameKey="name"
+              innerRadius={50}
+              outerRadius={80}
+              paddingAngle={2}
+            >
+              {renderData.map((_,i)=>(
+                <Cell key={i} fill={colors[i % colors.length]} />
+              ))}
+            </Pie>
+            <Tooltip/>
+            <Legend verticalAlign="bottom" height={24}/>
+          </PieChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
+
+
+
 Now Lets Work on this only
 
 add here Standerd 15 colours plates use unique colours pair for each var or line .
