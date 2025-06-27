@@ -1,3 +1,88 @@
+import React from 'react';
+import { Card, CardContent, Typography, Box } from '@mui/material';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+export default function PieChartCard({
+  title,
+  data,
+  colors = ['#FFC107','#E0E0E0','#FFE599','#FFF2CC'],
+  height = 300,
+  showZeroSlice = false,
+  animationDuration = 1500,
+  noDataMessage = 'No realtime employee data'
+}) {
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+
+  // No-data
+  if (total === 0 && !showZeroSlice) {
+    return (
+      <Card sx={cardStyle(colors[0])}>
+        <CardContent>
+          <Typography variant="subtitle1" align="center" color="text.primary">
+            {title}
+          </Typography>
+          <Typography variant="body2" align="center" sx={{ mt: 4, color: 'text.secondary' }}>
+            {noDataMessage}
+          </Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Zero but forced slice
+  const renderData = total === 0 && showZeroSlice
+    ? [{ name: 'Available', value: data[1]?.value || 0 }]
+    : data;
+
+  return (
+    <Card sx={cardStyle(colors[0])}>
+      <CardContent sx={{ p: 1 }}>
+        <Typography variant="subtitle1" align="center" color="text.primary" gutterBottom>
+          {title}
+        </Typography>
+        <Box sx={{ width: '100%', height }}>
+          <ResponsiveContainer>
+            <PieChart>
+              <Pie
+                data={renderData}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={80}
+                outerRadius={120}
+                paddingAngle={4}
+                isAnimationActive
+                animationDuration={animationDuration}
+              >
+                {renderData.map((_, i) => (
+                  <Cell key={i} fill={colors[i % colors.length]} />
+                ))}
+              </Pie>
+              <Tooltip contentStyle={{ backgroundColor: '#FFEE8C', borderColor: colors[0] }} />
+              <Legend verticalAlign="bottom" wrapperStyle={{ color: 'rgba(255,255,255,0.8)' }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+const cardStyle = borderColor => ({
+  border: `1px solid ${borderColor}`,
+  borderRadius: 2,
+  bgcolor: 'rgba(0,0,0,0.4)',
+  overflow: 'hidden',
+  transition: 'transform 0.3s, box-shadow 0.3s',
+  '&:hover': {
+    transform: 'scale(1.02)',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.7)'
+  }
+});
+
+
+
+
+
 Once Review all files carefully Check Formatting background 
 // src/components/CompositeChartCard.jsx
 
