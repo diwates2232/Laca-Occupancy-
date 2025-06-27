@@ -1,3 +1,63 @@
+--- a/src/components/LineChartCard.jsx
++++ b/src/components/LineChartCard.jsx
+@@ <LineChart ...>
+               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+
+               <XAxis
+                 dataKey="name"
+                 tickLine={false}
+                 axisLine={false}
+                 stroke="rgba(255,255,255,0.6)"
+                 tickFormatter={label =>
+                   label.replace(/^[^\d]*(\d+)(?:.*)$/, '$1')
+                        .replace(/^(.*)\sFloor$/, '$1')
+                 }
++                label={{
++                  value: 'Floor',
++                  position: 'insideBottomLeft',
++                  offset: -10,
++                  fill: '#fff',
++                  fontWeight: 600
++                }}
+               />
+
+               <YAxis
+                 tickLine={false}
+                 axisLine={false}
+                 stroke="rgba(255,255,255,0.6)"
++                label={{
++                  value: 'Count',
++                  angle: -90,
++                  position: 'insideLeft',
++                  fill: '#fff',
++                  fontWeight: 600
++                }}
+               />
+
+@@
+               {/* Primary: Headcount */}
+               <Line
+                 type="monotone"
+                 dataKey="headcount"
+                 name="Headcount"
+                 stroke={lineColor1}
+-                strokeWidth={3}
+-                dot={{ r: 6, stroke: '#fff', strokeWidth: 2 }}
++                strokeWidth={3}
++                dot={{ r: 4, stroke: '#fff', strokeWidth: 2 }}
+                 activeDot={{ r: 8 }}
+                 isAnimationActive
+                 animationDuration={animationDuration}
+                 animationEasing={animationEasing}
+               >
+
+
+
+
+
+
+
+
 // src/components/LineChartCard.jsx
 
 import React from 'react';
