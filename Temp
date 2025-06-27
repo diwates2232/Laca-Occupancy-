@@ -1,14 +1,7 @@
-I sampled a small area in the middle of each of the four horizontal panels (from top to bottom) and got these approximate hex color codes:
-	•	Top panel (olive-grey): #767266
-	•	2nd panel (deep olive-brown): #3D340B
-	•	3rd panel (warm brown): #564110
-	•	Bottom panel (golden mustard): #724E14
+Now In this chart Seat capacity and usage is not display.
+Add 1 Px Boreder for each bar
 
-You can use these exact hex values to reproduce the same colors in your designs.
-
-
-
-
+Dont make Any unnecessary changes regaring colours and increase Width etc ....
 
 
 
@@ -30,9 +23,11 @@ import {
   Cell
 } from 'recharts';
 
+
+
 const DARK_TO_LIGHT = [
-  '#0D1B2A', '#1B263B', '#415A77', '#778DA9', '#E0E1DD',
-  '#0F1C28', '#1F2D3D', '#3E556A', '#6B7C93', '#B8C1EC',
+  '#FFD666', '#FFE599', '#FFF2CC', '#FFE599', '#E0E1DD',
+  '#FFD666', '#767266', '#3D340B', ' #564110', '#724E14',
   '#16213E', '#21325E', '#415A77', '#6A7F9A', '#B0C4DE',
   '#1A1F36', '#2B3353', '#4C6482', '#7B90B2', '#CAD3E9'
 ];
@@ -123,7 +118,7 @@ export default function CompositeChartCard({
               />
 
               <Tooltip
-                contentStyle={{ backgroundColor: '#222', borderColor: lineColor }}
+                contentStyle={{ backgroundColor: '#FFD666', borderColor: lineColor }}
                 formatter={(value, name) => 
                   name === 'percentage' ? `${value}%` : value
                 }
@@ -139,7 +134,7 @@ export default function CompositeChartCard({
                 yAxisId="left"
                 dataKey="headcount"
                 name="Headcount"
-                barSize={20}
+                barSize={700}
                 isAnimationActive
                 animationDuration={animationDuration}
                 animationEasing={animationEasing}
@@ -197,134 +192,482 @@ export default function CompositeChartCard({
 
 
 
+// src/pages/Dashboard.jsx
 
-In This card the Building capacity is not displaying 
-also add legends and details Where display pecentage as well headcount details 
-per Floor Wise
-also 
-for bar Colours use colours like dark to faint colour theme 
-use unique Colour for each barthere are 10 floor so We need define 20 colour plate dark to faint 
+import React, { useEffect, useState } from 'react';
+import { Container, Box, Typography, Skeleton, Fade } from '@mui/material';
+import GroupIcon from '@mui/icons-material/Group';
+import TrackChangesIcon from '@mui/icons-material/TrackChanges';
+import PeopleIcon from '@mui/icons-material/People';
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
+import { useNavigate } from 'react-router-dom';
 
-update this part then We will move next section
+// Flags
+import CostaRicaFlag  from '../assets/flags/costa-rica.png';
+import ArgentinaFlag  from '../assets/flags/argentina.png';
+import MexicoFlag     from '../assets/flags/mexico.png';
+import PeruFlag       from '../assets/flags/peru.png';
+import BrazilFlag     from '../assets/flags/brazil.png';
+import PanamaFlag     from '../assets/flags/panama.png';
+
+import Header from '../components/Header';
+import SummaryCard from '../components/SummaryCard';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+import { partitionList } from '../services/occupancy.service';
+import seatCapacities from '../data/seatCapacities';
+import CompositeChartCard from '../components/CompositeChartCard';
+import LineChartCard      from '../components/LineChartCard';
+import PieChartCard       from '../components/PieChartCard';
+
+const displayNameMap = {
+  'CR.Costa Rica Partition': 'Costa Rica',
+  'AR.Cordoba':               'Argentina',
+  'MX.Mexico City':           'Mexico',
+  'PE.Lima':                  'Peru',
+  'BR.Sao Paulo':             'Brazil',
+  'PA.Panama City':           'Panama'
+};
+
+
+const colorsMap = {
+  'CR.Costa Rica Partition': ['#FFD666', '#fcf3cf', '#2ecc71', '#ec7063', '#ec7063'],
+  'AR.Cordoba':               ['#FFE599', '#fcf3cf', '#2ecc71', '#ec7063'],
+  'MX.Mexico City':           ['#FFD666', '#fcf3cf', '#2ecc71', '#ec7063'],
+  'PE.Lima':                  ['#FFF2CC', '#fcf3cf', '#2ecc71', '#ec7063'],
+  'BR.Sao Paulo':             ['#FFD666', '#fcf3cf', '#2ecc71', '#ec7063'],
+  'PA.Panama City':           ['#FFE599', '#fcf3cf', '#2ecc71', '#ec7063'],
+};
 
 
 
 
-// src/components/CompositeChartCard.jsx
+const widgetMap = {
+  'CR.Costa Rica Partition': 'composite',
+  'AR.Cordoba':               'line',
+  'BR.Sao Paulo':             'pie',
+  'MX.Mexico City':           'pie',
+  'PE.Lima':                  'pie',
+  'PA.Panama City':           'pie',
+};
 
-import React from 'react';
-import { Card, CardContent, Typography, Box } from '@mui/material';
-import {
-  ComposedChart,
-  Bar,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Legend
-} from 'recharts';
 
-export default function CompositeChartCard({
-  title,
-  data,
-  barColor = '#FFC107',
-  lineColor = '#E57373',
-  height = 300,
-  animationDuration = 1500,
-  animationEasing = 'ease-in-out'
-}) {
-  if (!Array.isArray(data) || data.length === 0) {
+const palette15 = [
+  '#FFC107','#E91E63','#3F51B5','#4CAF50','#FF5722',
+  '#9C27B0','#00BCD4','#8BC34A','#FF9800','#673AB7',
+  '#009688','#CDDC39','#FFEB3B','#795548','#607D8B'
+];
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (data) {
+      setLastUpdate(new Date().toLocaleTimeString());
+    }
+  }, [data]);
+
+  if (error) {
     return (
-      <Card sx={{ border: `1px solid ${barColor}`, bgcolor: 'rgba(0,0,0,0.4)' }}>
-        <CardContent>
-          <Typography variant="subtitle1" align="center" color="text.secondary">
-            {title}
-          </Typography>
-          <Typography variant="body2" align="center" sx={{ mt: 4 }}>
-            No realtime employee data
-          </Typography>
-        </CardContent>
-      </Card>
+      <Box width="100vw%" py={4}>
+        <Typography color="error" align="center">
+          Error loading live data
+        </Typography>
+      </Box>
     );
   }
 
-  return (
-    <Card
-      sx={{
-        border: `1px solid ${barColor}`,
-        borderRadius: 2,
-        overflow: 'hidden',
-        bgcolor: 'rgba(0,0,0,0.4)',
-        transition: 'transform 0.3s, box-shadow 0.3s',
-        '&:hover': {
-          transform: 'scale(1.02)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.7)'
-        }
-      }}
-    >
-      <CardContent sx={{ p: 1 }}>
-        <Typography variant="subtitle1" align="center" gutterBottom color="text.primary">
-          {title}
-        </Typography>
-        <Box sx={{ width: '100%', height }}>
-          <ResponsiveContainer>
-            <ComposedChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis dataKey="name" tickLine={false} axisLine={false} stroke="rgba(255,255,255,0.6)" />
-              <YAxis
-                yAxisId="left"
-                tickLine={false}
-                axisLine={false}
-                stroke="rgba(255,255,255,0.6)"
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                tickLine={false}
-                axisLine={false}
-                stroke="rgba(255,255,255,0.6)"
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#222',
-                  borderColor: barColor
-                }}
-              />
-              <Legend verticalAlign="top" wrapperStyle={{ color: 'rgba(255,255,255,0.8)' }} />
-              
-              <Bar
-                yAxisId="left"
-                dataKey="headcount"
-                name="Headcount"
-                barSize={504}
-                fill={barColor}
-                radius={[4, 4, 0, 0]}
-                isAnimationActive
-                animationDuration={animationDuration}
-                animationEasing={animationEasing}
-                onMouseOver={e => e && (e.fillOpacity = 0.8)}
-                onMouseOut={e => e && (e.fillOpacity = 1)}
-              />
+ const regions = data?.realtime || {};
+  const partitions = partitionList.map(name => {
+    const key = Object.keys(regions).find(k => k.includes(name));
+    const p   = key ? regions[key] : {};
+    return {
+      name,
+      total:     p.total      || 0,
+      Employee:  p.Employee   || 0,
+      Contractor:p.Contractor || 0,
+      floors:    p.floors     || {}
+    };
+  }).sort((a,b)=>b.total - a.total);
 
-              <Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="capacity"
-                name="Seat Capacity"
-                stroke={lineColor}
-                strokeWidth={3}
-                dot={{ r: 6, stroke: '#fff', strokeWidth: 2 }}
-                activeDot={{ r: 8 }}
-                isAnimationActive
-                animationDuration={animationDuration}
-                animationEasing={animationEasing}
+  const todayTot   = data?.today?.total    ?? 0;
+  const todayEmp   = data?.today?.Employee ?? 0;
+  const todayCont  = data?.today?.Contractor ?? 0;
+  const realtimeTot  = partitions.reduce((sum, p) => sum + p.total, 0);
+  const realtimeEmp  = partitions.reduce((sum, p) => sum + p.Employee, 0);
+  const realtimeCont = partitions.reduce((sum, p) => sum + p.Contractor, 0);
+
+  const crPartition = partitions.find(p=>p.name==='CR.Costa Rica Partition');
+  const arPartition = partitions.find(p=>p.name==='AR.Cordoba');
+  const smallOnes = partitions.filter(p=>
+    ['MX.Mexico City','BR.Sao Paulo','PE.Lima','PA.Panama City'].includes(p.name)
+  );
+
+
+  
+  return (
+    <>
+      <Header />
+
+      <Container
+        maxWidth={false}
+        disableGutters
+        sx={{
+          pt: 2,
+          pb: 3,
+          px: 2,
+          background: 'rgba(0,0,0,0.6)',
+        }}
+      >
+
+        {/* Last updated */}
+        <Typography
+          variant="caption"
+          sx={{ color: 'white', mb: 1, opacity: data ? 1 : 0, transition: 'opacity 0.6s' }}
+        >
+          {/* Last updated: {lastUpdate} */}
+        </Typography>
+     
+        
+        {/* Top six summary cards */}
+     <Box display="flex" flexWrap="wrap" gap={1} mb={1}>
+  {[
+    {
+      title: "Today's Total Headcount",
+      value: todayTot,
+      icon: <GroupIcon sx={{ color: '#E57373', fontSize: 36 }} />,
+      borderColor: '#FFD666',
+    },
+    {
+      title: "Today's Employees Count",
+      value: todayEmp,
+      icon: <PeopleIcon sx={{ color: '#81C784', fontSize: 36 }} />,
+      borderColor: '#81C784', 
+    },
+    {
+      title: "Today's Contractors Count",
+      value: todayCont,
+      icon: <BusinessCenterIcon sx={{ color: '#64B5F6', fontSize: 36 }} />,
+      borderColor: '#FFE599',
+      
+    },
+    {
+      title: "Realtime Headcount",
+      value: realtimeTot,
+      icon: <TrackChangesIcon sx={{ color: '#BA68C8', fontSize: 36 }} />,
+      borderColor: '#FFF2CC',
+    },
+    {
+      title: "Realtime Employees Count",
+      value: realtimeEmp,
+      icon: <PeopleIcon sx={{ color: '#FFB74D', fontSize: 36 }} />,
+      borderColor: '#FFD666',
+    },
+    {
+      title: "Realtime Contractors Count",
+      value: realtimeCont,
+      icon: <BusinessCenterIcon sx={{ color:  '#4DB6AC', fontSize: 36 }} />,
+      borderColor: '#FFE599'
+    }
+ 
+
+    ].map(card => (
+     <Box key={card.title} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+       <SummaryCard
+         title={card.title}
+         total={card.value}
+         stats={[]}
+         icon={card.icon}
+         sx={{
+           height: 140,
+           border: `1px solid ${card.borderColor}`
+         }}
+       />
+     </Box>
+   ))}
+ </Box> 
+
+
+        {/* Partition cards */}
+        <Box mt={4} sx={{ width: '100vw%', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          {loading ? (
+            <Skeleton variant="rectangular" width="100vw%" height={200} />
+          ) : (
+                        (() => {
+              // map of flags and primary colors for each partition
+              const flagMap = {
+                'CR.Costa Rica Partition': CostaRicaFlag,
+                'AR.Cordoba':               ArgentinaFlag,
+                'MX.Mexico City':           MexicoFlag,
+                'PE.Lima':                  PeruFlag,
+                'BR.Sao Paulo':             BrazilFlag,
+                'PA.Panama City':           PanamaFlag,
+              };
+
+
+              // full palette arrays per flag: [title, total, stat1, stat2, stat3?]
+              const colorsMap = {
+                'CR.Costa Rica Partition': [
+                  '#FFD666', // title (red)
+                  '#fcf3cf', // total (blue)
+                  '#2ecc71', // Employees (white)
+                  '#ec7063', // Contractors (blue)
+                  '#ec7063'  // TempBadge (white)
+                ],
+               'AR.Cordoba': [
+                   '#FFE599', // title (light blue)
+                  '#fcf3cf', // total (white)
+                  '#2ecc71', // Employees (sun yellow)
+                  '#ec7063',  // Contractors (white)
+                ],
+                'MX.Mexico City': [
+                   '#FFD666', // title (green)
+                  '#fcf3cf', // total (white)
+                  '#2ecc71', // Employees (red)
+                  '#ec7063',  // Contractors (white)
+                ],
+                'PE.Lima': [
+                  '#FFF2CC', // title (red)
+                  '#fcf3cf', // total (white)
+                  '#2ecc71',// Employees (red)
+                  '#ec7063',  // Contractors (white)
+                ],
+                'BR.Sao Paulo': [
+                  '#FFD666', // title (green)
+                  '#fcf3cf', // total (yellow)
+                  '#2ecc71', // Employees (blue)
+                  '#ec7063', // Contractors (yellow)
+                ],
+                'PA.Panama City': [
+                  '#FFE599', // title (blue)
+                  '#fcf3cf', // total (white)
+                  '#2ecc71', // Employees (red)
+                  '#ec7063', // Contractors (white)
+                ]
+              };
+
+              return partitions.map(p => {
+  
+
+                const flagSrc = flagMap[p.name] || '';
+                const colors = colorsMap[p.name] || ['#FFC107', '#FFC107'];
+                const [ titleC, totalC, ...statCs ] = colors;
+
+
+                return (
+                  <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+                    <SummaryCard
+                      // title={p.name}
+                      title={displayNameMap[p.name] || p.name.replace(' Partition','')}
+                    
+                      icon={
+                        flagSrc && (
+                          <Box
+                            component="img"
+                            src={flagSrc}
+                            alt={`${p.name} flag`}
+                            sx={{
+                              width: 50,
+                              height: 30,
+                              border: '1px solid #fff'  // 1px border
+                            }}
+                          />
+                        )
+                      }
+
+
+                      total={p.total}
+                      stats={[
+                        { label: 'Employees',   value: p.Employee },
+                        { label: 'Contractors', value: p.Contractor },
+                        ...(p.name === 'CR.Costa Rica Partition'
+                          ? [{ label: 'Temp Badge', value: p.TempBadge }]
+                          : [])
+                      ]}
+
+                      // pass our new color props
+                      titleColor={titleC}
+                      totalColor={totalC}
+                      statColors={statCs}
+
+
+                    sx={{
+                        width: '100vw%',
+                    
+                           border: `1px solid ${titleC}`,
+
+       // typography overrides:
+       '& .MuiTypography-subtitle1': {
+         fontSize: '1.3rem'          // partition title
+       },
+       '& .MuiTypography-h4': {
+         fontSize: '1.7rem'        // partition total
+       },
+       '& .MuiTypography-caption': {
+         fontSize: '0.875rem'      // partition stats labels/values
+       }
+
+                      }}
+                    />
+                  </Box>
+                );
+              });
+            })()
+           )}
+         </Box>
+
+
+
+
+ {/* Partition detail widgets: 3 in one row */}
+        {loading ? (
+          <Skeleton variant="rectangular" width="100%" height={500}/>
+        ) : (
+          <Box mt={4} display="flex" gap={2} justifyContent="space-between" flexWrap="wrap">
+
+            {/* 1) Costa Rica composite */}
+            <Box
+              sx={{
+                flex: '1 1 32%',
+                minWidth: 280,
+                border: '1px solid #FFE599',
+                borderRadius: 2,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.5)',
+                '&:hover': { transform: 'scale(1.02)' },
+                overflow: 'hidden',
+                transition: 'transform 0.3s'
+              }}
+            >
+              {crPartition.total === 0
+                ? <Typography align="center" sx={{ py: 4, color: 'white' }}>
+                    No realtime employee data
+                  </Typography>
+                : <CompositeChartCard
+                    title="Costa Rica"
+                    data={Object.entries(crPartition.floors).map(([f,c])=>({
+                      name: f.trim(), headcount:c,
+                      capacity: seatCapacities[`Costa Rica-${f.trim()}`]||0
+                    }))}
+                    barColor={palette15[0]}
+                    lineColor={palette15[1]}
+                    height={350}
+                    animationDuration={1500}
+                    animationEasing="ease-in-out"
+                  />
+              }
+            </Box>
+
+            {/* 2) Argentina line */}
+            <Box
+              sx={{
+                flex: '1 1 32%',
+                minWidth: 280,
+                border: '1px solid #FFE599',
+                borderRadius: 2,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.5)',
+                '&:hover': { transform: 'scale(1.02)' },
+                overflow: 'hidden',
+                transition: 'transform 0.3s'
+              }}
+            >
+              {arPartition.total === 0
+                ? <Typography align="center" sx={{ py: 4, color: 'white' }}>
+                    No realtime employee data
+                  </Typography>
+                : <LineChartCard
+                    title="Argentina"
+                    data={Object.entries(arPartition.floors).map(([f,c])=>({
+                      name: f.trim(), headcount:c,
+                      capacity: seatCapacities[`Argentina-${f.trim()}`]||0
+                    }))}
+                    lineColor1={palette15[2]}
+                    lineColor2={palette15[3]}
+                    height={350}
+                    animationDuration={1500}
+                    animationEasing="ease-in-out"
+                  />
+              }
+            </Box>
+
+            {/* 3) Combined Pie */}
+            <Box
+              sx={{
+                flex: '1 1 32%',
+                minWidth: 280,
+                border: '1px solid #FFE599',
+                borderRadius: 2,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.5)',
+                '&:hover': { transform: 'scale(1.02)' },
+                overflow: 'hidden',
+                transition: 'transform 0.3s'
+              }}
+            >
+              <PieChartCard
+                title="Latin America"
+                data={smallOnes.map(p=>({
+                  name: displayNameMap[p.name],
+                  value: p.total
+                }))}
+                colors={[
+                  palette15[4], palette15[5],
+                  palette15[6], palette15[7]
+                ]}
+                height={350}
+                showZeroSlice={true}
+                animationDuration={1500}
               />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </Box>
-      </CardContent>
-    </Card>
+            </Box>
+
+          </Box>
+        )}
+      </Container>
+
+
+      <footer style={{
+        backgroundColor: '#000000',
+        color: '#FFC107',
+        padding: '1.5rem 0',
+        textAlign: 'center',
+        marginTop: 0,
+        borderTop: '2px solid #FFC107',
+        fontSize: '0.95rem',
+        lineHeight: '1.6'
+      }}>
+        <div><strong>Global Security Operations Center</strong><br/>
+          Live HeadCount against Occupancy dashboard for Western Union — Real-time occupancy, floor activity, and personnel insights.
+        </div>
+        <div style={{ marginTop: '0.75rem' }}>
+          Contact us:&nbsp;
+          <a href="mailto:GSOC-GlobalSecurityOperationCenter.SharedMailbox@westernunion.com"
+             style={{ color: '#FFC107', textDecoration: 'underline' }}>
+            GSOC Mail
+          </a>&nbsp;|&nbsp;
+          Landline:&nbsp;<span style={{ color: '#FFC107' }}>+91-020-67632394</span>
+        </div>
+      </footer>
+    </>
   );
 }
+
+
+
+const widgetBoxStyle = borderColor => ({
+  flex: '1 1 32%',
+  minWidth: 280,
+  border: `1px solid ${borderColor}`,
+  borderRadius: 2,
+  boxShadow: '0 2px 6px rgba(0,0,0,0.5)',
+  overflow: 'hidden',
+  transition: 'transform 0.3s',
+  '&:hover': { transform: 'scale(1.02)' }
+});
+
+function NoData({ text }) {
+  return (
+    <Typography align="center" sx={{ py:4, color:'white' }}>
+      No realtime employee data in {text}
+    </Typography>
+  );
+}
+
