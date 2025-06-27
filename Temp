@@ -1,3 +1,69 @@
+--- a/src/components/PieChartCard.jsx
++++ b/src/components/PieChartCard.jsx
+@@ export default function PieChartCard({
+   const total = data.reduce((sum, d) => sum + d.value, 0);
+ 
+   // ... existing no-data logic ...
+ 
+-  return (
++  return (
+     <Card sx={cardStyle(colors[0])}>
+       <CardContent sx={{ p:1 }}>
+         <Typography variant="subtitle1" align="center" color="text.primary">
+           {title}
+         </Typography>
+-        <Box sx={{ width:'100%', height }}>
+-          <ResponsiveContainer>
+-            <PieChart>
++        {/* wrap in relative container so we can overlay the total */}
++        <Box sx={{ position: 'relative', width: '100%', height }}>
++          <ResponsiveContainer>
++            <PieChart>
+               <Pie
+                 data={renderData}
+                 dataKey="value"
+@@
+               </Pie>
+               <Tooltip contentStyle={{ backgroundColor:'#FFEE8C', borderColor:colors[0] }} />
+               <Legend verticalAlign="bottom" wrapperStyle={{ color:'rgba(255,255,255,0.8)' }} />
+-            </PieChart>
+-          </ResponsiveContainer>
+-        </Box>
++            </PieChart>
++          </ResponsiveContainer>
++
++          {/* centered total */}
++          <Box
++            component="div"
++            sx={{
++              position: 'absolute',
++              top: '50%',
++              left: '50%',
++              transform: 'translate(-50%, -50%)',
++              pointerEvents: 'none'
++            }}
++          >
++            <Typography variant="h4" align="center" sx={{ color: colors[0], fontWeight: 'bold' }}>
++              {total}
++            </Typography>
++            <Typography variant="caption" align="center" sx={{ color: 'rgba(255,255,255,0.7)' }}>
++              Total
++            </Typography>
++          </Box>
++        </Box>
+       </CardContent>
+     </Card>
+   );
+
+
+
+
+
+
+
+
+
+
 Dont make any unnecessary changes just Display Total Count in the inner redious of the chart(Total Count = Brazil + Mexoco +Panama + Peru)
 // src/components/PieChartCard.jsx
 
