@@ -1,5 +1,27 @@
 --- a/src/components/CompositeChartCard.jsx
 +++ b/src/components/CompositeChartCard.jsx
+@@ Bar
+-                <LabelList
+-                  dataKey="percentage"
+-                  position="top"
+-                  formatter={val => `${val}%`}
+-                  style={{ fill: '#fff', fontSize: 10, fontWeight: 600 }}
+-                />
++                {/* Show % on top of each bar */}
++                <LabelList
++                  dataKey="percentage"
++                  position="top"
++                  formatter={val => `${val}%`}
++                  style={{ fill: '#fff', fontSize: 12, fontWeight: 700 }}
++                />
+
+
+
+
+
+
+--- a/src/components/CompositeChartCard.jsx
++++ b/src/components/CompositeChartCard.jsx
 @@ -38,7 +38,12 @@ export default function CompositeChartCard({
        <CardContent sx={{ p: 1 }}>
          <Typography
