@@ -1,207 +1,42 @@
---- a/src/components/CompositeChartCard.jsx
-+++ b/src/components/CompositeChartCard.jsx
-@@ Bar
--                <LabelList
--                  dataKey="percentage"
--                  position="top"
--                  formatter={val => `${val}%`}
--                  style={{ fill: '#fff', fontSize: 10, fontWeight: 600 }}
--                />
-+                {/* Show % on top of each bar */}
-+                <LabelList
-+                  dataKey="percentage"
-+                  position="top"
-+                  formatter={val => `${val}%`}
-+                  style={{ fill: '#fff', fontSize: 12, fontWeight: 700 }}
-+                />
+Use Western Union brand Colour for Line and add legends and deatails 
+also display hradcount above the dot
 
-
-
-
-
-
---- a/src/components/CompositeChartCard.jsx
-+++ b/src/components/CompositeChartCard.jsx
-@@ -38,7 +38,12 @@ export default function CompositeChartCard({
-       <CardContent sx={{ p: 1 }}>
-         <Typography
-           variant="subtitle1"
-           align="center"
-           gutterBottom
-           color="text.primary"
-         >
-           {title}
-         </Typography>
-         <Box sx={{ width: '100%', height }}>
-           <ResponsiveContainer>
-             <ComposedChart
-               data={enriched}
-               margin={{ top: 10, right: 20, left: 0, bottom: 20 }}
-             >
-               <CartesianGrid
-                 strokeDasharray="3 3"
-                 stroke="rgba(255,255,255,0.1)"
-               />
-
--              <XAxis
--                dataKey="name"
--                tickLine={false}
--                axisLine={false}
--                stroke="rgba(255,255,255,0.6)"
--              />
-+              <XAxis
-+                dataKey="name"
-+                tickLine={false}
-+                axisLine={false}
-+                stroke="rgba(255,255,255,0.6)"
-+                tickFormatter={label => 
-+                  // strip any leading word(s) and space, e.g. "Building A1" → "A1"
-+                  label.replace(/^[^\s]*\s*/, '')
-+                }
-+              />
-
-               <YAxis
-                 yAxisId="left"
-                 tickLine={false}
-                 axisLine={false}
-                 stroke="rgba(255,255,255,0.6)"
-               />
-
-               <YAxis
-                 yAxisId="right"
-                 orientation="right"
-                 tickLine={false}
-                 axisLine={false}
-                 stroke="rgba(255,255,255,0.6)"
-                 domain={[0, 100]}
-                 tickFormatter={val => `${val}%`}
-               />
-
-               <Tooltip
-                 contentStyle={{ backgroundColor: '#222', borderColor: lineColor }}
-                 formatter={(value, name) => 
-                   name === 'percentage' ? `${value}%` : value
-                 }
-               />
-
-               <Legend
-                 verticalAlign="top"
-                 wrapperStyle={{ color: 'rgba(255,255,255,0.8)' }}
-               />
-
-               {/* Headcount bars with per-bar colors & percentage labels */}
-               <Bar
-                 yAxisId="left"
-                 dataKey="headcount"
-                 name="Headcount"
-                 barSize={20}
-                 isAnimationActive
-                 animationDuration={animationDuration}
-                 animationEasing={animationEasing}
-               >
-                 {enriched.map((entry, idx) => (
-                   <Cell
-                     key={`cell-${idx}`}
-                     fill={entry._color}
-                     stroke="#fff"
-                     strokeWidth={1}
-                   />
-                 ))}
-                 <LabelList
-                   dataKey="percentage"
-                   position="top"
-                   formatter={val => `${val}%`}
-                   style={{ fill: '#fff', fontSize: 10, fontWeight: 600 }}
-                 />
-               </Bar>
-
-               {/* Usage % line on right axis */}
-               <Line
-                 yAxisId="right"
-                 type="monotone"
-                 dataKey="percentage"
-                 name="Usage %"
-                 stroke={lineColor}
-                 strokeWidth={2}
-                 dot={false}
-                 isAnimationActive
-                 animationDuration={animationDuration}
-                 animationEasing={animationEasing}
-               />
-
-               {/* Seat Capacity dashed line */}
-               <Line
-                 yAxisId="left"
-                 type="monotone"
-                 dataKey="capacity"
-                 name="Seat Capacity"
-                 stroke="#81C784"
-                 strokeDasharray="5 5"
-                 dot={false}
-                 isAnimationActive
-                 animationDuration={animationDuration}
-                 animationEasing={animationEasing}
-               />
-             </ComposedChart>
-           </ResponsiveContainer>
-         </Box>
-       </CardContent>
-     </Card>
-   );
- }
-
-
-
-
-
-
-Now Strickly Dont make Another Changes 
-Just BeLow The Bar details display like
-Building A1  Building A2 Building A3 
-Just Display A1 , A2 Like make only this changes
-// src/components/CompositeChartCard.jsx
+// src/components/LineChartCard.jsx
 
 import React from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import {
-  ComposedChart,
-  Bar,
+  LineChart,
   Line,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
-  Legend,
-  LabelList,
-  Cell
+  Legend
 } from 'recharts';
 
-
-
-const DARK_TO_LIGHT = [
-  '#FFD666', '#FFE599', '#FFF2CC', '#FFE599', '#E0E1DD',
-  '#FFD666', '#FFEE8C', '#F8DE7E', ' #FBEC5D', '#724E14',
-  ' #FFEE8C', '#21325E', '#415A77', '#6A7F9A', '#B0C4DE',
-  '#1A1F36', '#2B3353', '#4C6482', '#7B90B2', '#CAD3E9'
-];
-
-export default function CompositeChartCard({
+export default function LineChartCard({
   title,
   data,
-  lineColor = '#E57373',
+  lineColor1 = '#3F51B5',
+  lineColor2 = '#009688',
   height = 300,
   animationDuration = 1500,
   animationEasing = 'ease-in-out'
 }) {
   if (!Array.isArray(data) || data.length === 0) {
     return (
-      <Card sx={{ border: `1px solid ${lineColor}`, bgcolor: 'rgba(0,0,0,0.4)' }}>
+      <Card sx={{
+        border: `1px solid ${lineColor1}`,
+        borderRadius: 2,
+        bgcolor: 'rgba(0,0,0,0.4)',
+      }}>
         <CardContent>
-          <Typography variant="subtitle1" align="center" color="text.secondary">
+          <Typography variant="subtitle1" align="center" color="text.primary">
             {title}
           </Typography>
-          <Typography variant="body2" align="center" sx={{ mt: 4 }}>
+          <Typography variant="body2" align="center" sx={{ mt: 4, color: 'text.secondary' }}>
             No realtime employee data
           </Typography>
         </CardContent>
@@ -209,129 +44,59 @@ export default function CompositeChartCard({
     );
   }
 
-  // Enrich each datum with its usage percentage
-  const enriched = data.map((d, i) => ({
-    ...d,
-    percentage: d.capacity ? Math.round(d.headcount / d.capacity * 100) : 0,
-    _color: DARK_TO_LIGHT[i % DARK_TO_LIGHT.length]
-  }));
-
   return (
-    <Card
-      sx={{
-        border: `1px solid ${lineColor}`,
-        borderRadius: 2,
-        overflow: 'hidden',
-        bgcolor: 'rgba(0,0,0,0.4)',
-        transition: 'transform 0.3s, box-shadow 0.3s',
-        '&:hover': {
-          transform: 'scale(1.02)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.7)'
-        }
-      }}
-    >
+    <Card sx={{
+      border: `1px solid ${lineColor1}`,
+      borderRadius: 2,
+      overflow: 'hidden',
+      bgcolor: 'rgba(0,0,0,0.4)',
+      transition: 'transform 0.3s, box-shadow 0.3s',
+      '&:hover': {
+        transform: 'scale(1.02)',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.7)'
+      }
+    }}>
       <CardContent sx={{ p: 1 }}>
-        <Typography
-          variant="subtitle1"
-          align="center"
-          gutterBottom
-          color="text.primary"
-        >
+        <Typography variant="subtitle1" align="center" gutterBottom color="text.primary">
           {title}
         </Typography>
         <Box sx={{ width: '100%', height }}>
           <ResponsiveContainer>
-            <ComposedChart
-              data={enriched}
-              margin={{ top: 10, right: 20, left: 0, bottom: 20 }}
-            >
+            <LineChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-
-              <XAxis
-                dataKey="name"
-                tickLine={false}
-                axisLine={false}
-                stroke="rgba(255,255,255,0.6)"
-              />
-
-              <YAxis
-                yAxisId="left"
-                tickLine={false}
-                axisLine={false}
-                stroke="rgba(255,255,255,0.6)"
-              />
-
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                tickLine={false}
-                axisLine={false}
-                stroke="rgba(255,255,255,0.6)"
-                domain={[0, 100]}
-                tickFormatter={val => `${val}%`}
-              />
-
+              <XAxis dataKey="name" tickLine={false} axisLine={false} stroke="rgba(255,255,255,0.6)" />
+              <YAxis tickLine={false} axisLine={false} stroke="rgba(255,255,255,0.6)" />
               <Tooltip
-                contentStyle={{ backgroundColor: '#FFD666', borderColor: lineColor }}
-                formatter={(value, name) => 
-                  name === 'percentage' ? `${value}%` : value
-                }
+                contentStyle={{ backgroundColor: '#222', borderColor: lineColor1 }}
               />
+              <Legend verticalAlign="top" wrapperStyle={{ color: 'rgba(255,255,255,0.8)' }} />
 
-              <Legend
-                verticalAlign="top"
-                wrapperStyle={{ color: 'rgba(255,255,255,0.8)' }}
-              />
-
-              {/* Headcount bars with per-bar colors & percentage labels */}
-              <Bar
-                yAxisId="left"
+              <Line
+                type="monotone"
                 dataKey="headcount"
                 name="Headcount"
-                barSize={700}
-                isAnimationActive
-                animationDuration={animationDuration}
-                animationEasing={animationEasing}
-              >
-                {enriched.map((entry, idx) => (
-                  <Cell key={`cell-${idx}`} fill={entry._color} />
-                ))}
-                <LabelList
-                  dataKey="percentage"
-                  position="top"
-                  formatter={val => `${val}%`}
-                  style={{ fill: '#fff', fontSize: 10, fontWeight: 600 }}
-                />
-              </Bar>
-
-              {/* Seat Capacity line */}
-              <Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="percentage"
-                name="Usage %"
-                stroke={lineColor}
-                strokeWidth={2}
-                dot={false}
+                stroke={lineColor1}
+                strokeWidth={3}
+                dot={{ r: 6, stroke: '#fff', strokeWidth: 2 }}
+                activeDot={{ r: 8 }}
                 isAnimationActive
                 animationDuration={animationDuration}
                 animationEasing={animationEasing}
               />
 
-              {/* Optional: draw capacity as second line */}
               <Line
-                yAxisId="left"
                 type="monotone"
                 dataKey="capacity"
                 name="Seat Capacity"
-                stroke="#81C784"
+                stroke={lineColor2}
+                strokeWidth={2}
                 strokeDasharray="5 5"
                 dot={false}
                 isAnimationActive
                 animationDuration={animationDuration}
                 animationEasing={animationEasing}
               />
-            </ComposedChart>
+            </LineChart>
           </ResponsiveContainer>
         </Box>
       </CardContent>
