@@ -1,3 +1,104 @@
+// src/pages/Dashboard.jsx
+…
+        {/* Partition detail widgets */}
+-        {loading ? (
+-          <Skeleton variant="rectangular" width="100%" height={600}/>
+-        ) : (
+-          <>
+-            {/* First row: Costa Rica & Argentina */}
+-            <Box mt={4} display="flex" gap={1}>
+-              {/* Costa Rica */}
+-              <Box sx={{ flex:'1 1 49%', minWidth:320 }}>
+-                <CompositeChartCard … height={300}/>
+-              </Box>
+-              {/* Argentina */}
+-              <Box sx={{ flex:'1 1 49%', minWidth:320 }}>
+-                <LineChartCard … height={300}/>
+-              </Box>
+-            </Box>
+-
+-            {/* Second row: Brazil, Panama, Peru pies */}
+-            <Box mt={4} display="flex" gap={1}>
+-              {others.map((p, idx) => (
+-                <Box key={p.name} sx={{ flex:'1 1 32%', minWidth:200 }}>
+-                  <PieChartCard … height={300}/>
+-                </Box>
+-              ))}
+-            </Box>
+-          </>
+-        )}
++        {loading ? (
++          <Skeleton variant="rectangular" width="100%" height={400}/>
++        ) : (
++          <Box mt={4} display="flex" gap={1} justifyContent="space-between">
++
++            {/* 1) Costa Rica (Composite) */}
++            <Box sx={{ flex:'1 1 32%', minWidth:280 }}>
++              <CompositeChartCard
++                title="Costa Rica"
++                data={Object.entries(
++                  partitions.find(p=>p.name==='CR.Costa Rica Partition').floors
++                ).map(([floor,c])=>({
++                  name: floor.trim(),
++                  headcount: c,
++                  capacity:  seatCapacities[`Costa Rica-${floor.trim()}`]||0
++                }))}
++                barColor={palette15[0]}
++                lineColor={palette15[1]}
++                height={300}
++              />
++            </Box>
++
++            {/* 2) Argentina (Line) */}
++            <Box sx={{ flex:'1 1 32%', minWidth:280 }}>
++              <LineChartCard
++                title="Argentina"
++                data={Object.entries(
++                  partitions.find(p=>p.name==='AR.Cordoba').floors
++                ).map(([floor,c])=>({
++                  name: floor.trim(),
++                  headcount: c,
++                  capacity:  seatCapacities[`Argentina-${floor.trim()}`]||0
++                }))}
++                lineColor1={palette15[2]}
++                lineColor2={palette15[3]}
++                height={300}
++              />
++            </Box>
++
++            {/* 3) Combined Pie for MX/BR/PE/PA */}
++            <Box sx={{ flex:'1 1 32%', minWidth:280 }}>
++              <PieChartCard
++                title="Latin America"
++                data={partitions
++                  .filter(p => ['MX.Mexico City','BR.Sao Paulo','PE.Lima','PA.Panama City'].includes(p.name))
++                  .map(p => ({
++                    name: displayNameMap[p.name],
++                    value: p.total
++                  }))}
++                colors={[
++                  palette15[4],
++                  palette15[5],
++                  palette15[6],
++                  palette15[7],
++                ]}
++                height={300}
++                showZeroSlice={true}
++              />
++            </Box>
++
++          </Box>
++        )}
+…
+
+
+
+
+
+
+
+
+
 import React, { useEffect, useState } from 'react';
 import { Container, Box, Typography, Skeleton } from '@mui/material';
 import GroupIcon from '@mui/icons-material/Group';
