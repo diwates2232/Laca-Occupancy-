@@ -1,3 +1,22 @@
+pm2 start src/server.js --name laca-occupancy-backend
+
+
+
+pm2 start npm --name laca-occupancy-backend -- run dev
+
+
+
+
+pm2 start npm --name laca-occupancy-backend -- start
+
+pm2 save
+
+
+
+
+
+
+
 --- a/src/components/PieChartCard.jsx
 +++ b/src/components/PieChartCard.jsx
 @@ export default function PieChartCard({
