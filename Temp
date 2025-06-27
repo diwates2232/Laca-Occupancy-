@@ -1,3 +1,128 @@
+// src/components/CompositeChartCard.jsx
+
+import React from 'react';
+import { Card, CardContent, Typography, Box } from '@mui/material';
+import {
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend
+} from 'recharts';
+
+export default function CompositeChartCard({
+  title,
+  data,
+  barColor = '#FFC107',
+  lineColor = '#E57373',
+  height = 300,
+  animationDuration = 1500,
+  animationEasing = 'ease-in-out'
+}) {
+  if (!Array.isArray(data) || data.length === 0) {
+    return (
+      <Card sx={{ border: `1px solid ${barColor}`, bgcolor: 'rgba(0,0,0,0.4)' }}>
+        <CardContent>
+          <Typography variant="subtitle1" align="center" color="text.secondary">
+            {title}
+          </Typography>
+          <Typography variant="body2" align="center" sx={{ mt: 4 }}>
+            No realtime employee data
+          </Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card
+      sx={{
+        border: `1px solid ${barColor}`,
+        borderRadius: 2,
+        overflow: 'hidden',
+        bgcolor: 'rgba(0,0,0,0.4)',
+        transition: 'transform 0.3s, box-shadow 0.3s',
+        '&:hover': {
+          transform: 'scale(1.02)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.7)'
+        }
+      }}
+    >
+      <CardContent sx={{ p: 1 }}>
+        <Typography variant="subtitle1" align="center" gutterBottom color="text.primary">
+          {title}
+        </Typography>
+        <Box sx={{ width: '100%', height }}>
+          <ResponsiveContainer>
+            <ComposedChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="name" tickLine={false} axisLine={false} stroke="rgba(255,255,255,0.6)" />
+              <YAxis
+                yAxisId="left"
+                tickLine={false}
+                axisLine={false}
+                stroke="rgba(255,255,255,0.6)"
+              />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                tickLine={false}
+                axisLine={false}
+                stroke="rgba(255,255,255,0.6)"
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#222',
+                  borderColor: barColor
+                }}
+              />
+              <Legend verticalAlign="top" wrapperStyle={{ color: 'rgba(255,255,255,0.8)' }} />
+              
+              <Bar
+                yAxisId="left"
+                dataKey="headcount"
+                name="Headcount"
+                barSize={24}
+                fill={barColor}
+                radius={[4, 4, 0, 0]}
+                isAnimationActive
+                animationDuration={animationDuration}
+                animationEasing={animationEasing}
+                onMouseOver={e => e && (e.fillOpacity = 0.8)}
+                onMouseOut={e => e && (e.fillOpacity = 1)}
+              />
+
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="capacity"
+                name="Seat Capacity"
+                stroke={lineColor}
+                strokeWidth={3}
+                dot={{ r: 6, stroke: '#fff', strokeWidth: 2 }}
+                activeDot={{ r: 8 }}
+                isAnimationActive
+                animationDuration={animationDuration}
+                animationEasing={animationEasing}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
+
+
+
 // src/pages/Dashboard.jsx
 
 import React, { useEffect, useState } from 'react';
