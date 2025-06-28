@@ -1,3 +1,20 @@
+pm2-service-uninstall                                  # remove the old system‐level service
+npm install -g pm2-windows-service
+
+pm2-service-install `
+  --name "backend" `
+  --pm2-path "%APPDATA%\npm\node_modules\pm2\bin\pm2" `
+  --node-path "C:\Program Files\nodejs\node.exe" `
+  --script "C:\Projects\Backend\src\app.js" `
+  --run-as-user "S326131HQ" `
+  --password "YourWindowsPassword"
+
+
+
+
+
+
+
 npm install -g pm2-windows-service
 
 
