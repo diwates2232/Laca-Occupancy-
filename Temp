@@ -1,3 +1,27 @@
+npm install -g pm2-windows-service
+
+
+pm2-service-install `
+  --name "backend" `
+  --pm2-path "%APPDATA%\npm\node_modules\pm2\bin\pm2" `
+  --node-path "C:\Program Files\nodejs\node.exe" `
+  --script "C:\Projects\Backend\src\app.js"
+
+
+
+pm2 list
+pm2 restart backend
+pm2 stop backend
+
+
+
+
+
+
+
+
+
+
 S C:\Projects\Backend> pm2 save
 [PM2] Saving current process list...
 [PM2] Successfully saved in C:\Users\S326131HQ\.pm2\dump.pm2
