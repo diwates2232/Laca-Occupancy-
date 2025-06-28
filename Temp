@@ -1,3 +1,24 @@
+netstat -a -n -o | findstr :3000
+
+
+taskkill /PID 12345 /F
+
+npm start
+
+
+
+npm install -g kill-port
+
+
+kill-port 3000
+
+npm start
+
+
+
+
+
+
 PS C:\Projects\Backend> npm start
 
 > backend@1.0.0 start
