@@ -1,3 +1,22 @@
+npm install -g pm2
+
+
+# Directly:
+pm2 start src/app.js --name backend
+
+# Or via your package.json start script:
+pm2 start npm --name backend -- run start
+
+
+
+pm2 save
+
+pm2 startup
+
+
+
+
+
 {
     "name": "backend",
     "version": "1.0.0",
