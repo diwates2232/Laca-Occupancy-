@@ -1,282 +1,418 @@
-npm install -g pm2
-
-pm2 start npm --name backend -- run start
-
-pm2 save
+//C:\Users\W0024618\Desktop\laca-occupancy-backend\src\controllers\occupancy.controller.js
 
 
-netstat -a -n -o | findstr :3000
-
-taskkill /PID 11316 /F
-
-
-netstat -a -n -o | findstr :3000
+const service = require('../services/occupancy.service');
+const doorMap = require('../utils/doorMap'); 
 
 
 
-
-
-
-
-Still we got this error so Go step by step 
-This is Windows 2016 server
-
-PS C:\Projects\Backend> npm start
-
-> backend@1.0.0 start
-> nodemon src/app.js
-
-[nodemon] 3.1.7
-[nodemon] to restart at any time, enter `rs`
-[nodemon] watching path(s): *.*
-[nodemon] watching extensions: js,mjs,cjs,json
-[nodemon] starting `node src/app.js`
-Excel Data Loaded: [ 'archivers', 'controllers', 'cameras', 'servers' ]
-node:events:496
-      throw er; // Unhandled 'error' event
-      ^
-
-Error: listen EADDRINUSE: address already in use 0.0.0.0:3000
-    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
-    at listenInCluster (node:net:1994:12)
-    at node:net:2203:7
-    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
-Emitted 'error' event on Server instance at:
-    at emitErrorNT (node:net:1973:8)
-    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
-  code: 'EADDRINUSE',
-  errno: -4091,
-  syscall: 'listen',
-  address: '0.0.0.0',
-  port: 3000
-}
-
-Node.js v22.14.0
-[nodemon] app crashed - waiting for file changes before starting...
-
-
-
-
-
-
-
-also check 
-C:\Projects\Backend\src\app.js
-
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const bodyParser = require("body-parser");
-const fs = require("fs");
-const { pingHost } = require("./services/pingService");
-const { DateTime } = require("luxon");
-const regionRoutes = require("./routes/regionRoutes");
-const { fetchAllIpAddress, ipRegionMap } = require("./services/excelService");
-const path = require("path");
-
-const basicAuth=require('basic-auth');
-
-const app = express();
-
-const HOST = "0.0.0.0";
-
-
-
-
-
-
-
-
-// Your username and password (you should ideally store these securely)
-const USERNAME = 'admin';
-const PASSWORD = '12345';
-
-// Middleware to check basic auth
-function basicAuthMiddleware(req, res, next) {
-  const user = basicAuth(req);
-
-  if (!user || user.name !== USERNAME || user.pass !== PASSWORD) {
-      res.setHeader('WWW-Authenticate', 'Basic realm="Authorization required"');
-      return res.status(401).send('Access denied');
+exports.getLiveOccupancy = async (req, res) => {
+  try {
+    const data = await service.fetchLiveOccupancy();
+    res.json({ success: true, count: data.length, data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Live occupancy fetch failed' });
   }
+};
 
-  next();
+
+
+
+/**
+ * Returns true if this PersonnelType counts as Employee.
+ * Everything else (including blank) counts as Contractor.
+ */
+
+function isEmployeeType(pt) {
+  return pt === 'Employee'
+      || pt === 'Terminated Employee'
+      || pt === 'Terminated Personnel';
 }
 
-// Use the authentication middleware globally
-app.use(basicAuthMiddleware);
+/**
+ * Returns true if this PersonnelType is a Temp Badge.
+ */
+// function isTempBadgeType(pt) {
+//   return pt === 'Temp Badge';
+// }
 
 
-
-// Helpers
-function pruneOldEntries(entries, days = 30) {
-  const cutoff = DateTime.now().minus({ days }).toMillis();
-  return entries.filter(e => DateTime.fromISO(e.timestamp).toMillis() >= cutoff);
-}
-function getLogFileForDate(dt) {
-  return `./deviceLogs-${dt.toISODate()}.json`;
-}
-
-
-
-app.use(cors());
-app.use(express.json());
-
-app.use(cors({
-  origin:"*",
-  methods:"GET,POST,PUT,DELETE",
-  allowedHeaders:"Content-Type,Authorization"
-}));
-
-app.use(bodyParser.json());
-
-
-app.use('/Frontend/Device Dashboard',express.static(path.join(__dirname, '../../Frontend/Device Dashboard')));
-
-
-
-// serve everything in public/ as static files
-
-app.use(
-  '/dashboard',
-  express.static(path.join(__dirname,'../../Frontend/Device Dashboard'))
-);
-
-app.get('/health',(req,res)=>{
-  res.json({status:'up' });
-});
-
-app.use('/api/regions',regionRoutes);
-// fallback to frontend  index.html
-
-app.get('/Frontend/Device Dashboard/*', (req, res)=>{
-  res.sendFile(path.join(__dirname, '../../Frontend/Device Dashboard/index.html'));
-})
-
-
-// Device Status Tracking
-const devices = fetchAllIpAddress();
-let deviceStatus = {};
-
-// Load only today's logs
-const today = DateTime.now().setZone("Asia/Kolkata");
-const todayLogFile = getLogFileForDate(today);
-let todayLogs = fs.existsSync(todayLogFile)
-  ? JSON.parse(fs.readFileSync(todayLogFile, "utf8"))
-  : {};
-
-// Persist today's logs
-function saveTodayLogs() {
-  fs.writeFileSync(todayLogFile, JSON.stringify(todayLogs, null, 2));
+function isTempBadgeType(pt) {
+  // handle both variants from the database
+  return pt === 'Temp Badge' || pt === 'TempBadge';
 }
 
-// Log a status change
-function logDeviceChange(ip, status) {
-  const timestamp = DateTime.now().setZone("Asia/Kolkata").toISO();
-  const arr = (todayLogs[ip] = todayLogs[ip] || []);
-  const last = arr[arr.length - 1];
-  if (!last || last.status !== status) {
-    arr.push({ status, timestamp });
-    todayLogs[ip] = pruneOldEntries(arr, 30);
-    saveTodayLogs();
-  }
-}
 
-// Ping devices
- async function pingDevices() {
-  const limit = require("p-limit")(20);
-  await Promise.all(
-    devices.map(ip =>
-      limit(async () => {
-        const newStatus = await pingHost(ip);
-        if (deviceStatus[ip] !== newStatus) {
-          logDeviceChange(ip, newStatus);
-        }
-        deviceStatus[ip] = newStatus;
-      })
-    )
+
+/**
+ * Look up floor for a given record by matching door + partition.
+ */
+function lookupFloor(partition, door, direction, unmappedSet) {
+  const entry = doorMap.find(d =>
+    d.partition === partition && d.door === door
   );
-  console.log("Updated device status:", deviceStatus);
- }
-
-// Start ping loop
-setInterval(pingDevices, 12_0000); //60_000
-pingDevices();
-
-// Real‑time status
-app.get("/api/region/devices/status", (req, res) => {
-  res.json(deviceStatus);
-});
-
-
-// Full history: stitch together all daily files
-app.get("/api/devices/history", (req, res) => {
-  const files = fs.readdirSync(".")
-    .filter(f => f.startsWith("deviceLogs-") && f.endsWith(".json"));
-  const combined = {};
-  for (const f of files) {
-    const dayLogs = JSON.parse(fs.readFileSync(f, "utf8"));
-    for (const ip of Object.keys(dayLogs)) {
-      combined[ip] = (combined[ip] || []).concat(dayLogs[ip]);
-    }
+  if (!entry) {
+    unmappedSet.add(`${partition} | ${door}`);
+    return null;
   }
-  // prune to last 30 days
-  for (const ip of Object.keys(combined)) {
-    combined[ip] = pruneOldEntries(combined[ip], 30);
-  }
-  res.json(combined);
-});
+  return direction === 'InDirection'
+    ? entry.inDirectionFloor
+    : entry.outDirectionFloor;
+}
 
-// Region‑wise history
-app.get("/api/region/:region/history", (req, res) => {
-  const region = req.params.region.toLowerCase();
-  const files = fs.readdirSync(".")
-    .filter(f => f.startsWith("deviceLogs-") && f.endsWith(".json"));
-  const regionLogs = {};
+exports.getLiveSummary = async (req, res) => {
+  try {
+    const swipes = await service.fetchLiveOccupancy();
 
-  for (const f of files) {
-    const dayLogs = JSON.parse(fs.readFileSync(f, "utf8"));
-    for (const ip of Object.keys(dayLogs)) {
-      if (ipRegionMap[ip] === region) {
-        regionLogs[ip] = (regionLogs[ip] || []).concat(dayLogs[ip]);
+    // 1. TODAY’S HEADCOUNT: first swipe per person
+    const firstByPerson = {};
+    swipes.forEach(r => {
+      const prev = firstByPerson[r.PersonGUID];
+      const t = new Date(r.LocaleMessageTime).getTime();
+      if (!prev || t < new Date(prev.LocaleMessageTime).getTime()) {
+        firstByPerson[r.PersonGUID] = r;
       }
+    });
+    const todayRecs = Object.values(firstByPerson);
+    const today = { total: 0, Employee: 0, Contractor: 0, TempBadge: 0 };
+    todayRecs.forEach(r => {
+      today.total++;
+      if (isTempBadgeType(r.PersonnelType)) today.TempBadge++;
+      else if (isEmployeeType(r.PersonnelType)) today.Employee++;
+      else today.Contractor++;
+    });
+
+    // 2. REAL-TIME: last swipe per person, only InDirection
+    const lastByPerson = {};
+    swipes.forEach(r => {
+      const prev = lastByPerson[r.PersonGUID];
+      const t = new Date(r.LocaleMessageTime).getTime();
+      if (!prev || t > new Date(prev.LocaleMessageTime).getTime()) {
+        lastByPerson[r.PersonGUID] = r;
+      }
+    });
+
+    const realtime = {};
+    const unmappedDoors = new Set();
+    Object.values(lastByPerson).forEach(r => {
+      // if (r.Direction !== 'InDirection') return;
+     // ● only remove if this door truly maps to "Out of office"
+     if (r.Direction === 'OutDirection') {
+       const floor = lookupFloor(r.PartitionName2, r.Door, r.Direction, unmappedDoors);
+       if (floor === 'Out of office' || floor?.trim() === 'Out of office') {
+         return; // true exit → evict
+       }
+       // otherwise fall through and count them
+     }
+
+
+      const p = r.PartitionName2;
+      // initialize, including TempBadge for CR
+      if (!realtime[p]) {
+        realtime[p] = { total: 0, Employee: 0, Contractor: 0 };
+        if (p === 'CR.Costa Rica Partition') realtime[p].TempBadge = 0;
+        realtime[p].floors = {};
+      }
+      realtime[p].total++;
+      if (isTempBadgeType(r.PersonnelType)) realtime[p].TempBadge++;
+      else if (isEmployeeType(r.PersonnelType)) realtime[p].Employee++;
+      else realtime[p].Contractor++;
+
+      const floor = lookupFloor(p, r.Door, r.Direction, unmappedDoors) || 'Unmapped';
+      realtime[p].floors[floor] = (realtime[p].floors[floor] || 0) + 1;
+    });
+
+    if (unmappedDoors.size) {
+      console.warn('Unmapped doors:\n' + Array.from(unmappedDoors).join('\n'));
     }
-  }
 
-  if (!Object.keys(regionLogs).length) {
-    return res.status(404).json({ message: `No device history found for region: ${region}` });
+    return res.json({
+      success: true,
+      today,
+      realtime,
+      details: Object.values(lastByPerson)
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Live summary failed' });
   }
-  // prune per‑IP
-  for (const ip of Object.keys(regionLogs)) {
-    regionLogs[ip] = pruneOldEntries(regionLogs[ip], 30);
+};
+
+
+exports.getHistoricalOccupancy = async (req, res) => {
+  const location = req.params.location || null;
+  try {
+    const raw = await service.fetchHistoricalOccupancy(location);
+
+    // first swipe per person per date
+    const byDate = raw.reduce((acc, r) => {
+      const iso = (r.LocaleMessageTime instanceof Date)
+        ? r.LocaleMessageTime.toISOString()
+        : r.LocaleMessageTime;
+      const date = iso.slice(0,10);
+      acc[date] = acc[date] || {};
+      const prev = acc[date][r.PersonGUID];
+      if (!prev || new Date(iso) < new Date(prev.LocaleMessageTime)) {
+        acc[date][r.PersonGUID] = { ...r, LocaleMessageTime: iso };
+      }
+      return acc;
+    }, {});
+
+    const summaryByDate = [];
+    const details = [];
+
+    Object.keys(byDate).sort().forEach(date => {
+      const recs = Object.values(byDate[date]);
+      details.push(...recs);
+
+      // initialize region counts, including TempBadge for CR location
+      const regionCounts = { total: 0, Employee: 0, Contractor: 0 };
+      if (location === 'CR.Costa Rica Partition') regionCounts.TempBadge = 0;
+
+      const partitionCounts = {};
+      recs.forEach(r => {
+        regionCounts.total++;
+        if (isTempBadgeType(r.PersonnelType)) regionCounts.TempBadge++;
+        else if (isEmployeeType(r.PersonnelType)) regionCounts.Employee++;
+        else regionCounts.Contractor++;
+
+        if (!location) {
+          const p = r.PartitionName2;
+          if (!partitionCounts[p]) {
+            partitionCounts[p] = { total: 0, Employee: 0, Contractor: 0 };
+            if (p === 'CR.Costa Rica Partition') partitionCounts[p].TempBadge = 0;
+          }
+          partitionCounts[p].total++;
+          if (isTempBadgeType(r.PersonnelType)) partitionCounts[p].TempBadge++;
+          else if (isEmployeeType(r.PersonnelType)) partitionCounts[p].Employee++;
+          else partitionCounts[p].Contractor++;
+        }
+      });
+
+      summaryByDate.push({
+        date,
+        day: new Date(date).toLocaleDateString('en-US', { weekday:'long' }),
+        region: location
+          ? { name: location, ...regionCounts }
+          : { name: 'LACA', ...regionCounts },
+        partitions: location ? undefined : partitionCounts
+      });
+    });
+
+    return res.json({ success: true, summaryByDate, details });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Historical fetch failed' });
   }
-  res.json(regionLogs);
+};
+
+
+
+
+
+
+
+
+// src/services/occupancy.service.js
+
+const { poolPromise, sql } = require('../config/db');
+
+const partitionList = [
+  'AR.Cordoba',
+  'BR.Sao Paulo',
+  'CR.Costa Rica Partition',
+  'MX.Mexico City',
+  'PA.Panama City',
+  'PE.Lima'
+];
+
+/**
+ * Live occupancy (today) query unchanged.
+ */
+exports.fetchLiveOccupancy = async () => {
+  const pool = await poolPromise;
+  const partitionsSql = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
+
+  const query = `
+    WITH CombinedQuery AS (
+      SELECT
+        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
+        t1.ObjectName1,
+        t1.ObjectName2            AS Door,
+        CASE
+          WHEN t3.Name IN ('Contractor','Terminated Contractor')
+            THEN t2.Text12
+          ELSE CAST(t2.Int1 AS NVARCHAR)
+        END                       AS EmployeeID,
+        t2.text5                  AS Text5,
+        t1.PartitionName2         AS PartitionName2,
+        t1.ObjectIdentity1        AS PersonGUID,
+        t3.Name                   AS PersonnelType,
+        COALESCE(
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]','varchar(50)'),
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID)[1]','varchar(50)'),
+          sc.value
+        )                         AS CardNumber,
+        t5a.value                 AS AdmitCode,
+        t5d.value                 AS Direction
+      FROM [ACVSUJournal_00010028].[dbo].[ACVSUJournalLog] AS t1
+      LEFT JOIN [ACVSCore].[Access].[Personnel]     AS t2
+        ON t1.ObjectIdentity1 = t2.GUID
+      LEFT JOIN [ACVSCore].[Access].[PersonnelType] AS t3
+        ON t2.PersonnelTypeId = t3.ObjectID
+      LEFT JOIN [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxmlShred] AS t5a
+        ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
+      LEFT JOIN [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxmlShred] AS t5d
+        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
+      LEFT JOIN [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxml] AS t_xml
+        ON t1.XmlGUID = t_xml.GUID
+      LEFT JOIN (
+        SELECT GUID, value
+        FROM [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxmlShred]
+        WHERE Name IN ('Card','CHUID')
+      ) AS sc
+        ON t1.XmlGUID = sc.GUID
+      WHERE
+        t1.MessageType = 'CardAdmitted'
+        AND t1.PartitionName2 IN (${partitionsSql})
+        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
+            = CONVERT(DATE, GETDATE())
+    )
+    SELECT
+      LocaleMessageTime,
+      CONVERT(VARCHAR(10), LocaleMessageTime, 23) AS Dateonly,
+      CONVERT(VARCHAR(8), LocaleMessageTime, 108) AS Swipe_Time,
+      EmployeeID,
+      PersonGUID,
+      ObjectName1,
+      Door,
+      PersonnelType,
+      CardNumber,
+      Text5,
+      PartitionName2,
+      AdmitCode,
+      Direction
+    FROM CombinedQuery
+    ORDER BY LocaleMessageTime ASC;
+  `;
+
+  const result = await pool.request().query(query);
+  return result.recordset;
+};
+
+
+/**
+ * Core raw‐data fetch for the past N days, all or by location.
+ */
+exports.fetchHistoricalData = async ({ days = 7, location = null }) => {
+  const pool = await poolPromise;
+  const partitionsSql = partitionList.map(p => `'${p.replace("'", "''")}'`).join(',');
+  const locationFilter = location
+    ? `AND t1.PartitionName2 = @location`
+    : `AND t1.PartitionName2 IN (${partitionsSql})`;
+
+  const query = `
+    WITH Hist AS (
+      SELECT
+        DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC) AS LocaleMessageTime,
+        t1.ObjectName1,
+        t1.ObjectName2       AS Door,
+        CASE
+          WHEN t3.Name IN ('Contractor','Terminated Contractor') THEN t2.Text12
+          ELSE CAST(t2.Int1 AS NVARCHAR)
+        END                   AS EmployeeID,
+        t2.text5             AS Text5,
+        t1.PartitionName2    AS PartitionName2,
+        t1.ObjectIdentity1   AS PersonGUID,
+        t3.Name              AS PersonnelType,
+        COALESCE(
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID/Card)[1]','varchar(50)'),
+          TRY_CAST(t_xml.XmlMessage AS XML).value('(/LogMessage/CHUID)[1]','varchar(50)'),
+          sc.value
+        )                     AS CardNumber,
+        t5a.value            AS AdmitCode,
+        t5d.value            AS Direction,
+        CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC)) AS SwipeDate
+      FROM [ACVSUJournal_00010028].[dbo].[ACVSUJournalLog] AS t1
+      LEFT JOIN [ACVSCore].[Access].[Personnel]     AS t2
+        ON t1.ObjectIdentity1 = t2.GUID
+      LEFT JOIN [ACVSCore].[Access].[PersonnelType] AS t3
+        ON t2.PersonnelTypeId = t3.ObjectID
+      LEFT JOIN [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxmlShred] AS t5a
+        ON t1.XmlGUID = t5a.GUID AND t5a.Name = 'AdmitCode'
+      LEFT JOIN [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxmlShred] AS t5d
+        ON t1.XmlGUID = t5d.GUID AND t5d.Value IN ('InDirection','OutDirection')
+      LEFT JOIN [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxml] AS t_xml
+        ON t1.XmlGUID = t_xml.GUID
+      LEFT JOIN (
+        SELECT GUID, value
+        FROM [ACVSUJournal_00010028].[dbo].[ACVSUJournalLogxmlShred]
+        WHERE Name IN ('Card','CHUID')
+      ) AS sc
+        ON t1.XmlGUID = sc.GUID
+      WHERE
+        t1.MessageType = 'CardAdmitted'
+        ${locationFilter}
+        AND CONVERT(DATE, DATEADD(MINUTE, -1 * t1.MessageLocaleOffset, t1.MessageUTC))
+            >= DATEADD(DAY, -${days}, CONVERT(DATE, GETDATE()))
+    )
+    SELECT *
+    FROM Hist
+    ORDER BY LocaleMessageTime ASC;
+  `;
+
+  const req = pool.request();
+  if (location) req.input('location', sql.NVarChar, location);
+  const result = await req.query(query);
+  return result.recordset;
+};
+
+
+/**
+ * Public wrapper: always last 7 days, all or by location.
+ */
+exports.fetchHistoricalOccupancy = async (location) => {
+  return exports.fetchHistoricalData({ days: 7, location: location || null });
+};
+
+module.exports.partitionList = partitionList;
+
+
+
+
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-backend\src\app.js
+
+    const express = require('express');
+    const cors = require('cors');
+    const occupancyRoutes = require('./routes/occupancy.routes');
+
+    const app = express();
+    app.use(express.json());
+    app.use(cors()); 
+
+
+    // Health check
+    app.get('/', (req, res) => res.send('🌎 LACA Occupancy API Running'));
+
+    // Routes
+    app.use('/api/occupancy', occupancyRoutes);
+
+    module.exports = app;
+
+
+
+C:\Users\W0024618\Desktop\laca-occupancy-backend\src\server.js
+
+require('dotenv').config();
+const app = require('./app');
+
+const PORT = process.env.PORT || 3001;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
 
 
-// Single‑device history
-app.get("/api/device/history/:ip", (req, res) => {
-  const ip = req.params.ip;
-  const files = fs.readdirSync(".")
-    .filter(f => f.startsWith("deviceLogs-") && f.endsWith(".json"));
-  let history = [];
-  for (const f of files) {
-    const dayLogs = JSON.parse(fs.readFileSync(f, "utf8"));
-    if (dayLogs[ip]) history = history.concat(dayLogs[ip]);
-  }
-  if (!history.length) {
-    return res.status(404).json({ message: "No history found for this device" });
-  }
-  history.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-  res.json({ ip, history });
-});
-
-
-// Start Server
- const PORT = process.env.PORT || 3000;
- app.listen(3000,'0.0.0.0', ()=>{
-
-  console.log(`Server running on http://0.0.0.0:${PORT}`);
-    console.log(`Server running on Your LAN at http://10.138.161.4:${PORT}`);
-  pingDevices();
- })
