@@ -1,284 +1,779 @@
-import React, { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import LoadingSpinner from '../components/LoadingSpinner';
+Now update only this then we will imrove each file
+Lets Check this file carefully this is laca file
+// src/pages/Dashboard.jsx
 
-const Dashboard               = lazy(() => import('../pages/Dashboard'));
-const History                 = lazy(() => import('../pages/History'));
-const PartitionDetail         = lazy(() => import('../pages/PartitionDetail'));
-const PartitionDetailDetails  = lazy(() => import('../pages/PartitionDetailDetails'));
+import React, { useEffect, useState } from 'react';
+import { Container, Box, Typography, Skeleton, Fade } from '@mui/material';
+import GroupIcon from '@mui/icons-material/Group';
+import TrackChangesIcon from '@mui/icons-material/TrackChanges';
+import PeopleIcon from '@mui/icons-material/People';
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
+import { useNavigate } from 'react-router-dom';
 
-export default function AppRoutes() {
+// Flags
+import CostaRicaFlag  from '../assets/flags/costa-rica.png';
+import ArgentinaFlag  from '../assets/flags/argentina.png';
+import MexicoFlag     from '../assets/flags/mexico.png';
+import PeruFlag       from '../assets/flags/peru.png';
+import BrazilFlag     from '../assets/flags/brazil.png';
+import PanamaFlag     from '../assets/flags/panama.png';
+
+import Header from '../components/Header';
+import SummaryCard from '../components/SummaryCard';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+import { partitionList } from '../services/occupancy.service';
+import seatCapacities from '../data/seatCapacities';
+import CompositeChartCard from '../components/CompositeChartCard';
+import LineChartCard      from '../components/LineChartCard';
+import PieChartCard       from '../components/PieChartCard';
+
+const displayNameMap = {
+  'CR.Costa Rica Partition': 'Costa Rica',
+  'AR.Cordoba':               'Argentina',
+  'MX.Mexico City':           'Mexico',
+  'PE.Lima':                  'Peru',
+  'BR.Sao Paulo':             'Brazil',
+  'PA.Panama City':           'Panama'
+};
+
+
+const colorsMap = {
+  'CR.Costa Rica Partition': ['#FFD666', '#fcf3cf', '#2ecc71', '#ec7063', '#ec7063'],
+  'AR.Cordoba':               ['#FFE599', '#fcf3cf', '#2ecc71', '#ec7063'],
+  'MX.Mexico City':           ['#FFD666', '#fcf3cf', '#2ecc71', '#ec7063'],
+  'PE.Lima':                  ['#FFF2CC', '#fcf3cf', '#2ecc71', '#ec7063'],
+  'BR.Sao Paulo':             ['#FFD666', '#fcf3cf', '#2ecc71', '#ec7063'],
+  'PA.Panama City':           ['#FFE599', '#fcf3cf', '#2ecc71', '#ec7063'],
+};
+
+
+
+
+const widgetMap = {
+  'CR.Costa Rica Partition': 'composite',
+  'AR.Cordoba':               'line',
+  'BR.Sao Paulo':             'pie',
+  'MX.Mexico City':           'pie',
+  'PE.Lima':                  'pie',
+  'PA.Panama City':           'pie',
+};
+
+
+
+
+const palette15 = [
+
+  '#FFC107', // Gold (WU primary)
+  '#E91E63', // Pink
+  '#4CAF50', // Green
+  
+  '#FFEB3B', // Yellow
+
+  '#FFD666',
+  
+  '#D84315', // Red-Orange
+
+
+  '#FFC107','#E91E63','#3F51B5',
+    '#E91E63', // Pink
+  '#9C27B0','#00BCD4','#8BC34A','#FF9800','#673AB7',
+  '#009688','#CDDC39','#FFEB3B','#795548','#607D8B'
+];
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (data) {
+      setLastUpdate(new Date().toLocaleTimeString());
+    }
+  }, [data]);
+
+  if (error) {
+    return (
+      <Box width="100vw%" py={4}>
+        <Typography color="error" align="center">
+          Error loading live data
+        </Typography>
+      </Box>
+    );
+  }
+
+ const regions = data?.realtime || {};
+  const partitions = partitionList.map(name => {
+    const key = Object.keys(regions).find(k => k.includes(name));
+    const p   = key ? regions[key] : {};
+    return {
+      name,
+      total:     p.total      || 0,
+      Employee:  p.Employee   || 0,
+      Contractor:p.Contractor || 0,
+      floors:    p.floors     || {}
+    };
+  }).sort((a,b)=>b.total - a.total);
+
+  const todayTot   = data?.today?.total    ?? 0;
+  const todayEmp   = data?.today?.Employee ?? 0;
+  const todayCont  = data?.today?.Contractor ?? 0;
+  const realtimeTot  = partitions.reduce((sum, p) => sum + p.total, 0);
+  const realtimeEmp  = partitions.reduce((sum, p) => sum + p.Employee, 0);
+  const realtimeCont = partitions.reduce((sum, p) => sum + p.Contractor, 0);
+
+  const crPartition = partitions.find(p=>p.name==='CR.Costa Rica Partition');
+  const arPartition = partitions.find(p=>p.name==='AR.Cordoba');
+  const smallOnes = partitions.filter(p=>
+    ['MX.Mexico City','BR.Sao Paulo','PE.Lima','PA.Panama City'].includes(p.name)
+  );
+
+
+  
   return (
-    <BrowserRouter>
-      <Suspense fallback={<LoadingSpinner />}>
-        <Routes>
-          {/* Home dashboard */}
-          <Route path="/" element={<Dashboard />} />
+    <>
+      <Header />
 
-          {/* Global history */}
-          <Route path="/history" element={<History />} />
+      <Container
+        maxWidth={false}
+        disableGutters
+        sx={{
+          pt: 2,
+          pb: 3,
+          px: 2,
+          background: 'rgba(0,0,0,0.6)',
+        }}
+      >
 
-          {/* Partition-scoped history */}
-          <Route path="/partition/:partition/history" element={<History />} />
+        {/* Last updated */}
+        <Typography
+          variant="caption"
+          sx={{ color: 'white', mb: 1, opacity: data ? 1 : 0, transition: 'opacity 0.6s' }}
+        >
+          {/* Last updated: {lastUpdate} */}
+        </Typography>
+     
+        
+        {/* Top six summary cards */}
+     <Box display="flex" flexWrap="wrap" gap={1} mb={1}>
+  {[
+    {
+      title: "Today's Total Headcount",
+      value: todayTot,
+      icon: <GroupIcon sx={{ color: '#E57373', fontSize: 36 }} />,
+      borderColor: '#FFD666',
+    },
+    {
+      title: "Today's Employees Count",
+      value: todayEmp,
+      icon: <PeopleIcon sx={{ color: '#81C784', fontSize: 36 }} />,
+      borderColor: '#81C784', 
+    },
+    {
+      title: "Today's Contractors Count",
+      value: todayCont,
+      icon: <BusinessCenterIcon sx={{ color: '#64B5F6', fontSize: 36 }} />,
+      borderColor: '#FFE599',
+      
+    },
+    {
+      title: "Realtime Headcount",
+      value: realtimeTot,
+      icon: <TrackChangesIcon sx={{ color: '#BA68C8', fontSize: 36 }} />,
+      borderColor: '#FFF2CC',
+    },
+    {
+      title: "Realtime Employees Count",
+      value: realtimeEmp,
+      icon: <PeopleIcon sx={{ color: '#FFB74D', fontSize: 36 }} />,
+      borderColor: '#FFD666',
+    },
+    {
+      title: "Realtime Contractors Count",
+      value: realtimeCont,
+      icon: <BusinessCenterIcon sx={{ color:  '#4DB6AC', fontSize: 36 }} />,
+      borderColor: '#FFE599'
+    }
+ 
 
-          {/* Partition overview (live) */}
-          <Route path="/partition/:partition" element={<PartitionDetail />} />
+    ].map(card => (
+     <Box key={card.title} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+       <SummaryCard
+         title={card.title}
+         total={card.value}
+         stats={[]}
+         icon={card.icon}
+         sx={{
+           height: 140,
+           border: `1px solid ${card.borderColor}`
+         }}
+       />
+     </Box>
+   ))}
+ </Box> 
 
-          {/* Partition “see details” sub-page */}
-          <Route
-            path="/partition/:partition/details"
-            element={<PartitionDetailDetails />}
-          />
-        </Routes>
-      </Suspense>
-    </BrowserRouter>
+
+        {/* Partition cards */}
+        <Box mt={4} sx={{ width: '100vw%', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          {loading ? (
+            <Skeleton variant="rectangular" width="100vw%" height={200} />
+          ) : (
+                        (() => {
+              // map of flags and primary colors for each partition
+              const flagMap = {
+                'CR.Costa Rica Partition': CostaRicaFlag,
+                'AR.Cordoba':               ArgentinaFlag,
+                'MX.Mexico City':           MexicoFlag,
+                'PE.Lima':                  PeruFlag,
+                'BR.Sao Paulo':             BrazilFlag,
+                'PA.Panama City':           PanamaFlag,
+              };
+
+
+              // full palette arrays per flag: [title, total, stat1, stat2, stat3?]
+              const colorsMap = {
+                'CR.Costa Rica Partition': [
+                  '#FFD666', // title (red)
+                  '#fcf3cf', // total (blue)
+                  '#2ecc71', // Employees (white)
+                  '#ec7063', // Contractors (blue)
+                  '#ec7063'  // TempBadge (white)
+                ],
+               'AR.Cordoba': [
+                   '#FFE599', // title (light blue)
+                  '#fcf3cf', // total (white)
+                  '#2ecc71', // Employees (sun yellow)
+                  '#ec7063',  // Contractors (white)
+                ],
+                'MX.Mexico City': [
+                   '#FFD666', // title (green)
+                  '#fcf3cf', // total (white)
+                  '#2ecc71', // Employees (red)
+                  '#ec7063',  // Contractors (white)
+                ],
+                'PE.Lima': [
+                  '#FFF2CC', // title (red)
+                  '#fcf3cf', // total (white)
+                  '#2ecc71',// Employees (red)
+                  '#ec7063',  // Contractors (white)
+                ],
+                'BR.Sao Paulo': [
+                  '#FFD666', // title (green)
+                  '#fcf3cf', // total (yellow)
+                  '#2ecc71', // Employees (blue)
+                  '#ec7063', // Contractors (yellow)
+                ],
+                'PA.Panama City': [
+                  '#FFE599', // title (blue)
+                  '#fcf3cf', // total (white)
+                  '#2ecc71', // Employees (red)
+                  '#ec7063', // Contractors (white)
+                ]
+              };
+
+              return partitions.map(p => {
+  
+
+                const flagSrc = flagMap[p.name] || '';
+                const colors = colorsMap[p.name] || ['#FFC107', '#FFC107'];
+                const [ titleC, totalC, ...statCs ] = colors;
+
+
+                return (
+                  <Box key={p.name} sx={{ flex: '1 1 calc(16.66% - 8px)' }}>
+                    <SummaryCard
+                      // title={p.name}
+                      title={displayNameMap[p.name] || p.name.replace(' Partition','')}
+                    
+                      icon={
+                        flagSrc && (
+                          <Box
+                            component="img"
+                            src={flagSrc}
+                            alt={`${p.name} flag`}
+                            sx={{
+                              width: 50,
+                              height: 30,
+                              border: '1px solid #fff'  // 1px border
+                            }}
+                          />
+                        )
+                      }
+
+
+                      total={p.total}
+                      stats={[
+                        { label: 'Employees',   value: p.Employee },
+                        { label: 'Contractors', value: p.Contractor },
+                        ...(p.name === 'CR.Costa Rica Partition'
+                          ? [{ label: 'Temp Badge', value: p.TempBadge }]
+                          : [])
+                      ]}
+
+                      // pass our new color props
+                      titleColor={titleC}
+                      totalColor={totalC}
+                      statColors={statCs}
+
+
+                    sx={{
+                        width: '100vw%',
+                    
+                           border: `1px solid ${titleC}`,
+
+       // typography overrides:
+       '& .MuiTypography-subtitle1': {
+         fontSize: '1.3rem'          // partition title
+       },
+       '& .MuiTypography-h4': {
+         fontSize: '1.7rem'        // partition total
+       },
+       '& .MuiTypography-caption': {
+         fontSize: '0.875rem'      // partition stats labels/values
+       }
+
+                      }}
+                    />
+                  </Box>
+                );
+              });
+            })()
+           )}
+         </Box>
+
+
+
+
+ {/* Partition detail widgets: 3 in one row */}
+        {loading ? (
+          <Skeleton variant="rectangular" width="100%" height={500}/>
+        ) : (
+          <Box mt={4} display="flex" gap={2} justifyContent="space-between" flexWrap="wrap">
+
+            {/* 1) Costa Rica composite */}
+            <Box
+              sx={{
+                flex: '1 1 32%',
+                minWidth: 280,
+                border: '1px solid #FFE599',
+                borderRadius: 2,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.5)',
+                '&:hover': { transform: 'scale(1.02)' },
+                overflow: 'hidden',
+                transition: 'transform 0.3s'
+              }}
+            >
+              {crPartition.total === 0
+                ? <Typography align="center" sx={{ py: 4, color: 'white' }}>
+                    No realtime employee data
+                  </Typography>
+                : <CompositeChartCard
+                    title="Costa Rica"
+                    data={Object.entries(crPartition.floors).map(([f,c])=>({
+                      name: f.trim(), headcount:c,
+                      capacity: seatCapacities[`Costa Rica-${f.trim()}`]||0
+                    }))}
+                    barColor={palette15[0]}
+                    lineColor={palette15[1]}
+                    height={350}
+                    animationDuration={1500}
+                    animationEasing="ease-in-out"
+                  />
+              }
+            </Box>
+
+            {/* 2) Argentina line */}
+            <Box
+              sx={{
+                flex: '1 1 32%',
+                minWidth: 280,
+                border: '1px solid #FFE599',
+                borderRadius: 2,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.5)',
+                '&:hover': { transform: 'scale(1.02)' },
+                overflow: 'hidden',
+                transition: 'transform 0.3s'
+              }}
+            >
+              {arPartition.total === 0
+                ? <Typography align="center" sx={{ py: 4, color: 'white' }}>
+                    No realtime employee data
+                  </Typography>
+                : <LineChartCard
+                    title="Argentina"
+                    data={Object.entries(arPartition.floors).map(([f,c])=>({
+                      name: f.trim(), headcount:c,
+                      capacity: seatCapacities[`Argentina-${f.trim()}`]||0
+                    }))}
+                    lineColor1={palette15[2]}
+                    lineColor2={palette15[3]}
+                    height={350}
+                    animationDuration={1500}
+                    animationEasing="ease-in-out"
+                  />
+              }
+            </Box>
+
+            {/* 3) Combined Pie */}
+            <Box
+              sx={{
+                flex: '1 1 32%',
+                minWidth: 280,
+                border: '1px solid #FFE599',
+                borderRadius: 2,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.5)',
+                '&:hover': { transform: 'scale(1.02)' },
+                overflow: 'hidden',
+                transition: 'transform 0.3s'
+              }}
+            >
+              <PieChartCard
+                title="Latin America"
+                data={smallOnes.map(p=>({
+                  name: displayNameMap[p.name],
+                  value: p.total
+                }))}
+                colors={[
+                  palette15[4], palette15[5],
+                  palette15[6], palette15[7]
+                ]}
+                height={350}
+                showZeroSlice={true}
+                animationDuration={1500}
+              />
+            </Box>
+
+          </Box>
+        )}
+      </Container>
+
+
+      <footer style={{
+        backgroundColor: '#000000',
+        color: '#FFC107',
+        padding: '1.5rem 0',
+        textAlign: 'center',
+        marginTop: 0,
+        borderTop: '2px solid #FFC107',
+        fontSize: '0.95rem',
+        lineHeight: '1.6'
+      }}>
+        <div><strong>Global Security Operations Center</strong><br/>
+          Live HeadCount against Occupancy dashboard for Western Union — Real-time occupancy, floor activity, and personnel insights.
+        </div>
+        <div style={{ marginTop: '0.75rem' }}>
+          Contact us:&nbsp;
+          <a href="mailto:GSOC-GlobalSecurityOperationCenter.SharedMailbox@westernunion.com"
+             style={{ color: '#FFC107', textDecoration: 'underline' }}>
+            GSOC Mail
+          </a>&nbsp;|&nbsp;
+          Landline:&nbsp;<span style={{ color: '#FFC107' }}>+91-020-67632394</span>
+        </div>
+      </footer>
+    </>
+  );
+}
+
+
+
+const widgetBoxStyle = borderColor => ({
+  flex: '1 1 32%',
+  minWidth: 280,
+  border: `1px solid ${borderColor}`,
+  borderRadius: 2,
+  boxShadow: '0 2px 6px rgba(0,0,0,0.5)',
+  overflow: 'hidden',
+  transition: 'transform 0.3s',
+  '&:hover': { transform: 'scale(1.02)' }
+});
+
+function NoData({ text }) {
+  return (
+    <Typography align="center" sx={{ py:4, color:'white' }}>
+      No realtime employee data in {text}
+    </Typography>
   );
 }
 
 
 
 
+now make exact same here For Vilinus have fllor details so For Vilinus create Composite chart
+Vienna
+Abu Dhabi
+Dublin
+Rome
+for this four use one donout chart in slices display each region
+
+Casablanca
+Moscow
+London
+Madrid
+for this use one chart 
 
 
-const BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3005';
 
-// In-memory cache
-const cache = {
-  liveSummary: null,
-  history: new Map(),  // key: partition code or 'global'
+
+
+
+//C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages\Dashboard.jsx
+// src/pages/Dashboard.jsx
+
+import React, { useEffect, useState } from 'react';
+import { Container, Box, Typography, Skeleton } from '@mui/material';
+import GroupIcon          from '@mui/icons-material/Group';
+import TrackChangesIcon   from '@mui/icons-material/TrackChanges';
+import PeopleIcon         from '@mui/icons-material/People';
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
+
+import Header         from '../components/Header';
+import Footer         from '../components/Footer';
+import SummaryCard    from '../components/SummaryCard';
+import ChartCard      from '../components/ChartCard';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+import doorMapRaw from '../utils/doorMap'; // has partition, door, inDirectionFloor
+import { summaryPartitionGroup } from '../utils/partitionGroups';
+
+// Flags
+import austriaFlag    from '../assets/flags/austria.png';
+import uaeFlag        from '../assets/flags/uae.png';
+import irelandFlag    from '../assets/flags/ireland.png';
+import italyFlag      from '../assets/flags/italy.png';
+import lithuaniaFlag  from '../assets/flags/lithuania.png';
+import moroccoFlag    from '../assets/flags/morocco.png';
+import russiaFlag     from '../assets/flags/russia.png';
+import ukFlag         from '../assets/flags/uk.png';
+import spainFlag      from '../assets/flags/spain.png';
+
+// Your EMEA partitions
+const partitionList = [
+  'AUT.Vienna','DU.Abu Dhab','IE.Dublin','IT.Rome',
+  'LT.Vilnius','MA.Casablanca','RU.Moscow','UK.London','ES.Madrid'
+];
+
+// Display names
+const displayName = {
+  'AUT.Vienna':    'Vienna',
+  'DU.Abu Dhab':   'Abu Dhabi',
+  'IE.Dublin':     'Dublin',
+  'IT.Rome':       'Rome',
+  'LT.Vilnius':    'Vilnius',
+  'MA.Casablanca': 'Casablanca',
+  'RU.Moscow':     'Moscow',
+  'UK.London':     'London',
+  'ES.Madrid':     'Madrid'
+};
+
+// Flags per partition
+const flagMap = {
+  'AUT.Vienna':    austriaFlag,
+  'DU.Abu Dhab':   uaeFlag,
+  'IE.Dublin':     irelandFlag,
+  'IT.Rome':       italyFlag,
+  'LT.Vilnius':    lithuaniaFlag,
+  'MA.Casablanca': moroccoFlag,
+  'RU.Moscow':     russiaFlag,
+  'UK.London':     ukFlag,
+  'ES.Madrid':     spainFlag
+};
+
+// Colors per partition ([title, total, stat1, stat2])
+const colorsMap = {
+  'AUT.Vienna':    ['#FFD666','#fcf3cf','#2ecc71','#ec7063'],
+  'DU.Abu Dhab':   ['#FFE599','#fcf3cf','#2ecc71','#ec7063'],
+  'IE.Dublin':     ['#FFF2CC','#fcf3cf','#2ecc71','#ec7063'],
+  'IT.Rome':       ['#FFD666','#fcf3cf','#2ecc71','#ec7063'],
+  'LT.Vilnius':    ['#FFE599','#fcf3cf','#2ecc71','#ec7063'],
+  'MA.Casablanca': ['#FFF2CC','#fcf3cf','#2ecc71','#ec7063'],
+  'RU.Moscow':     ['#FFD666','#fcf3cf','#2ecc71','#ec7063'],
+  'UK.London':     ['#FFE599','#fcf3cf','#2ecc71','#ec7063'],
+  'ES.Madrid':     ['#FFC0CB','#fcf3cf','#2ecc71','#ec7063']
 };
 
 /**
- * Fetch live summary, caching for session.
+ * Build a quick lookup for Vilnius doors → either "GAMA" or "Delta".
+ * We ignore the floor here because chart is aggregated by building only.
  */
-export async function fetchLiveSummary() {
-  if (cache.liveSummary) {
-    return cache.liveSummary;
+const vilniusDoorToBuilding = doorMapRaw.reduce((acc, { partition, door }) => {
+  if (partition === 'LT.Vilnius') {
+    acc[door] = door.toUpperCase().includes('GAMA') ? 'GAMA' : 'Delta';
   }
-  const res = await fetch(`${BASE}/api/occupancy/live-summary`);
-  if (!res.ok) throw new Error(`Live summary fetch failed: ${res.status}`);
-  const json = await res.json();
-  cache.liveSummary = json;
-  return json;
-}
+  return acc;
+}, {});
 
-/**
- * Fetch history (global or per-partition), caching for session.
- * @param {string} [location] — partition identifier, e.g. 'LT.Vilnius'
- */
-export async function fetchHistory(location) {
-  const key = location || 'global';
-  if (cache.history.has(key)) {
-    return cache.history.get(key);
-  }
-  const url = location
-    ? `${BASE}/api/occupancy/history/${encodeURIComponent(location)}`
-    : `${BASE}/api/occupancy/history`;
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
 
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`History fetch failed: ${res.status}`);
-  const json = await res.json();
-  cache.history.set(key, json);
-  return json;
-}
-
-/**
- * Clear all cached data (if you need to force a fresh fetch).
- */
-export function clearCache() {
-  cache.liveSummary = null;
-  cache.history.clear();
-}
-
-// --- list of EMEA partitions for Dashboard
-export const partitionList = [
-  'AUT.Vienna',
-  'DU.Abu Dhab',
-  'IE.Dublin',
-  'IT.Rome',
-  'LT.Vilnius',
-  'MA.Casablanca',
-  'RU.Moscow',
-  'UK.London',
-  'ES.Madrid'
-];
-
-
-
-
-
-
-
-
-
-import { useState, useEffect, useRef } from 'react';
-import { fetchLiveSummary } from '../api/occupancy.service';
-
-export function useLiveOccupancy(interval = 1000) {
-  const [data, setData]       = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState(null);
-  const timer = useRef(null);
-
+  // update last‐updated timestamp
   useEffect(() => {
-    let active = true;
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
 
-    async function load() {
-      try {
-        // fetchLiveSummary now returns cached data instantly if available
-        const json = await fetchLiveSummary();
-        if (!active) return;
-        setData(json);
-        setLoading(false);
-      } catch (e) {
-        if (!active) return;
-        setError(e);
-        setLoading(false);
-      }
+  if (error) {
+    return (
+      <Box py={4}>
+        <Typography color="error" align="center">
+          Error loading live data
+        </Typography>
+      </Box>
+    );
+  }
+
+  // 1) Count GAMA vs Delta for Vilnius from raw swipe details
+  const rawDetails = data?.details || [];
+  const vilniusCounts = { GAMA: 0, Delta: 0 };
+  rawDetails.forEach(r => {
+    if (r.PartitionName2 === 'LT.Vilnius' && r.Direction === 'InDirection') {
+      const b = vilniusDoorToBuilding[r.Door];
+      if (b) vilniusCounts[b]++;
     }
+  });
 
-    load();
-    timer.current = setInterval(load, interval);
+  // 2) Build the bar‐chart data
+  const chartData = [
+    { name: 'Vilnius Gama',  value: vilniusCounts.GAMA,  breakdown: {} },
+    { name: 'Vilnius Delta', value: vilniusCounts.Delta, breakdown: {} }
+  ];
+  // then add each other site
+  partitionList.forEach(site => {
+    if (site === 'LT.Vilnius') return;
+    const region = data?.realtime?.[site] || {};
+    chartData.push({
+      name: displayName[site],
+      value: region.total || 0,
+      breakdown: {
+        Employees:   region.Employee || 0,
+        Contractors: region.Contractor || 0
+      }
+    });
+  });
 
-    return () => {
-      active = false;
-      clearInterval(timer.current);
-    };
-  }, [interval]);
+  // 3) Prepare summary cards
+  // today’s totals (global)
+  const todayTot = data?.today.total    || 0;
+  const todayEmp = data?.today.Employee || 0;
+  const todayCon = data?.today.Contractor|| 0;
+  // realtime totals (sum of all partitions)
+  const realtimeTot = Object.values(data?.realtime || {})
+    .reduce((sum,x) => sum + (x.total||0), 0);
+  const realtimeEmp = Object.values(data?.realtime || {})
+    .reduce((sum,x) => sum + (x.Employee||0), 0);
+  const realtimeCon = Object.values(data?.realtime || {})
+    .reduce((sum,x) => sum + (x.Contractor||0), 0);
 
-  return { data, loading, error };
-}
+  // build summaryItems: one "Vilnius" card (full totals) + other sites
+  const summaryItems = [];
+  // Vilnius
+  const vilniusRegion = data?.realtime?.['LT.Vilnius'] || {};
+  summaryItems.push({
+    label: 'Vilnius',
+    total: vilniusRegion.total  || 0,
+    emp:   vilniusRegion.Employee || 0,
+    cont:  vilniusRegion.Contractor|| 0,
+    flag:  flagMap['LT.Vilnius'],
+    colors: colorsMap['LT.Vilnius']
+  });
+  // others
+  partitionList.forEach(site => {
+    if (site === 'LT.Vilnius') return;
+    const r = data?.realtime?.[site] || {};
+    summaryItems.push({
+      label: displayName[site],
+      total: r.total      || 0,
+      emp:   r.Employee   || 0,
+      cont:  r.Contractor || 0,
+      flag:  flagMap[site],
+      colors: colorsMap[site]
+    });
+  });
 
-
-
-
-
-
-
-
-
-
-// // src/routes/AppRoutes.jsx
-
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-
-import Dashboard              from '../pages/Dashboard';
-import History                from '../pages/History';
-import PartitionDetail        from '../pages/PartitionDetail';
-import PartitionDetailDetails from '../pages/PartitionDetailDetails';
-
-export default function AppRoutes() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <>
+      <Header />
+      <Container maxWidth={false} disableGutters sx={{ px:2, py:1 }}>
 
-        {/* Home dashboard */}
-        <Route path="/" element={<Dashboard />} />
+        {/* Top six global cards */}
+        <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
+          {[
+            { title:"Today's Total Headcount",    value: todayTot,   icon:<GroupIcon sx={{color:'#E57373',fontSize:36}}/>,  border:'#FFD666' },
+            { title:"Today's Employees Count",    value: todayEmp,   icon:<PeopleIcon sx={{color:'#81C784',fontSize:36}}/>,    border:'#81C784' },
+            { title:"Today's Contractors Count",  value: todayCon,   icon:<BusinessCenterIcon sx={{color:'#64B5F6',fontSize:36}}/>, border:'#FFE599' },
+            { title:"Realtime Headcount",         value: realtimeTot,icon:<TrackChangesIcon sx={{color:'#BA68C8',fontSize:36}}/>, border:'#FFF2CC' },
+            { title:"Realtime Employees Count",   value: realtimeEmp,icon:<PeopleIcon sx={{color:'#FFB74D',fontSize:36}}/>,    border:'#FFD666' },
+            { title:"Realtime Contractors Count", value: realtimeCon,icon:<BusinessCenterIcon sx={{color:'#4DB6AC',fontSize:36}}/>, border:'#FFE599' }
+          ].map(c => (
+            <Box key={c.title} sx={{ flex:'1 1 calc(16.66% - 8px)' }}>
+              <SummaryCard
+                title={c.title}
+                total={c.value}
+                stats={[]}
+                icon={c.icon}
+                sx={{ height:140, border:`2px solid ${c.border}` }}
+              />
+            </Box>
+          ))}
+        </Box>
 
-        {/* Global history */}
-        <Route path="/history" element={<History />} />
+        {/* Partition summary cards */}
+        <Box display="flex" flexWrap="wrap" gap={1} mb={4}>
+          {loading
+            ? <LoadingSpinner/>
+            : summaryItems.map(item => {
+                const [tc, totc, ec, cc] = item.colors;
+                return (
+                  <Box key={item.label} sx={{ flex:'1 1 calc(16.66% - 8px)' }}>
+                    <SummaryCard
+                      title={item.label}
+                      total={item.total}
+                      stats={[
+                        { label:'Employees',   value:item.emp },
+                        { label:'Contractors', value:item.cont }
+                      ]}
+                      icon={item.flag && (
+                        <Box component="img"
+                             src={item.flag}
+                             alt={`${item.label} flag`}
+                             sx={{ width:50, height:30, border:'1px solid #fff' }}/>
+                      )}
+                      titleColor={tc}
+                      totalColor={totc}
+                      statColors={[ec,cc]}
+                      sx={{
+                        height:160,
+                        border:`2px solid ${tc}`,
+                        '& .MuiTypography-subtitle1':{ fontSize:'1.3rem' },
+                        '& .MuiTypography-h4':        { fontSize:'1.7rem' },
+                        '& .MuiTypography-caption':   { fontSize:'0.875rem' }
+                      }}
+                    />
+                  </Box>
+                );
+              })
+          }
+        </Box>
 
-        {/* Partition-scoped history */}
-        <Route path="/partition/:partition/history" element={<History />} />
-
-        {/* Partition overview (live) */}
-        <Route path="/partition/:partition" element={<PartitionDetail />} />
-
-        {/* Partition “see details” sub-page */}
-        <Route
-          path="/partition/:partition/details"
-          element={<PartitionDetailDetails />}
-        />
-
-      </Routes>
-    </BrowserRouter>
+        {/* Live totals bar chart */}
+        <Box p={2} sx={{ border:'2px solid #FFC107' }}>
+          <Box display="flex" justifyContent="space-between" mb={1}>
+            <Typography variant="h6">Live Totals by Site</Typography>
+            <Typography variant="body2">Last updated: {lastUpdate}</Typography>
+          </Box>
+          {loading
+            ? <Skeleton variant="rectangular" height={240}/>
+            : <ChartCard
+                data={chartData}
+                dataKey="value"
+                colors={{ head:'#FFC107', cap:'#B0BEC5' }}
+                chartHeight={320}
+              />
+          }
+        </Box>
+      </Container>
+      <Footer/>
+    </>
   );
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-// C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\api\occupancy.service.js
-
-const BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3005';
-
-export async function fetchLiveSummary() {
-  const res = await fetch(`${BASE}/api/occupancy/live-summary`);
-  if (!res.ok) throw new Error(`Live summary fetch failed: ${res.status}`);
-  return res.json();
-}
-
-export async function fetchHistory(location) {
-  const url = location
-    ? `${BASE}/api/occupancy/history/${encodeURIComponent(location)}`
-    : `${BASE}/api/occupancy/history`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`History fetch failed: ${res.status}`);
-  return res.json();
-}
-
-// --- NEW: list of EMEA partitions for Dashboard
-export const partitionList = [
-  'AUT.Vienna',
-  'DU.Abu Dhab',
-  'IE.Dublin',
-  'IT.Rome',
-  'LT.Vilnius',
-  'MA.Casablanca',
-  'RU.Moscow',
-  'UK.London',
-  'ES.Madrid'
-];
-
-
-
-
-
-
-
-C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\hooks\useLiveOccupancy.js
-
-
-import { useState, useEffect, useRef } from 'react';
-import { fetchLiveSummary } from '../api/occupancy.service';
-
-export function useLiveOccupancy(interval = 1000) {
-  const [data, setData]         = useState(null);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState(null);
-  const timer = useRef(null);
-
-  useEffect(() => {
-    let active = true;
-    async function load() {
-      try {
-        const json = await fetchLiveSummary();
-        if (!active) return;
-        setData(json);
-        setLoading(false);
-      } catch (e) {
-        if (!active) return;
-        setError(e);
-        setLoading(false);
-      }
-    }
-    load();
-    timer.current = setInterval(load, interval);
-    return () => {
-      active = false;
-      clearInterval(timer.current);
-    };
-  }, [interval]);
-
-  return { data, loading, error };
-}
