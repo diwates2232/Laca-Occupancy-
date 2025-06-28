@@ -395,3 +395,11 @@ export default function CompositeChartCard({
   );
 }
 
+
+
+
+now refer above file and update same for emea
+
+C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\components\PieChartCard.jsx
+C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\components\CompositeChartCard.jsx
+
