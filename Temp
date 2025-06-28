@@ -1,152 +1,117 @@
-pm2-service-uninstall                                  # remove the old system‐level service
-npm install -g pm2-windows-service
-
-pm2-service-install `
-  --name "backend" `
-  --pm2-path "%APPDATA%\npm\node_modules\pm2\bin\pm2" `
-  --node-path "C:\Program Files\nodejs\node.exe" `
-  --script "C:\Projects\Backend\src\app.js" `
-  --run-as-user "S326131HQ" `
-  --password "YourWindowsPassword"
-
-
-
-
-
-
-
-npm install -g pm2-windows-service
-
-
-pm2-service-install `
-  --name "backend" `
-  --pm2-path "%APPDATA%\npm\node_modules\pm2\bin\pm2" `
-  --node-path "C:\Program Files\nodejs\node.exe" `
-  --script "C:\Projects\Backend\src\app.js"
-
-
-
-pm2 list
-pm2 restart backend
-pm2 stop backend
-
-
-
-
-
-
-
-
-
-
-S C:\Projects\Backend> pm2 save
-[PM2] Saving current process list...
-[PM2] Successfully saved in C:\Users\S326131HQ\.pm2\dump.pm2
-PS C:\Projects\Backend> pm2 startup
-[PM2][ERROR] Init system not found
-C:\Users\S326131HQ\AppData\Roaming\npm\node_modules\pm2\lib\API\Startup.js:216
-      throw new Error('Init system not found');
+PS C:\Projects\Backend> pm2-service-install `
+>>   --name "backend" `
+>>   --pm2-path "%APPDATA%\npm\node_modules\pm2\bin\pm2" `
+>>   --node-path "C:\Program Files\nodejs\node.exe" `
+>>   --script "C:\Projects\Backend\src\app.js" `
+>>   --run-as-user "S326131HQ" `
+>>   --password "YourWindowsPassword"
+>> 
+(node:11908) Warning: Accessing non-existent property 'cat' of module exports inside circular dependency
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:11908) Warning: Accessing non-existent property 'cd' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'chmod' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'cp' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'dirs' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'pushd' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'popd' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'echo' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'tempdir' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'pwd' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'exec' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'ls' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'find' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'grep' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'head' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'ln' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'mkdir' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'rm' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'mv' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'sed' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'set' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'sort' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'tail' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'test' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'to' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'toEnd' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'touch' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'uniq' of module exports inside circular dependency
+(node:11908) Warning: Accessing non-existent property 'which' of module exports inside circular dependency
+*** HINT: Run this as administrator to avoid the UAC spam ***
+? Perform environment setup (recommended)? Yes
+? Set PM2_HOME? Yes
+? PM2_HOME value (this path should be accessible to the service user and
+should not contain any "user-context" variables [e.g. %APPDATA%]):
+? Set PM2_SERVICE_SCRIPTS (the list of start-up scripts for pm2)? Yes
+? Set the list of startup scripts/files (semi-colon separated json config
+files or js files)
+? Set PM2_SERVICE_PM2_DIR (the location of the global pm2 to use with the service)? [recommended] Yes
+? Specify the directory containing the pm2 version to be used by the
+service C:\USERS\S326131HQ\APPDATA\ROAMING\NPM\node_modules\pm2\index.js
+PM2 service installed and started.
+PS C:\Projects\Backend> Pm2 save
+connect EPERM //./pipe/rpc.sock
+[PM2] Spawning PM2 daemon with pm2_home=C:\Users\S326131HQ\.pm2
+node:events:496
+      throw er; // Unhandled 'error' event
       ^
 
-Error: Init system not found
-    at CLI.startup (C:\Users\S326131HQ\AppData\Roaming\npm\node_modules\pm2\lib\API\Startup.js:216:13)
-    at Command.<anonymous> (C:\Users\S326131HQ\AppData\Roaming\npm\node_modules\pm2\lib\binaries\CLI.js:716:9)
-    at Command.listener (C:\Users\S326131HQ\AppData\Roaming\npm\node_modules\pm2\node_modules\commander\index.js:315:8)
-    at Command.emit (node:events:518:28)
-    at Command.parseArgs (C:\Users\S326131HQ\AppData\Roaming\npm\node_modules\pm2\node_modules\commander\index.js:651:12)
-    at Command.parse (C:\Users\S326131HQ\AppData\Roaming\npm\node_modules\pm2\node_modules\commander\index.js:474:21)
-    at Timeout._onTimeout (C:\Users\S326131HQ\AppData\Roaming\npm\node_modules\pm2\lib\binaries\CLI.js:213:15)
-    at listOnTimeout (node:internal/timers:594:17)
-    at process.processTimers (node:internal/timers:529:7)
+Error: connect EPERM //./pipe/rpc.sock
+    at PipeConnectWrap.afterConnect [as oncomplete] (node:net:1634:16)
+Emitted 'error' event on ReqSocket instance at:
+    at Socket.<anonymous> (C:\Users\S326131HQ\AppData\Roaming\npm\node_modules\pm2\node_modules\pm2-axon\lib\sockets\sock.js:201:49)
+    at Socket.emit (node:events:518:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  errno: -4048,
+  code: 'EPERM',
+  syscall: 'connect',
+  address: '//./pipe/rpc.sock'
+}
+
+Node.js v22.14.0
+PS C:\Projects\Backend> pm2 list
+connect EPERM //./pipe/rpc.sock
+[PM2] Spawning PM2 daemon with pm2_home=C:\Users\S326131HQ\.pm2
+node:events:496
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: connect EPERM //./pipe/rpc.sock
+    at PipeConnectWrap.afterConnect [as oncomplete] (node:net:1634:16)
+Emitted 'error' event on ReqSocket instance at:
+    at Socket.<anonymous> (C:\Users\S326131HQ\AppData\Roaming\npm\node_modules\pm2\node_modules\pm2-axon\lib\sockets\sock.js:201:49)
+    at Socket.emit (node:events:518:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  errno: -4048,
+  code: 'EPERM',
+  syscall: 'connect',
+  address: '//./pipe/rpc.sock'
+}
+
+Node.js v22.14.0
+PS C:\Projects\Backend> pm2 restart backend
+connect EPERM //./pipe/rpc.sock
+[PM2] Spawning PM2 daemon with pm2_home=C:\Users\S326131HQ\.pm2
+node:events:496
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: connect EPERM //./pipe/rpc.sock
+    at PipeConnectWrap.afterConnect [as oncomplete] (node:net:1634:16)
+Emitted 'error' event on ReqSocket instance at:
+    at Socket.<anonymous> (C:\Users\S326131HQ\AppData\Roaming\npm\node_modules\pm2\node_modules\pm2-axon\lib\sockets\sock.js:201:49)
+    at Socket.emit (node:events:518:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  errno: -4048,
+  code: 'EPERM',
+  syscall: 'connect',
+  address: '//./pipe/rpc.sock'
+}
 
 Node.js v22.14.0
 PS C:\Projects\Backend> 
-
-
-npm install -g pm2
-
-
-# Directly:
-pm2 start src/app.js --name backend
-
-# Or via your package.json start script:
-pm2 start npm --name backend -- run start
-
-
-
-pm2 save
-
-pm2 startup
-
-
-
-
-
-{
-    "name": "backend",
-    "version": "1.0.0",
-    "type": "commonjs",
-    "main": "index.js",
-    "scripts": {
-        "start": "nodemon src/app.js",
-        "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "description": "",
-    "dependencies": {
-        "axios": "^1.8.4",
-        "backend": "file:",
-        "basic-auth": "^2.0.1",
-        "body-parser": "^1.20.3",
-        "cors": "^2.8.5",
-        "date-fns": "^4.1.0",
-        "dotenv": "^16.5.0",
-        "exceljs": "^4.4.0",
-        "express": "^4.21.2",
-        "jsonwebtoken": "^9.0.2",
-        "luxon": "^3.5.0",
-        "moment-timezone": "^0.5.47",
-        "mssql": "^11.0.1",
-        "nodemailer": "^6.9.16",
-        "nodemon": "^3.1.7",
-        "p-limit": "^2.3.0",
-        "ping": "^0.4.4",
-        "xlsx": "^0.18.5"
-    }
-}
-{
-    "name": "backend",
-    "version": "1.0.0",
-    "type": "commonjs",
-    "main": "index.js",
-    "scripts": {
-        "start": "nodemon src/app.js",
-        "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "description": "",
-    "dependencies": {
-        "axios": "^1.8.4",
-        "backend": "file:",
-        "basic-auth": "^2.0.1",
-        "body-parser": "^1.20.3",
-        "cors": "^2.8.5",
-        "date-fns": "^4.1.0",
-        "dotenv": "^16.5.0",
-        "exceljs": "^4.4.0",
-        "express": "^4.21.2",
-        "jsonwebtoken": "^9.0.2",
-        "luxon": "^3.5.0",
-        "moment-timezone": "^0.5.47",
-        "mssql": "^11.0.1",
-        "nodemailer": "^6.9.16",
-        "nodemon": "^3.1.7",
-        "p-limit": "^2.3.0",
-        "ping": "^0.4.4",
-        "xlsx": "^0.18.5"
-    }
-}
