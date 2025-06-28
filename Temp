@@ -1,23 +1,5 @@
-netstat -a -n -o | findstr :3000
-
-
-taskkill /PID 12345 /F
-
-npm start
-
-
-
-npm install -g kill-port
-
-
-kill-port 3000
-
-npm start
-
-
-
-
-
+Still we got this error so Go step by step 
+This is Windows 2016 server
 
 PS C:\Projects\Backend> npm start
 
@@ -51,3 +33,230 @@ Emitted 'error' event on Server instance at:
 
 Node.js v22.14.0
 [nodemon] app crashed - waiting for file changes before starting...
+
+
+
+
+
+
+
+also check 
+C:\Projects\Backend\src\app.js
+
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+const fs = require("fs");
+const { pingHost } = require("./services/pingService");
+const { DateTime } = require("luxon");
+const regionRoutes = require("./routes/regionRoutes");
+const { fetchAllIpAddress, ipRegionMap } = require("./services/excelService");
+const path = require("path");
+
+const basicAuth=require('basic-auth');
+
+const app = express();
+
+const HOST = "0.0.0.0";
+
+
+
+
+
+
+
+
+// Your username and password (you should ideally store these securely)
+const USERNAME = 'admin';
+const PASSWORD = '12345';
+
+// Middleware to check basic auth
+function basicAuthMiddleware(req, res, next) {
+  const user = basicAuth(req);
+
+  if (!user || user.name !== USERNAME || user.pass !== PASSWORD) {
+      res.setHeader('WWW-Authenticate', 'Basic realm="Authorization required"');
+      return res.status(401).send('Access denied');
+  }
+
+  next();
+}
+
+// Use the authentication middleware globally
+app.use(basicAuthMiddleware);
+
+
+
+// Helpers
+function pruneOldEntries(entries, days = 30) {
+  const cutoff = DateTime.now().minus({ days }).toMillis();
+  return entries.filter(e => DateTime.fromISO(e.timestamp).toMillis() >= cutoff);
+}
+function getLogFileForDate(dt) {
+  return `./deviceLogs-${dt.toISODate()}.json`;
+}
+
+
+
+app.use(cors());
+app.use(express.json());
+
+app.use(cors({
+  origin:"*",
+  methods:"GET,POST,PUT,DELETE",
+  allowedHeaders:"Content-Type,Authorization"
+}));
+
+app.use(bodyParser.json());
+
+
+app.use('/Frontend/Device Dashboard',express.static(path.join(__dirname, '../../Frontend/Device Dashboard')));
+
+
+
+// serve everything in public/ as static files
+
+app.use(
+  '/dashboard',
+  express.static(path.join(__dirname,'../../Frontend/Device Dashboard'))
+);
+
+app.get('/health',(req,res)=>{
+  res.json({status:'up' });
+});
+
+app.use('/api/regions',regionRoutes);
+// fallback to frontend  index.html
+
+app.get('/Frontend/Device Dashboard/*', (req, res)=>{
+  res.sendFile(path.join(__dirname, '../../Frontend/Device Dashboard/index.html'));
+})
+
+
+// Device Status Tracking
+const devices = fetchAllIpAddress();
+let deviceStatus = {};
+
+// Load only today's logs
+const today = DateTime.now().setZone("Asia/Kolkata");
+const todayLogFile = getLogFileForDate(today);
+let todayLogs = fs.existsSync(todayLogFile)
+  ? JSON.parse(fs.readFileSync(todayLogFile, "utf8"))
+  : {};
+
+// Persist today's logs
+function saveTodayLogs() {
+  fs.writeFileSync(todayLogFile, JSON.stringify(todayLogs, null, 2));
+}
+
+// Log a status change
+function logDeviceChange(ip, status) {
+  const timestamp = DateTime.now().setZone("Asia/Kolkata").toISO();
+  const arr = (todayLogs[ip] = todayLogs[ip] || []);
+  const last = arr[arr.length - 1];
+  if (!last || last.status !== status) {
+    arr.push({ status, timestamp });
+    todayLogs[ip] = pruneOldEntries(arr, 30);
+    saveTodayLogs();
+  }
+}
+
+// Ping devices
+ async function pingDevices() {
+  const limit = require("p-limit")(20);
+  await Promise.all(
+    devices.map(ip =>
+      limit(async () => {
+        const newStatus = await pingHost(ip);
+        if (deviceStatus[ip] !== newStatus) {
+          logDeviceChange(ip, newStatus);
+        }
+        deviceStatus[ip] = newStatus;
+      })
+    )
+  );
+  console.log("Updated device status:", deviceStatus);
+ }
+
+// Start ping loop
+setInterval(pingDevices, 12_0000); //60_000
+pingDevices();
+
+// Real‑time status
+app.get("/api/region/devices/status", (req, res) => {
+  res.json(deviceStatus);
+});
+
+
+// Full history: stitch together all daily files
+app.get("/api/devices/history", (req, res) => {
+  const files = fs.readdirSync(".")
+    .filter(f => f.startsWith("deviceLogs-") && f.endsWith(".json"));
+  const combined = {};
+  for (const f of files) {
+    const dayLogs = JSON.parse(fs.readFileSync(f, "utf8"));
+    for (const ip of Object.keys(dayLogs)) {
+      combined[ip] = (combined[ip] || []).concat(dayLogs[ip]);
+    }
+  }
+  // prune to last 30 days
+  for (const ip of Object.keys(combined)) {
+    combined[ip] = pruneOldEntries(combined[ip], 30);
+  }
+  res.json(combined);
+});
+
+// Region‑wise history
+app.get("/api/region/:region/history", (req, res) => {
+  const region = req.params.region.toLowerCase();
+  const files = fs.readdirSync(".")
+    .filter(f => f.startsWith("deviceLogs-") && f.endsWith(".json"));
+  const regionLogs = {};
+
+  for (const f of files) {
+    const dayLogs = JSON.parse(fs.readFileSync(f, "utf8"));
+    for (const ip of Object.keys(dayLogs)) {
+      if (ipRegionMap[ip] === region) {
+        regionLogs[ip] = (regionLogs[ip] || []).concat(dayLogs[ip]);
+      }
+    }
+  }
+
+  if (!Object.keys(regionLogs).length) {
+    return res.status(404).json({ message: `No device history found for region: ${region}` });
+  }
+  // prune per‑IP
+  for (const ip of Object.keys(regionLogs)) {
+    regionLogs[ip] = pruneOldEntries(regionLogs[ip], 30);
+  }
+  res.json(regionLogs);
+});
+
+
+// Single‑device history
+app.get("/api/device/history/:ip", (req, res) => {
+  const ip = req.params.ip;
+  const files = fs.readdirSync(".")
+    .filter(f => f.startsWith("deviceLogs-") && f.endsWith(".json"));
+  let history = [];
+  for (const f of files) {
+    const dayLogs = JSON.parse(fs.readFileSync(f, "utf8"));
+    if (dayLogs[ip]) history = history.concat(dayLogs[ip]);
+  }
+  if (!history.length) {
+    return res.status(404).json({ message: "No history found for this device" });
+  }
+  history.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  res.json({ ip, history });
+});
+
+
+// Start Server
+ const PORT = process.env.PORT || 3000;
+ app.listen(3000,'0.0.0.0', ()=>{
+
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
+    console.log(`Server running on Your LAN at http://10.138.161.4:${PORT}`);
+  pingDevices();
+ })
