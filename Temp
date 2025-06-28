@@ -1,183 +1,68 @@
-Hello Sir,
-I’m Swapnil from the GSoC team. We’ve built a live occupancy dashboard for the LACA region. As suggested by Lloyds Das sir, I’m sharing it with you for your feedback.
-
-We’re still working on adding seat-capacity data and refining the UI, so your input on those areas (and anything else) would be especially valuable.
-
-Please take a look at the link below and let me know what you think or what else we should improve.
-
-Thank you!
-
-
-
-
-
-
-
-
-pm2 start src/server.js --name laca-occupancy-backend
-
-
-
-pm2 start npm --name laca-occupancy-backend -- run dev
-
-
-
-
-pm2 start npm --name laca-occupancy-backend -- start
-
-pm2 save
-
-
-
-
-
-
-
---- a/src/components/PieChartCard.jsx
-+++ b/src/components/PieChartCard.jsx
-@@ export default function PieChartCard({
-   const total = data.reduce((sum, d) => sum + d.value, 0);
- 
-   // ... existing no-data logic ...
- 
--  return (
-+  return (
-     <Card sx={cardStyle(colors[0])}>
-       <CardContent sx={{ p:1 }}>
-         <Typography variant="subtitle1" align="center" color="text.primary">
-           {title}
-         </Typography>
--        <Box sx={{ width:'100%', height }}>
--          <ResponsiveContainer>
--            <PieChart>
-+        {/* wrap in relative container so we can overlay the total */}
-+        <Box sx={{ position: 'relative', width: '100%', height }}>
-+          <ResponsiveContainer>
-+            <PieChart>
-               <Pie
-                 data={renderData}
-                 dataKey="value"
-@@
-               </Pie>
-               <Tooltip contentStyle={{ backgroundColor:'#FFEE8C', borderColor:colors[0] }} />
-               <Legend verticalAlign="bottom" wrapperStyle={{ color:'rgba(255,255,255,0.8)' }} />
--            </PieChart>
--          </ResponsiveContainer>
--        </Box>
-+            </PieChart>
-+          </ResponsiveContainer>
-+
-+          {/* centered total */}
-+          <Box
-+            component="div"
-+            sx={{
-+              position: 'absolute',
-+              top: '50%',
-+              left: '50%',
-+              transform: 'translate(-50%, -50%)',
-+              pointerEvents: 'none'
-+            }}
-+          >
-+            <Typography variant="h4" align="center" sx={{ color: colors[0], fontWeight: 'bold' }}>
-+              {total}
-+            </Typography>
-+            <Typography variant="caption" align="center" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-+              Total
-+            </Typography>
-+          </Box>
-+        </Box>
-       </CardContent>
-     </Card>
-   );
-
-
-
-
-
-
-
-
-
-
-Dont make any unnecessary changes just Display Total Count in the inner redious of the chart(Total Count = Brazil + Mexoco +Panama + Peru)
-// src/components/PieChartCard.jsx
-
-import React from 'react';
-import { Card, CardContent, Typography, Box } from '@mui/material';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-
-export default function PieChartCard({
-  title,
-  data,
-  colors = ['#FFC107', '#E0E0E0'],
-  height = 300,
-  showZeroSlice = false,
-  animationDuration = 1500,
-  noDataMessage = 'No realtime data'
-}) {
-  const total = data.reduce((sum, d) => sum + d.value, 0);
-
-  if (total === 0 && !showZeroSlice) {
-    return (
-      <Card sx={cardStyle(colors[0])}>
-        <CardContent>
-          <Typography variant="subtitle1" align="center" color="text.primary">
-            {title}
-          </Typography>
-          <Typography variant="body2" align="center" sx={{ mt:4, color:'text.secondary' }}>
-            {noDataMessage}
-          </Typography>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // If zero, and showZeroSlice==true, show single “Available” slice
-  const renderData = (total === 0 && showZeroSlice)
-    ? [{ name: 'Available', value: data[1]?.value || 0 }]
-    : data;
-
-  return (
-    <Card sx={cardStyle(colors[0])}>
-      <CardContent sx={{ p:1 }}>
-        <Typography variant="subtitle1" align="center" color="text.primary">
-          {title}
-        </Typography>
-        <Box sx={{ width:'100%', height }}>
-          <ResponsiveContainer>
-            <PieChart>
-              <Pie
-                data={renderData}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={80}
-                outerRadius={140}
-                paddingAngle={4}
-                isAnimationActive
-                animationDuration={animationDuration}
-              >
-                {renderData.map((_, i) => (
-                  <Cell key={i} fill={colors[i % colors.length]} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={{ backgroundColor:'#FFEE8C', borderColor:colors[0] }} />
-              <Legend verticalAlign="bottom" wrapperStyle={{ color:'rgba(255,255,255,0.8)' }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </Box>
-      </CardContent>
-    </Card>
-  );
+{
+    "name": "backend",
+    "version": "1.0.0",
+    "type": "commonjs",
+    "main": "index.js",
+    "scripts": {
+        "start": "nodemon src/app.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "dependencies": {
+        "axios": "^1.8.4",
+        "backend": "file:",
+        "basic-auth": "^2.0.1",
+        "body-parser": "^1.20.3",
+        "cors": "^2.8.5",
+        "date-fns": "^4.1.0",
+        "dotenv": "^16.5.0",
+        "exceljs": "^4.4.0",
+        "express": "^4.21.2",
+        "jsonwebtoken": "^9.0.2",
+        "luxon": "^3.5.0",
+        "moment-timezone": "^0.5.47",
+        "mssql": "^11.0.1",
+        "nodemailer": "^6.9.16",
+        "nodemon": "^3.1.7",
+        "p-limit": "^2.3.0",
+        "ping": "^0.4.4",
+        "xlsx": "^0.18.5"
+    }
 }
-
-const cardStyle = borderColor => ({
-  border: `1px solid ${borderColor}`,
-  borderRadius: 2,
-  bgcolor: 'rgba(0,0,0,0.4)',
-  overflow: 'hidden',
-  transition: 'transform 0.3s, box-shadow 0.3s',
-  '&:hover': {
-    transform: 'scale(1.02)',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.7)'
-  }
-});
+{
+    "name": "backend",
+    "version": "1.0.0",
+    "type": "commonjs",
+    "main": "index.js",
+    "scripts": {
+        "start": "nodemon src/app.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "dependencies": {
+        "axios": "^1.8.4",
+        "backend": "file:",
+        "basic-auth": "^2.0.1",
+        "body-parser": "^1.20.3",
+        "cors": "^2.8.5",
+        "date-fns": "^4.1.0",
+        "dotenv": "^16.5.0",
+        "exceljs": "^4.4.0",
+        "express": "^4.21.2",
+        "jsonwebtoken": "^9.0.2",
+        "luxon": "^3.5.0",
+        "moment-timezone": "^0.5.47",
+        "mssql": "^11.0.1",
+        "nodemailer": "^6.9.16",
+        "nodemon": "^3.1.7",
+        "p-limit": "^2.3.0",
+        "ping": "^0.4.4",
+        "xlsx": "^0.18.5"
+    }
+}
