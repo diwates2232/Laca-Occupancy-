@@ -1,3 +1,16 @@
+pm2-service-uninstall
+
+pm2 kill
+
+
+pm2 start src/app.js --name backend
+pm2 save
+
+
+
+
+
+
 PS C:\Projects\Backend> pm2-service-install `
 >>   --name "backend" `
 >>   --pm2-path "%APPDATA%\npm\node_modules\pm2\bin\pm2" `
