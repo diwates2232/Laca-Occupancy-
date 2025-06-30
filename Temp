@@ -124,6 +124,132 @@ export default function Dashboard() {
 
 
 
+// src/pages/Dashboard.jsx
+
+import React, { useEffect, useState } from 'react';
+import { Container, Box, Typography, Skeleton } from '@mui/material';
+import GroupIcon          from '@mui/icons-material/Group';
+import TrackChangesIcon   from '@mui/icons-material/TrackChanges';
+import PeopleIcon         from '@mui/icons-material/People';
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
+
+import Header             from '../components/Header';
+import Footer             from '../components/Footer';
+import SummaryCard        from '../components/SummaryCard';
+import CompositeChartCard from '../components/CompositeChartCard';
+import PieChartCard       from '../components/PieChartCard';
+import LoadingSpinner     from '../components/LoadingSpinner';
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy';
+
+import doorMapRaw         from '../utils/doorMap'; 
+
+// … (flags, partition arrays, displayName, flagMap, colorsMap, vilniusMap as before) …
+
+export default function Dashboard() {
+  const { data, loading, error } = useLiveOccupancy(1000);
+  const [lastUpdate, setLastUpdate] = useState('');
+
+  useEffect(() => {
+    if (data) setLastUpdate(new Date().toLocaleTimeString());
+  }, [data]);
+
+  if (error) {
+    return (
+      <Box py={4}>
+        <Typography color="error" align="center">
+          Error loading live data
+        </Typography>
+      </Box>
+    );
+  }
+
+  // … (build vilniusFloors, slice1, slice2, summaryItems as before) …
+
+  return (
+    <>
+      <Header />
+      <Container maxWidth={false} disableGutters sx={{ px: 2, py: 1 }}>
+
+        {/* Summary cards (global + per-site) */}
+        {/* … your existing summary cards code … */}
+
+        {/* Live charts row */}
+        <Box display="flex" gap={2} mb={4} flexWrap="wrap">
+          
+          {/* 1) Vilnius composite */}
+          <Box flex="1 1 0" sx={{ border: '2px solid #FFC107', borderRadius: 2, p: 2, background: 'rgba(0,0,0,0.6)' }}>
+            <Typography variant="h6" gutterBottom>
+              Vilnius Floor Usage
+            </Typography>
+            {loading ? (
+              <Skeleton variant="rectangular" height={350} />
+            ) : (
+              <CompositeChartCard
+                title="Vilnius by Building"
+                data={vilniusFloors}
+                barColor="#4CAF50"
+                lineColor="#FFEB3B"
+                height={350}
+                animationDuration={1500}
+                animationEasing="ease-in-out"
+              />
+            )}
+          </Box>
+          
+          {/* 2) Top regions donut */}
+          <Box flex="1 1 0" sx={{ border: '2px solid #FFC107', borderRadius: 2, p: 2, background: 'rgba(0,0,0,0.6)' }}>
+            <Typography variant="h6" gutterBottom>
+              Top Region Totals
+            </Typography>
+            {loading ? (
+              <Skeleton variant="rectangular" height={350} />
+            ) : (
+              <PieChartCard
+                title="Vienna • Abu Dhabi • Dublin • Rome"
+                data={slice1}
+                colors={['#FFD666', '#FFE599', '#FFF2CC', '#FFD666']}
+                innerRadius={60}
+                height={350}
+                showZeroSlice
+                animationDuration={1500}
+              />
+            )}
+          </Box>
+          
+          {/* 3) Other regions donut */}
+          <Box flex="1 1 0" sx={{ border: '2px solid #FFC107', borderRadius: 2, p: 2, background: 'rgba(0,0,0,0.6)' }}>
+            <Typography variant="h6" gutterBottom>
+              Other Region Totals
+            </Typography>
+            {loading ? (
+              <Skeleton variant="rectangular" height={350} />
+            ) : (
+              <PieChartCard
+                title="Casablanca • Moscow • London • Madrid"
+                data={slice2}
+                colors={['#FFF2CC', '#FFD666', '#FFE599', '#FFC0CB']}
+                innerRadius={60}
+                height={350}
+                showZeroSlice
+                animationDuration={1500}
+              />
+            )}
+          </Box>
+
+        </Box>
+      </Container>
+      <Footer />
+    </>
+  );
+}
+
+
+
+
+
+
+
+
 //C:\Users\W0024618\Desktop\emea-occupancy-frontend\src\pages\Dashboard.jsx
 
 
