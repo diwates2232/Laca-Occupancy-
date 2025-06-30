@@ -1,3 +1,38 @@
+function lookupFloor(_partition, rawDoor, direction, unmapped) {
+  const door = normalizeDoorName(rawDoor);
+  const entry = doorMap.find(d =>
+    d.normalizedDoor === door && d.partition === _partition
+  );
+  if (!entry) {
+    unmapped.add(`${_partition}|${rawDoor}`);
+    return 'Unknown';
+  }
+
+  // pick the floor for this direction
+  let fl = (direction === 'InDirection')
+    ? entry.inDirectionFloor
+    : entry.outDirectionFloor;
+
+  // if it's null/undefined (or explicitly the string 'null'), coerce to 'Unknown'
+  if (!fl || fl === 'null') {
+    fl = 'Unknown';
+  }
+
+  return fl;
+}
+
+
+
+"Out of office":               null,
+
+
+
+
+
+
+
+
+
 http://localhost:3007/api/occupancy/live-summary
 
 {
